@@ -20,7 +20,8 @@ import {
   DEFAULT_SETTINGS,
   TagType,
   SemanticTag,
-  ClassificationResult
+  ClassificationResult,
+  CKG_TYPES
 } from './types';
 
 import { SemanticAISettingTab } from './settings';
@@ -579,9 +580,8 @@ export default class SemanticAIPlugin extends Plugin {
 
     try {
       const content = await this.app.vault.read(file);
-      const defaultTypes: TagType[] = ['Axiom', 'Claim', 'EvidenceBundle', 'Relationship'];
 
-      const result = await this.classifier.classify(content, defaultTypes, file.path);
+      const result = await this.classifier.classify(content, CKG_TYPES, file.path);
 
       // Show result modal
       new ClassificationResultModal(
@@ -628,7 +628,7 @@ export default class SemanticAIPlugin extends Plugin {
 
     new TagSelectionModal(
       this.app,
-      ['Axiom', 'Claim', 'EvidenceBundle', 'Relationship'],
+      CKG_TYPES,
       async (types) => {
         await this.runClassifierWithTypes(file, types);
       },
@@ -823,8 +823,7 @@ export default class SemanticAIPlugin extends Plugin {
       () => {}
     );
 
-    const defaultTypes: TagType[] = ['Axiom', 'Claim', 'EvidenceBundle', 'Relationship'];
-    const estimate = batchClassifier.estimateBatchCost(fileContents, defaultTypes);
+    const estimate = batchClassifier.estimateBatchCost(fileContents, CKG_TYPES);
 
     // Show confirmation modal
     const modal = new BatchProcessingModal(
