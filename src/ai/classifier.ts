@@ -7,10 +7,13 @@ import { requestUrl, RequestUrlParam, Notice } from 'obsidian';
 import {
   SemanticTag,
   TagType,
+  Domain,
   ClassificationResult,
   AIClassificationResponse,
   SemanticAISettings,
-  TokenEstimate
+  TokenEstimate,
+  CKG_TYPES,
+  ALL_DOMAINS
 } from '../types';
 import { PromptManager, estimateTokens, estimatePromptTokens, estimateCost } from './prompt-manager';
 import { createTag } from '../tagging/tag-writer';
@@ -40,7 +43,7 @@ export class AIClassifier {
    */
   async classify(
     content: string,
-    types: TagType[] = ['Axiom', 'Claim', 'EvidenceBundle', 'Relationship'],
+    types: TagType[] = CKG_TYPES,
     sourceFile?: string
   ): Promise<ClassificationResult> {
     const prompt = this.promptManager.buildClassificationPrompt(content, types);
@@ -348,6 +351,13 @@ export class AIClassifier {
 
       if (response.metadata) {
         tag.metadata = response.metadata;
+      }
+
+      // CKG Axis 2: attach validated domain resonance
+      if (response.domains && Array.isArray(response.domains)) {
+        tag.domains = response.domains.filter(
+          (d): d is Domain => ALL_DOMAINS.includes(d as Domain)
+        );
       }
 
       tags.push(tag);

@@ -3,7 +3,10 @@
  * Manages prompts for each tag type and custom classifiers
  */
 
-import { TagType, DEFAULT_PROMPTS, PromptTemplate, CustomClassifier, SemanticAISettings } from '../types';
+import {
+  TagType, Domain, DEFAULT_PROMPTS, DEFAULT_DOMAIN_PROMPT, ALL_DOMAINS,
+  CKG_TYPES, PromptTemplate, CustomClassifier, SemanticAISettings
+} from '../types';
 
 /**
  * Prompt Manager class for handling all prompt-related operations
@@ -55,9 +58,12 @@ export class PromptManager {
    */
   getAllPrompts(): PromptTemplate[] {
     const tagTypes: TagType[] = [
-      'Axiom', 'Claim', 'EvidenceBundle', 'ScientificProcess',
-      'Relationship', 'InternalLink', 'ExternalLink', 'ProperName',
-      'ForwardLink', 'WordOntology', 'Sentence', 'Paragraph'
+      // CKG epistemic types (Axis 1)
+      'Axiom', 'Claim', 'Hypothesis', 'Definition', 'Theory',
+      'Observation', 'Law', 'Theorem', 'Lemma', 'Canonical', 'EvidenceBundle',
+      // Structural / relational types
+      'ScientificProcess', 'Relationship', 'InternalLink', 'ExternalLink',
+      'ProperName', 'ForwardLink', 'WordOntology', 'Sentence', 'Paragraph'
     ];
 
     return tagTypes.map(type => ({
@@ -80,9 +86,19 @@ export class PromptManager {
    */
   getTagTypeName(type: TagType): string {
     const names: Record<TagType, string> = {
+      // CKG epistemic types
       Axiom: 'Axioms',
       Claim: 'Claims',
+      Hypothesis: 'Hypotheses',
+      Definition: 'Definitions',
+      Theory: 'Theories',
+      Observation: 'Observations',
+      Law: 'Laws',
+      Theorem: 'Theorems',
+      Lemma: 'Lemmas',
+      Canonical: 'Canonical Elements',
       EvidenceBundle: 'Evidence Bundles',
+      // Structural types
       ScientificProcess: 'Scientific Processes',
       Relationship: 'Relationships',
       InternalLink: 'Internal Links',
@@ -165,18 +181,33 @@ export class PromptManager {
    * Build system prompt with all selected tag types
    */
   buildSystemPrompt(types: TagType[]): string {
-    const header = `You are a semantic analysis AI. Your task is to analyze text and identify semantic elements according to specific criteria. For each element found, provide a JSON response.
+    const domainEnabled = this.settings.enableDomainMapping;
+    const domainFields = domainEnabled
+      ? `\n- "domains": An array of domain strings indicating where this element resonates (e.g. ["Physics", "Mathematics"]). Valid domains: ${ALL_DOMAINS.join(', ')}`
+      : '';
+
+    const domainExample = domainEnabled
+      ? `, "domains": ["Physics", "Mathematics"]`
+      : '';
+
+    const domainExample2 = domainEnabled
+      ? `, "domains": ["Physics", "Theology"]`
+      : '';
+
+    const header = `You are a semantic analysis AI for the Theophysics Canonical Knowledge Graph (CKG). Your task is to classify text elements on two axes:
+  Axis 1 — "What is this?" (epistemic type)
+  Axis 2 — "Where does this resonate?" (domain mapping)
 
 Output format: Return a JSON array of objects. Each object must have:
 - "type": The tag type (one of: ${types.join(', ')})
 - "label": A concise, descriptive label for the identified element
 - "parentLabel": (optional) The label of a parent element if this is nested
-- "confidence": (optional) A confidence score from 0 to 1
+- "confidence": (optional) A confidence score from 0 to 1${domainFields}
 
 Example output:
 [
-  {"type": "Axiom", "label": "Conservation of Energy", "confidence": 0.95},
-  {"type": "Claim", "label": "Renewable energy is more sustainable", "parentLabel": "Conservation of Energy", "confidence": 0.85}
+  {"type": "Axiom", "label": "Conservation of Energy", "confidence": 0.95${domainExample}},
+  {"type": "Claim", "label": "The Logos field unifies physical and theological reality", "parentLabel": "Conservation of Energy", "confidence": 0.85${domainExample2}}
 ]
 
 Tag Type Definitions:`;
@@ -186,7 +217,13 @@ Tag Type Definitions:`;
       return `\n### ${type}\n${prompt}`;
     }).join('\n');
 
-    return `${header}${definitions}`;
+    let domainSection = '';
+    if (domainEnabled) {
+      const domainPrompt = this.settings.domainMappingPrompt || DEFAULT_DOMAIN_PROMPT;
+      domainSection = `\n\n## Domain Mapping (Axis 2)\n${domainPrompt}`;
+    }
+
+    return `${header}${definitions}${domainSection}`;
   }
 
   /**
@@ -208,15 +245,22 @@ JSON Response:`;
    */
   buildSingleTypePrompt(content: string, type: TagType): string {
     const prompt = this.getPrompt(type);
+    const domainEnabled = this.settings.enableDomainMapping;
+    const domainField = domainEnabled
+      ? `\n- "domains": Array of resonance domains (${ALL_DOMAINS.join(', ')})`
+      : '';
+    const domainInstruction = domainEnabled
+      ? `\nAlso identify which knowledge domains each element resonates in.`
+      : '';
 
-    return `You are a semantic analysis AI. Your task is to identify ${this.getTagTypeName(type)} in the given text.
+    return `You are a semantic analysis AI for the Theophysics CKG. Your task is to identify ${this.getTagTypeName(type)} in the given text.${domainInstruction}
 
 ${prompt}
 
 Output format: Return a JSON array of objects. Each object must have:
 - "type": "${type}"
 - "label": A concise, descriptive label
-- "confidence": (optional) A confidence score from 0 to 1
+- "confidence": (optional) A confidence score from 0 to 1${domainField}
 
 Return ONLY valid JSON, no other text.
 
