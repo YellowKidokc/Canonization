@@ -442,6 +442,71 @@ const EPISTEMIC_PRESET: TaxonomyPreset = {
   ]
 };
 
+const BRIDGE_PRESET: TaxonomyPreset = {
+  id: 'bridge',
+  name: 'Bridge engineering',
+  description: 'Separates native meaning, neutral mapping, mathematical structure, loss, rivals, and tests.',
+  systemContext: 'Treat every cross-domain connection as a proposal. Do not convert shared vocabulary into identity or evidence.',
+  axis2Label: 'Register',
+  categories: [
+    category('NativeGrammar', 'Native grammar', 'Native grammars', 1, 'Identify the source-domain meaning before comparison, including context, disputed senses, and prohibited readings.'),
+    category('NeutralForm', 'Neutral form', 'Neutral forms', 2, 'Identify a domain-neutral description using typed entities, relations, operations, constraints, and transformations.'),
+    category('Mapping', 'Mapping', 'Mappings', 3, 'Identify an explicit forward or reverse mapping between registers and its directionality.'),
+    category('Invariant', 'Invariant', 'Invariants', 4, 'Identify the structure claimed to be preserved across the mapping.'),
+    category('TranslationLoss', 'Translation loss', 'Translation losses', 5, 'Identify meaning or structure omitted, distorted, added, or made ambiguous by translation.'),
+    category('MathematicalMiddle', 'Mathematical middle', 'Mathematical middles', 6, 'Identify the shared formal object, variables, types, units, operations, assumptions, and scope.'),
+    category('ReverseMap', 'Reverse map', 'Reverse maps', 7, 'Identify what can be reconstructed in each native domain after passing through the bridge.'),
+    category('RivalMapping', 'Rival mapping', 'Rival mappings', 3, 'Identify alternative mappings that preserve equal or greater structure.'),
+    category('NegativeControl', 'Negative control', 'Negative controls', 4, 'Identify label-removal, swap, permutation, counter-domain, and other controls.'),
+    category('BridgeTest', 'Bridge test', 'Bridge tests', 5, 'Identify tests of commutativity, preservation, reconstruction, discrimination, or operational instantiation.'),
+    category('DefeatCondition', 'Defeat condition', 'Defeat conditions', 8, 'Identify what would reduce the bridge grade or defeat the proposed connection.'),
+    category('BridgeAssessment', 'Bridge assessment', 'Bridge assessments', 1, 'Identify the current bridge grade and the assessor rationale without upgrading a proposal silently.'),
+    ...structuralCategories()
+  ],
+  topics: [
+    topic('Theology', 'Theology', 'Theological and scriptural registers'),
+    topic('Physics', 'Physics', 'Physical and cosmological registers'),
+    topic('Mathematics', 'Mathematics', 'Formal structures and invariants'),
+    topic('Information', 'Information', 'Information, computation, and semantics'),
+    topic('Consciousness', 'Consciousness', 'Experience, integration, agency, and personhood'),
+    topic('Moral', 'Moral', 'Value, goodness, corruption, and repair'),
+    topic('NaturalisticControl', 'Naturalistic control', 'Bunge, Ladyman-Ross, Hawking, and domain theories')
+  ]
+};
+
+const LEAN_PRESET: TaxonomyPreset = {
+  id: 'lean',
+  name: 'Lean and formalization triage',
+  description: 'Finds formalization candidates, dependencies, blockers, and proof boundaries without calling them proved.',
+  systemContext: 'Classify formalization readiness only. A candidate, notation, or derivation is not a Lean proof. Preserve semantic and empirical boundaries.',
+  axis2Label: 'Formal domain',
+  categories: [
+    category('Primitive', 'Primitive', 'Primitives', 1, 'Identify entities or terms introduced without derivation, including their intended types and scope.'),
+    category('Definition', 'Definition', 'Definitions', 2, 'Identify terms that can be made precise, with proposed inputs, outputs, types, and boundary conditions.'),
+    category('Axiom', 'Axiom', 'Axioms', 3, 'Identify stipulated premises that a formal system would need. Do not add premises merely to make a proof work.'),
+    category('Assumption', 'Assumption', 'Assumptions', 4, 'Identify hidden or explicit assumptions required by a derivation, model, or equation.'),
+    category('Dependency', 'Dependency', 'Dependencies', 5, 'Identify what a result depends on: definitions, axioms, lemmas, typeclass assumptions, or external facts.'),
+    category('Derivation', 'Derivation', 'Derivations', 6, 'Identify an ordered symbolic reasoning chain and mark gaps, informal steps, and unproved transitions.'),
+    category('LemmaCandidate', 'Lemma candidate', 'Lemma candidates', 7, 'Identify a proposition that could serve as a reusable intermediate formal result.'),
+    category('TheoremCandidate', 'Theorem candidate', 'Theorem candidates', 1, 'Identify a proposition suitable for formal theorem work, without treating it as proved.'),
+    category('ProofArtifact', 'Proof artifact', 'Proof artifacts', 2, 'Identify an actual proof, Lean file, checked term, or proof-producing computation and its verification status.'),
+    category('Countermodel', 'Countermodel', 'Countermodels', 3, 'Identify a model satisfying the declared premises while rejecting the proposed conclusion.'),
+    category('FormalizationBlocker', 'Formalization blocker', 'Formalization blockers', 8, 'Identify undefined terms, type ambiguity, missing premises, inconsistent assumptions, undecidable scope, or semantic mismatch.'),
+    category('FormalBoundary', 'Formal boundary', 'Formal boundaries', 5, 'Identify what formalization can establish and what remains empirical, theological, interpretive, or analogical.'),
+    category('LeanChecked', 'Lean checked', 'Lean checked results', 6, 'Identify a result explicitly verified by Lean 4 and record the project, imports, theorem, and assumptions.'),
+    ...structuralCategories()
+  ],
+  topics: [
+    topic('Axioms', 'Axioms', 'Foundational commitments and axiom systems'),
+    topic('Definitions', 'Definitions', 'Types, functions, structures, and semantic boundaries'),
+    topic('Logic', 'Logic', 'Inference rules, propositions, quantifiers, and consistency'),
+    topic('Mathematics', 'Mathematics', 'Algebra, analysis, topology, category theory, and formal structures'),
+    topic('MasterEquation', 'Master Equation', 'Formal equation candidates and their premises'),
+    topic('Theophysics', 'Theophysics', 'Formalizable portions of the Theophysics framework'),
+    topic('EmpiricalBoundary', 'Empirical boundary', 'Claims that cannot be established by formal proof alone')
+  ]
+};
+
 const WRITING_PRESET: TaxonomyPreset = {
   id: 'writing',
   name: 'Fiction and long-form writing',
@@ -530,6 +595,8 @@ export const TAXONOMY_PRESETS: TaxonomyPreset[] = [
   GENERAL_PRESET,
   RESEARCH_PRESET,
   EPISTEMIC_PRESET,
+  BRIDGE_PRESET,
+  LEAN_PRESET,
   PROJECT_PRESET,
   WRITING_PRESET,
   BLANK_PRESET
