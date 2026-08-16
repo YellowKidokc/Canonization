@@ -41,6 +41,7 @@ This is a generated, proposal-level graph export. Source notes remain authoritat
 | Artifacts | ${artifacts.length} |
 | Objects | ${objects.length} |
 | Relations | ${graph.relations.length} |
+| Proposed links | ${graph.relations.filter((r: any) => r.status === 'proposed').length} |
 | Classifications | ${graph.classifications.length} |
 
 ## Unresolved Claims

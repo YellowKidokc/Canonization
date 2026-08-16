@@ -4577,8 +4577,70 @@ var SupraInfraqueGraphRegistry = class {
     for (const file of files) {
       await this.registerNoteWithTags(file, await readTags2(file));
     }
+    this.inferProposedRelations();
     await this.save();
     return files.length;
+  }
+  inferProposedRelations() {
+    const objects = Object.values(this.data.objects);
+    const assignments = Object.values(this.data.classifications).filter((a) => a.axis === "concept" && a.status !== "superseded");
+    const conceptsByObject = /* @__PURE__ */ new Map();
+    for (const assignment of assignments) {
+      if (!conceptsByObject.has(assignment.objectId))
+        conceptsByObject.set(assignment.objectId, /* @__PURE__ */ new Set());
+      conceptsByObject.get(assignment.objectId).add(assignment.term.toLowerCase());
+    }
+    const spanByObject = /* @__PURE__ */ new Map();
+    for (const occurrence of Object.values(this.data.occurrences)) {
+      if (!spanByObject.has(occurrence.objectId))
+        spanByObject.set(occurrence.objectId, []);
+      spanByObject.get(occurrence.objectId).push(occurrence.spanId);
+    }
+    for (const source of objects) {
+      for (const target of objects) {
+        if (source.objectId === target.objectId)
+          continue;
+        const shared = [...conceptsByObject.get(source.objectId) || []].filter((term) => {
+          var _a;
+          return (_a = conceptsByObject.get(target.objectId)) == null ? void 0 : _a.has(term);
+        });
+        if (shared.length === 0)
+          continue;
+        let relationType = "RELATED_BY_SHARED_CONCEPT";
+        if (source.objectType === "CLAIM" && target.objectType === "EVIDENCE_UNIT")
+          relationType = "CANDIDATE_SUPPORTS";
+        if (source.objectType === "CLAIM" && target.objectType === "PROOF")
+          relationType = "CANDIDATE_PROOF_FOR";
+        const key = `${source.objectId}|${target.objectId}|${relationType}`;
+        const exists = Object.values(this.data.relations).some((relation) => `${relation.sourceObjectId}|${relation.targetObjectId}|${relation.relationType}` === key);
+        if (exists)
+          continue;
+        const relationId = generateUUID();
+        this.data.relations[relationId] = {
+          relationId,
+          sourceObjectId: source.objectId,
+          sourceVersion: source.version,
+          targetObjectId: target.objectId,
+          targetVersion: target.version,
+          relationType,
+          warrant: `Shared concept classification only: ${shared.slice(0, 5).join(", ")}. This is a review candidate, not admitted support or proof.`,
+          assumptions: ["The shared concept label refers to compatible content."],
+          sourceSpanIds: [...spanByObject.get(source.objectId) || [], ...spanByObject.get(target.objectId) || []],
+          confidence: null,
+          status: "proposed",
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.data.changeEvents.push({
+          eventId: generateUUID(),
+          action: "linked",
+          targetId: relationId,
+          reason: `Proposed ${relationType} from shared concept classifications.`,
+          actor: "supra-infraque-inference",
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        this.dirty = true;
+      }
+    }
   }
   addTagClassifications(objectId, tags, spanId, actor) {
     for (const tag of tags) {
@@ -4688,6 +4750,7 @@ This is a generated, proposal-level graph export. Source notes remain authoritat
 | Artifacts | ${artifacts.length} |
 | Objects | ${objects.length} |
 | Relations | ${graph.relations.length} |
+| Proposed links | ${graph.relations.filter((r) => r.status === "proposed").length} |
 | Classifications | ${graph.classifications.length} |
 
 ## Unresolved Claims
