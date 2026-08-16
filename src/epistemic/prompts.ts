@@ -1,0 +1,58 @@
+import { EpistemicObjectType } from './types';
+
+/** Neutral capture prompts. They populate slots; they do not assume the answer. */
+export const EPISTEMIC_TYPE_PROMPTS: Record<EpistemicObjectType, string> = {
+  AXIOM: 'What is stipulated as a starting commitment, and what is explicitly not included in it?',
+  CONSTITUTIVE_DISCLOSURE: 'Is this content constitutive of the parent axiom, and what audit supports that classification?',
+  PRIMITIVE: 'What term or entity is introduced without derivation, and what scope does it have?',
+  DEFINITION: 'What meaning is assigned, with boundaries and excluded meanings?',
+  DISTINCTION: 'What two or more things are distinguished, and what relation is preserved between them?',
+  QUESTION: 'What neutral question is being asked, what slot does it target, and what answers would count?',
+  QUESTION_FAMILY: 'What related questions share a target slot or adjudication rule?',
+  RESPONSE: 'What response was given verbatim, under what question and context?',
+  OBSERVATION: 'What was observed, where, by what method, and without adding interpretation?',
+  CLAIM: 'What is the smallest complete assertion, with scope, modality, polarity, and defeat conditions?',
+  PREMISE: 'What does an argument assume, and is the assumption stipulated, observed, or inferred?',
+  LEMMA: 'What limited result is established relative to which premises and rules?',
+  THEOREM: 'What result is proven, in which formal system, with which premises?',
+  PROOF: 'What proof artifact establishes this result, under which formal system and premises?',
+  COROLLARY: 'Which prior result entails this statement and under what additional conditions?',
+  DERIVATION: 'What ordered steps connect premises to conclusion, and where could the chain fail?',
+  INFERENCE_RULE: 'What rule licenses the transition, and is it deductive, inductive, abductive, or analogical?',
+  MODEL: 'What structure represents the target, what does it preserve, and what does it omit?',
+  FORMAL_EXPRESSION: 'What does this notation formalize, with symbols, types, units, and assumptions?',
+  ANALOGY: 'Which similarities are proposed, and which dissimilarities limit the analogy?',
+  METAPHOR: 'What interpretive image is used, and what must not be inferred from it?',
+  INTERPRETATION: 'What meaning is assigned to the evidence, and what rival interpretations remain?',
+  BRIDGE: 'What source and target registers are connected, with mapping, preservation, loss, and tests?',
+  TRANSLATION: 'What transformation carries content between registers, and what changes in translation?',
+  CORRESPONDENCE: 'Which structures correspond, and is the relation partial, directional, or reversible?',
+  IDENTITY_CLAIM: 'What identity is asserted across domains, and what would distinguish it from analogy?',
+  EVIDENCE_UNIT: 'What exact observation or source passage is available, with custody and limitations?',
+  PREDICTION: 'What outcome is predicted before testing, under what conditions and with what discriminator?',
+  PROTOCOL: 'How can the test be repeated, including apparatus, sample, procedure, and stopping rules?',
+  TEST: 'What protocol was executed, and what question or claim did it test?',
+  RESULT: 'What raw result occurred, separate from the interpretation applied to it?',
+  FALSIFIER: 'What observation would count against the claim within its stated scope?',
+  DEFEATER: 'What logical, empirical, source, scope, or bridge condition would defeat this object?',
+  OBJECTION: 'What specific objection is raised, against which object, and with what force?',
+  COUNTEREXAMPLE: 'What instance challenges a universal or necessary statement?',
+  COUNTERMODEL: 'What coherent model satisfies the premises but rejects the proposed conclusion?',
+  ALTERNATIVE_EXPLANATION: 'What rival explanation accounts for the same evidence, and what discriminates them?',
+  LIMITATION: 'What boundary, uncertainty, missing evidence, or category error limits the object?',
+  LAW: 'What regularity or governing principle is claimed, and what domain and test support it?',
+  PRINCIPLE: 'What general organizing commitment is proposed, and how does it differ from an axiom or law?',
+  SYNTHESIS: 'Which objects are combined, what is preserved, and what new commitments are introduced?',
+  APPLICATION: 'How is the object applied, to what case, and what assumptions enter during application?'
+};
+
+export const EPISTEMIC_AXES = [
+  'logical_role', 'ontological_domain', 'relation_to_A0', 'ontological_mode',
+  'warrant_type', 'formal_status', 'empirical_status', 'epistemic_status', 'bridge_strength'
+] as const;
+
+export function promptCatalogMarkdown(): string {
+  const rows = Object.entries(EPISTEMIC_TYPE_PROMPTS)
+    .map(([type, prompt]) => `| ${type} | ${prompt} |`).join('\n');
+  return `# Supra Infraque Neutral Prompt Catalog\n\nThese prompts populate information slots. They do not adjudicate truth.\n\n## Object types\n\n| Type | Prompt |\n|---|---|\n${rows}\n\n## Independent axes\n\n${EPISTEMIC_AXES.map((axis) => `- ${axis}`).join('\n')}\n`;
+}

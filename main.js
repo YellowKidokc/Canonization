@@ -27,7 +27,7 @@ __export(main_exports, {
   default: () => SemanticAIPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian10 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 
 // src/types.ts
 var PROVIDER_IDS = ["openai", "deepseek", "anthropic", "ollama", "custom"];
@@ -4318,9 +4318,429 @@ var ConceptJourneyView = class extends import_obsidian8.ItemView {
   }
 };
 
-// src/ui/index-modal.ts
+// src/epistemic/graph-registry.ts
 var import_obsidian9 = require("obsidian");
-var IndexConfirmationModal = class extends import_obsidian9.Modal {
+var GRAPH_FILENAME = "supra-infraque-graph.json";
+var SCHEMA_VERSION = "1.0.0";
+function emptyGraph() {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    graphId: generateUUID(),
+    lastUpdated: (/* @__PURE__ */ new Date()).toISOString(),
+    artifacts: {},
+    sourceSpans: {},
+    objects: {},
+    occurrences: {},
+    relations: {},
+    classifications: {},
+    changeEvents: []
+  };
+}
+async function sha256(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+var SupraInfraqueGraphRegistry = class {
+  constructor(vault, pluginDir) {
+    this.data = emptyGraph();
+    this.dirty = false;
+    this.vault = vault;
+    this.path = (0, import_obsidian9.normalizePath)(`${pluginDir || `${vault.configDir}/plugins/semantic-ai`}/${GRAPH_FILENAME}`);
+  }
+  async load() {
+    try {
+      if (await this.vault.adapter.exists(this.path)) {
+        const parsed = JSON.parse(await this.vault.adapter.read(this.path));
+        this.data = {
+          ...emptyGraph(),
+          ...parsed,
+          schemaVersion: parsed.schemaVersion || SCHEMA_VERSION,
+          artifacts: parsed.artifacts || {},
+          sourceSpans: parsed.sourceSpans || {},
+          objects: parsed.objects || {},
+          occurrences: parsed.occurrences || {},
+          relations: parsed.relations || {},
+          classifications: parsed.classifications || {},
+          changeEvents: parsed.changeEvents || []
+        };
+      } else {
+        this.dirty = true;
+      }
+    } catch (e) {
+      new import_obsidian9.Notice("Supra Infraque graph could not be read; the previous file was left untouched.");
+      this.data = emptyGraph();
+    }
+  }
+  async save() {
+    if (!this.dirty)
+      return;
+    const dir = this.path.slice(0, this.path.lastIndexOf("/"));
+    if (dir && !await this.vault.adapter.exists(dir))
+      await this.vault.adapter.mkdir(dir);
+    this.data.lastUpdated = (/* @__PURE__ */ new Date()).toISOString();
+    await this.vault.adapter.write(this.path, JSON.stringify(this.data, null, 2));
+    this.dirty = false;
+  }
+  getData() {
+    return this.data;
+  }
+  getPath() {
+    return this.path;
+  }
+  async registerNote(file, actor = "obsidian-user") {
+    return this.registerNoteWithTags(file, [], actor);
+  }
+  async registerNoteWithTags(file, tags, actor = "obsidian-indexer") {
+    const content = await this.vault.read(file);
+    const sourceSha256 = await sha256(content);
+    const artifactId = `artifact:${sourceSha256}`;
+    const existing = Object.values(this.data.artifacts).find((a) => a.sourcePath === file.path && a.sourceSha256 === sourceSha256);
+    if (existing) {
+      const occurrence2 = Object.values(this.data.occurrences).find((o) => {
+        var _a;
+        return ((_a = this.data.sourceSpans[o.spanId]) == null ? void 0 : _a.artifactId) === existing.artifactId;
+      });
+      if (occurrence2 && this.data.objects[occurrence2.objectId]) {
+        this.addTagClassifications(occurrence2.objectId, tags, occurrence2.spanId, actor);
+        if (tags.length)
+          await this.save();
+        return this.data.objects[occurrence2.objectId];
+      }
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const artifact = {
+      artifactId,
+      sourcePath: file.path,
+      sourceName: file.name,
+      sourceExtension: `.${file.extension}`,
+      sourceBytes: new TextEncoder().encode(content).byteLength,
+      sourceModified: new Date(file.stat.mtime).toISOString(),
+      sourceSha256,
+      registeredAt: now
+    };
+    this.data.artifacts[artifactId] = artifact;
+    const spanId = generateUUID();
+    const lines = content.split(/\r?\n/);
+    const span = { spanId, artifactId, locator: { kind: "line", start: 1, end: lines.length }, exactText: content };
+    this.data.sourceSpans[spanId] = span;
+    const objectId = generateUUID();
+    const humanCode = `CLM-${String(Object.keys(this.data.objects).length + 1).padStart(3, "0")}`;
+    const objectType = this.objectTypeFromTags(tags);
+    const object = {
+      objectId,
+      humanCode,
+      objectType,
+      canonicalText: this.candidateText(content),
+      scope: `Note: ${file.path}`,
+      modality: "unclassified",
+      polarity: "unclassified",
+      ownerFramework: "unclassified",
+      status: "proposed",
+      createdBy: actor,
+      createdAt: now,
+      version: "0.1.0"
+    };
+    this.data.objects[objectId] = object;
+    const occurrence = { occurrenceId: generateUUID(), objectId, objectVersion: object.version, spanId };
+    this.data.occurrences[occurrence.occurrenceId] = occurrence;
+    this.addTagClassifications(objectId, tags, spanId, actor);
+    this.recordEvent("created", objectId, "Candidate object registered from immutable note provenance.", actor);
+    this.dirty = true;
+    await this.save();
+    return object;
+  }
+  async registerFolder(files, readTags2) {
+    for (const file of files) {
+      await this.registerNoteWithTags(file, await readTags2(file));
+    }
+    await this.save();
+    return files.length;
+  }
+  addTagClassifications(objectId, tags, spanId, actor) {
+    for (const tag of tags) {
+      const terms = [
+        { axis: "logical_role", term: tag.type },
+        { axis: "concept", term: tag.label },
+        ...(tag.topics || []).map((topic2) => ({ axis: "topic", term: topic2 }))
+      ];
+      for (const item of terms) {
+        const duplicate = Object.values(this.data.classifications).some(
+          (assignment) => assignment.objectId === objectId && assignment.axis === item.axis && assignment.term === item.term && assignment.status !== "superseded"
+        );
+        if (duplicate)
+          continue;
+        this.data.classifications[generateUUID()] = {
+          assignmentId: generateUUID(),
+          objectId,
+          axis: item.axis,
+          term: item.term,
+          classifier: `semantic-ai:${actor}`,
+          confidence: null,
+          rationale: "Imported from an existing Semantic AI tag; requires epistemic review.",
+          sourceSpanIds: [spanId],
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          status: "proposed"
+        };
+        this.dirty = true;
+      }
+    }
+  }
+  candidateText(content) {
+    const lines = content.split(/\r?\n/).filter((line) => line.trim() && !line.trim().startsWith("#") && !line.trim().startsWith("---"));
+    return (lines[0] || content.trim()).slice(0, 2e3);
+  }
+  objectTypeFromTags(tags) {
+    const normalized = tags.map((tag) => `${tag.type} ${tag.label}`.toLowerCase());
+    if (normalized.some((value) => /evidence|observation|result/.test(value)))
+      return "EVIDENCE_UNIT";
+    if (normalized.some((value) => /proof|theorem|lemma|derivation|formal/.test(value)))
+      return "PROOF";
+    if (normalized.some((value) => /axiom/.test(value)))
+      return "AXIOM";
+    if (normalized.some((value) => /question/.test(value)))
+      return "QUESTION";
+    if (normalized.some((value) => /bridge|translation|correspondence/.test(value)))
+      return "BRIDGE";
+    return "CLAIM";
+  }
+  recordEvent(action, targetId, reason, actor) {
+    this.data.changeEvents.push({ eventId: generateUUID(), action, targetId, reason, actor, createdAt: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+  exportFolder(folderPath) {
+    const artifacts = Object.values(this.data.artifacts).filter((a) => a.sourcePath === folderPath || a.sourcePath.startsWith(`${folderPath}/`));
+    const artifactIds = new Set(artifacts.map((a) => a.artifactId));
+    const spans = Object.values(this.data.sourceSpans).filter((s) => artifactIds.has(s.artifactId));
+    const spanIds = new Set(spans.map((s) => s.spanId));
+    const occurrences = Object.values(this.data.occurrences).filter((o) => spanIds.has(o.spanId));
+    const objectIds = new Set(occurrences.map((o) => o.objectId));
+    return {
+      schemaVersion: this.data.schemaVersion,
+      graphId: this.data.graphId,
+      lastUpdated: this.data.lastUpdated,
+      artifacts,
+      sourceSpans: spans,
+      objects: Object.values(this.data.objects).filter((o) => objectIds.has(o.objectId)),
+      occurrences,
+      relations: Object.values(this.data.relations).filter((r) => objectIds.has(r.sourceObjectId) || objectIds.has(r.targetObjectId)),
+      classifications: Object.values(this.data.classifications).filter((c) => objectIds.has(c.objectId)),
+      changeEvents: this.data.changeEvents.filter((e) => objectIds.has(e.targetId))
+    };
+  }
+};
+
+// src/epistemic/prompts.ts
+var EPISTEMIC_TYPE_PROMPTS = {
+  AXIOM: "What is stipulated as a starting commitment, and what is explicitly not included in it?",
+  CONSTITUTIVE_DISCLOSURE: "Is this content constitutive of the parent axiom, and what audit supports that classification?",
+  PRIMITIVE: "What term or entity is introduced without derivation, and what scope does it have?",
+  DEFINITION: "What meaning is assigned, with boundaries and excluded meanings?",
+  DISTINCTION: "What two or more things are distinguished, and what relation is preserved between them?",
+  QUESTION: "What neutral question is being asked, what slot does it target, and what answers would count?",
+  QUESTION_FAMILY: "What related questions share a target slot or adjudication rule?",
+  RESPONSE: "What response was given verbatim, under what question and context?",
+  OBSERVATION: "What was observed, where, by what method, and without adding interpretation?",
+  CLAIM: "What is the smallest complete assertion, with scope, modality, polarity, and defeat conditions?",
+  PREMISE: "What does an argument assume, and is the assumption stipulated, observed, or inferred?",
+  LEMMA: "What limited result is established relative to which premises and rules?",
+  THEOREM: "What result is proven, in which formal system, with which premises?",
+  PROOF: "What proof artifact establishes this result, under which formal system and premises?",
+  COROLLARY: "Which prior result entails this statement and under what additional conditions?",
+  DERIVATION: "What ordered steps connect premises to conclusion, and where could the chain fail?",
+  INFERENCE_RULE: "What rule licenses the transition, and is it deductive, inductive, abductive, or analogical?",
+  MODEL: "What structure represents the target, what does it preserve, and what does it omit?",
+  FORMAL_EXPRESSION: "What does this notation formalize, with symbols, types, units, and assumptions?",
+  ANALOGY: "Which similarities are proposed, and which dissimilarities limit the analogy?",
+  METAPHOR: "What interpretive image is used, and what must not be inferred from it?",
+  INTERPRETATION: "What meaning is assigned to the evidence, and what rival interpretations remain?",
+  BRIDGE: "What source and target registers are connected, with mapping, preservation, loss, and tests?",
+  TRANSLATION: "What transformation carries content between registers, and what changes in translation?",
+  CORRESPONDENCE: "Which structures correspond, and is the relation partial, directional, or reversible?",
+  IDENTITY_CLAIM: "What identity is asserted across domains, and what would distinguish it from analogy?",
+  EVIDENCE_UNIT: "What exact observation or source passage is available, with custody and limitations?",
+  PREDICTION: "What outcome is predicted before testing, under what conditions and with what discriminator?",
+  PROTOCOL: "How can the test be repeated, including apparatus, sample, procedure, and stopping rules?",
+  TEST: "What protocol was executed, and what question or claim did it test?",
+  RESULT: "What raw result occurred, separate from the interpretation applied to it?",
+  FALSIFIER: "What observation would count against the claim within its stated scope?",
+  DEFEATER: "What logical, empirical, source, scope, or bridge condition would defeat this object?",
+  OBJECTION: "What specific objection is raised, against which object, and with what force?",
+  COUNTEREXAMPLE: "What instance challenges a universal or necessary statement?",
+  COUNTERMODEL: "What coherent model satisfies the premises but rejects the proposed conclusion?",
+  ALTERNATIVE_EXPLANATION: "What rival explanation accounts for the same evidence, and what discriminates them?",
+  LIMITATION: "What boundary, uncertainty, missing evidence, or category error limits the object?",
+  LAW: "What regularity or governing principle is claimed, and what domain and test support it?",
+  PRINCIPLE: "What general organizing commitment is proposed, and how does it differ from an axiom or law?",
+  SYNTHESIS: "Which objects are combined, what is preserved, and what new commitments are introduced?",
+  APPLICATION: "How is the object applied, to what case, and what assumptions enter during application?"
+};
+var EPISTEMIC_AXES = [
+  "logical_role",
+  "ontological_domain",
+  "relation_to_A0",
+  "ontological_mode",
+  "warrant_type",
+  "formal_status",
+  "empirical_status",
+  "epistemic_status",
+  "bridge_strength"
+];
+function promptCatalogMarkdown() {
+  const rows = Object.entries(EPISTEMIC_TYPE_PROMPTS).map(([type, prompt]) => `| ${type} | ${prompt} |`).join("\n");
+  return `# Supra Infraque Neutral Prompt Catalog
+
+These prompts populate information slots. They do not adjudicate truth.
+
+## Object types
+
+| Type | Prompt |
+|---|---|
+${rows}
+
+## Independent axes
+
+${EPISTEMIC_AXES.map((axis) => `- ${axis}`).join("\n")}
+`;
+}
+
+// src/epistemic/graph-exporter.ts
+var START2 = "<!-- SUPRA_INFRAQUE:GENERATED:START -->";
+var END2 = "<!-- SUPRA_INFRAQUE:GENERATED:END -->";
+function graphToJSON(registry, folderPath) {
+  return JSON.stringify(registry.exportFolder(folderPath), null, 2);
+}
+function markdown(registry, folderPath) {
+  const graph = registry.exportFolder(folderPath);
+  const sourceFor = (objectId) => {
+    const occurrence = graph.occurrences.find((o) => o.objectId === objectId);
+    const span = occurrence && graph.sourceSpans.find((s) => s.spanId === occurrence.spanId);
+    const artifact = span && graph.artifacts.find((a) => a.artifactId === span.artifactId);
+    return (artifact == null ? void 0 : artifact.sourcePath) || "UNRESOLVED_SOURCE";
+  };
+  const objects = graph.objects;
+  const artifacts = graph.artifacts;
+  const rows = objects.length ? objects.map((o) => `| ${o.humanCode} | ${o.objectType} | ${o.status} | ${String(o.canonicalText).replace(/\|/g, "\\|")} |`).join("\n") : "| _No objects registered._ | | | |";
+  const unresolved = objects.filter((o) => o.objectType === "CLAIM" && !graph.relations.some(
+    (r) => r.sourceObjectId === o.objectId && ["SUPPORTS", "CONTRADICTS", "UNDERDETERMINES"].includes(r.relationType) && r.status !== "rejected"
+  ));
+  const unresolvedRows = unresolved.length ? unresolved.map((o) => `- **${o.humanCode}**: ${String(o.canonicalText).replace(/\n/g, " ")}`).join("\n") : "- No unresolved claims recorded.";
+  const safe = (value) => value.replace(/[^A-Za-z0-9_ -]/g, "").replace(/ /g, "_").slice(0, 48) || "object";
+  const mindMap = objects.length ? ["```mermaid", "mindmap", "  root((Supra Infraque))", ...objects.slice(0, 100).map((o) => `    ${safe(o.humanCode)}[${safe(o.objectType)}: ${safe(String(o.canonicalText))}]`), "```"].join("\n") : "```mermaid\nmindmap\n  root((Supra Infraque))\n```";
+  return `${START2}
+## Supra Infraque Graph
+
+This is a generated, proposal-level graph export. Source notes remain authoritative provenance containers; this file is not a truth verdict.
+
+| Field | Value |
+|---|---:|
+| Schema | ${graph.schemaVersion} |
+| Artifacts | ${artifacts.length} |
+| Objects | ${objects.length} |
+| Relations | ${graph.relations.length} |
+| Classifications | ${graph.classifications.length} |
+
+## Unresolved Claims
+
+These claims have no recorded evidential or defeating relation yet. They are review targets, not failed claims.
+
+${unresolvedRows}
+
+## Objects
+
+| Code | Type | Status | Candidate text |
+|---|---|---|---|
+${rows}
+
+## Mind Map
+
+${mindMap}
+
+## Governance
+
+Changes are append-only in the JSON graph. Candidate objects require later semantic review; registration does not adjudicate their truth.
+${END2}`;
+}
+async function writeGraphExports(vault, registry, folderPath) {
+  const markdownPath = folderPath ? `${folderPath}/SUPRA_INFRAQUE_GRAPH.md` : "SUPRA_INFRAQUE_GRAPH.md";
+  const jsonPath = folderPath ? `${folderPath}/SUPRA_INFRAQUE_GRAPH.json` : "SUPRA_INFRAQUE_GRAPH.json";
+  const block = markdown(registry, folderPath);
+  const existing = vault.getAbstractFileByPath(markdownPath);
+  if (existing && "path" in existing) {
+    await vault.process(existing, (content) => {
+      const pattern = new RegExp(`${START2}[\\s\\S]*?${END2}`);
+      return pattern.test(content) ? content.replace(pattern, block) : `${content.trimEnd()}
+
+${block}
+`;
+    });
+  } else {
+    await vault.create(markdownPath, `# Supra Infraque Graph
+
+${block}
+`);
+  }
+  const jsonExisting = vault.getAbstractFileByPath(jsonPath);
+  const json = graphToJSON(registry, folderPath);
+  if (jsonExisting && "path" in jsonExisting)
+    await vault.modify(jsonExisting, json);
+  else
+    await vault.create(jsonPath, json);
+  const promptsPath = folderPath ? `${folderPath}/SUPRA_INFRAQUE_PROMPTS.md` : "SUPRA_INFRAQUE_PROMPTS.md";
+  const promptsExisting = vault.getAbstractFileByPath(promptsPath);
+  if (promptsExisting && "path" in promptsExisting)
+    await vault.modify(promptsExisting, promptCatalogMarkdown());
+  else
+    await vault.create(promptsPath, promptCatalogMarkdown());
+  await writeRoutingIndexes(vault, registry, folderPath);
+  return { markdownPath, jsonPath };
+}
+async function writeRoutingIndexes(vault, registry, folderPath) {
+  const root = folderPath ? `${folderPath}/SUPRA_INFRAQUE` : "SUPRA_INFRAQUE";
+  const graph = registry.exportFolder(folderPath);
+  const sourceFor = (objectId) => {
+    const occurrence = graph.occurrences.find((o) => o.objectId === objectId);
+    const span = occurrence && graph.sourceSpans.find((s) => s.spanId === occurrence.spanId);
+    const artifact = span && graph.artifacts.find((a) => a.artifactId === span.artifactId);
+    return (artifact == null ? void 0 : artifact.sourcePath) || "UNRESOLVED_SOURCE";
+  };
+  const buckets = { Claims: [], Evidence: [], Proof: [], "Unresolved Claims": [] };
+  const proofTypes = /* @__PURE__ */ new Set(["PROOF", "THEOREM", "LEMMA", "DERIVATION", "FORMAL_EXPRESSION"]);
+  const evidenceTypes = /* @__PURE__ */ new Set(["EVIDENCE_UNIT", "OBSERVATION", "RESULT"]);
+  const relationByObject = new Set(graph.relations.filter((r) => r.status !== "rejected" && ["SUPPORTS", "CONTRADICTS", "UNDERDETERMINES"].includes(r.relationType)).map((r) => r.sourceObjectId));
+  for (const object of graph.objects) {
+    if (object.objectType === "CLAIM")
+      buckets.Claims.push(object);
+    if (evidenceTypes.has(object.objectType))
+      buckets.Evidence.push(object);
+    if (proofTypes.has(object.objectType))
+      buckets.Proof.push(object);
+    if (object.objectType === "CLAIM" && !relationByObject.has(object.objectId))
+      buckets["Unresolved Claims"].push(object);
+  }
+  try {
+    await vault.createFolder(root);
+  } catch (e) {
+  }
+  for (const [name, objects] of Object.entries(buckets)) {
+    const path = `${root}/${name.replace(/ /g, "_")}.md`;
+    const body = objects.length ? objects.map((o) => `- **${o.humanCode}** (${o.status}) \u2014 ${String(o.canonicalText).replace(/\n/g, " ")} \u2014 source: [[${sourceFor(o.objectId).replace(/\.md$/i, "")}]]`).join("\n") : "- None recorded.";
+    const content = `# ${name}
+
+Generated graph view. Source notes remain in their original series folders.
+
+${body}
+`;
+    const existing = vault.getAbstractFileByPath(path);
+    if (existing && "path" in existing)
+      await vault.modify(existing, content);
+    else
+      await vault.create(path, content);
+  }
+}
+
+// src/ui/index-modal.ts
+var import_obsidian10 = require("obsidian");
+var IndexConfirmationModal = class extends import_obsidian10.Modal {
   constructor(app, scope, scopePath, estimate, onConfirm) {
     super(app);
     this.indexScope = scope;
@@ -4362,7 +4782,7 @@ var IndexConfirmationModal = class extends import_obsidian9.Modal {
     infoList.createEl("li", { text: "A cross-reference of every tagged concept" });
     infoList.createEl("li", { text: "Where each concept appears" });
     infoList.createEl("li", { text: "Which notes share concepts, and how strongly" });
-    new import_obsidian9.Setting(contentEl).addButton((button) => {
+    new import_obsidian10.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => this.close());
     }).addButton((button) => {
       button.setButtonText(this.indexScope === "vault" ? "Index vault" : "Index folder").setCta().onClick(() => {
@@ -4381,7 +4801,7 @@ var IndexConfirmationModal = class extends import_obsidian9.Modal {
     this.contentEl.empty();
   }
 };
-var IndexProgressModal = class extends import_obsidian9.Modal {
+var IndexProgressModal = class extends import_obsidian10.Modal {
   constructor() {
     super(...arguments);
     this.statusEl = null;
@@ -4431,7 +4851,7 @@ var IndexProgressModal = class extends import_obsidian9.Modal {
     list.createEl("li", { text: `Concepts found: ${stats.concepts}` });
     list.createEl("li", { text: `Relationships: ${stats.relations}` });
     list.createEl("li", { text: `Time taken: ${(stats.timeMs / 1e3).toFixed(2)}s` });
-    new import_obsidian9.Setting(this.contentEl).addButton((button) => {
+    new import_obsidian10.Setting(this.contentEl).addButton((button) => {
       button.setButtonText("Close").setCta().onClick(() => this.close());
       window.setTimeout(() => button.buttonEl.focus(), 0);
     });
@@ -4440,7 +4860,7 @@ var IndexProgressModal = class extends import_obsidian9.Modal {
     this.contentEl.empty();
   }
 };
-var FolderSelectionModal = class extends import_obsidian9.Modal {
+var FolderSelectionModal = class extends import_obsidian10.Modal {
   constructor(app, folders, onSelect) {
     super(app);
     this.folders = folders;
@@ -4466,7 +4886,7 @@ var FolderSelectionModal = class extends import_obsidian9.Modal {
         window.setTimeout(() => item.focus(), 0);
       }
     });
-    new import_obsidian9.Setting(contentEl).addButton((button) => {
+    new import_obsidian10.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => this.close());
     });
   }
@@ -4477,7 +4897,7 @@ var FolderSelectionModal = class extends import_obsidian9.Modal {
 
 // src/main.ts
 var TAG_BLOCK_END2 = "%%--- END SEMANTIC TAGS ---%%";
-var SemanticAIPlugin = class extends import_obsidian10.Plugin {
+var SemanticAIPlugin = class extends import_obsidian11.Plugin {
   async onload() {
     await this.loadSettings();
     this.promptManager = new PromptManager(this.settings);
@@ -4486,6 +4906,8 @@ var SemanticAIPlugin = class extends import_obsidian10.Plugin {
     this.conceptRegistry = new ConceptRegistry(this.app.vault, this.manifest.dir);
     await this.conceptRegistry.load();
     setConceptRegistry(this.conceptRegistry);
+    this.supraInfraqueGraph = new SupraInfraqueGraphRegistry(this.app.vault, this.manifest.dir);
+    await this.supraInfraqueGraph.load();
     this.registerView(
       MERMAID_VIEW_TYPE,
       (leaf) => new MermaidView(leaf, this.settings)
@@ -4512,6 +4934,8 @@ var SemanticAIPlugin = class extends import_obsidian10.Plugin {
     if ((_a = this.conceptRegistry) == null ? void 0 : _a.isDirty()) {
       await this.conceptRegistry.save();
     }
+    if (this.supraInfraqueGraph)
+      await this.supraInfraqueGraph.save();
   }
   async loadSettings() {
     this.settings = migrateSettings(await this.loadData());
@@ -4570,7 +4994,7 @@ var SemanticAIPlugin = class extends import_obsidian10.Plugin {
       callback: async () => {
         this.settings.showHiddenTags = !this.settings.showHiddenTags;
         await this.saveSettings();
-        new import_obsidian10.Notice(this.settings.showHiddenTags ? "Tag blocks shown" : "Tag blocks hidden");
+        new import_obsidian11.Notice(this.settings.showHiddenTags ? "Tag blocks shown" : "Tag blocks hidden");
       }
     });
     this.addCommand({
@@ -4596,7 +5020,7 @@ var SemanticAIPlugin = class extends import_obsidian10.Plugin {
         if (folder) {
           await this.batchClassifyFolder(folder);
         } else {
-          new import_obsidian10.Notice("Open a note first, so there is a folder to work on.");
+          new import_obsidian11.Notice("Open a note first, so there is a folder to work on.");
         }
       }
     });
@@ -4609,7 +5033,7 @@ var SemanticAIPlugin = class extends import_obsidian10.Plugin {
         if (folder) {
           await this.indexFolder(folder);
         } else {
-          new import_obsidian10.Notice("Open a note first, so there is a folder to index.");
+          new import_obsidian11.Notice("Open a note first, so there is a folder to index.");
         }
       }
     });
@@ -4620,17 +5044,19 @@ var SemanticAIPlugin = class extends import_obsidian10.Plugin {
         var _a;
         const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
         if (!folder) {
-          new import_obsidian10.Notice("Open a note first, so there is a folder to index.");
+          new import_obsidian11.Notice("Open a note first, so there is a folder to index.");
           return;
         }
         try {
           const index = await this.vaultIndexer.buildIndex("folder", folder.path);
+          const graphCount = await this.registerGraphForScope(folder.path);
           const markdownPath = await writeIndexMarkdown(this.app.vault, index, folder.path);
           const jsonPath = await writeIndexJSON(this.app.vault, index, folder.path);
-          new import_obsidian10.Notice(`Saved ${markdownPath} and ${jsonPath}`);
+          const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
+          new import_obsidian11.Notice(`Saved ${markdownPath}, ${jsonPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
           await this.openConceptTracker();
         } catch (error) {
-          new import_obsidian10.Notice(`Index export failed: ${this.errorMessage(error)}`);
+          new import_obsidian11.Notice(`Index export failed: ${this.errorMessage(error)}`);
         }
       }
     });
@@ -4668,7 +5094,7 @@ var SemanticAIPlugin = class extends import_obsidian10.Plugin {
       callback: () => {
         const stats = this.conceptRegistry.getStats();
         const typeBreakdown = Object.entries(stats.byType).map(([type, count]) => `  ${type}: ${count}`).join("\n");
-        new import_obsidian10.Notice(
+        new import_obsidian11.Notice(
           `Concepts: ${stats.totalConcepts}
 With aliases: ${stats.withAliases}
 Updated: ${new Date(stats.lastUpdated).toLocaleString()}
@@ -4684,11 +5110,11 @@ ${typeBreakdown}`,
       callback: async () => {
         const filename = `concept-registry-${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.json`;
         if (this.app.vault.getAbstractFileByPath(filename)) {
-          new import_obsidian10.Notice(`${filename} already exists. Delete or rename it first.`);
+          new import_obsidian11.Notice(`${filename} already exists. Delete or rename it first.`);
           return;
         }
         await this.app.vault.create(filename, this.conceptRegistry.exportJSON());
-        new import_obsidian10.Notice(`Exported to ${filename}`);
+        new import_obsidian11.Notice(`Exported to ${filename}`);
       }
     });
     this.addCommand({
@@ -4696,7 +5122,33 @@ ${typeBreakdown}`,
       name: "Save concept registry",
       callback: async () => {
         await this.conceptRegistry.save();
-        new import_obsidian10.Notice("Concept registry saved");
+        new import_obsidian11.Notice("Concept registry saved");
+      }
+    });
+    this.addCommand({
+      id: "supra-infraque-register-note",
+      name: "Supra Infraque: register current note as candidate object",
+      editorCallback: async (_editor, view) => {
+        if (!view.file) {
+          new import_obsidian11.Notice("No note is open.");
+          return;
+        }
+        const object = await this.supraInfraqueGraph.registerNote(view.file);
+        new import_obsidian11.Notice(`Registered ${object.humanCode} as a proposed candidate; source note unchanged.`);
+      }
+    });
+    this.addCommand({
+      id: "supra-infraque-export-folder",
+      name: "Supra Infraque: export current folder graph",
+      callback: async () => {
+        var _a;
+        const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
+        if (!folder) {
+          new import_obsidian11.Notice("Open a note first, so there is a folder to export.");
+          return;
+        }
+        const paths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
+        new import_obsidian11.Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
       }
     });
   }
@@ -4706,7 +5158,7 @@ ${typeBreakdown}`,
   registerContextMenu() {
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file) => {
-        if (file instanceof import_obsidian10.TFile && file.extension === "md") {
+        if (file instanceof import_obsidian11.TFile && file.extension === "md") {
           menu.addSeparator();
           menu.addItem((item) => {
             item.setTitle("Classify note").setIcon("brain").onClick(async () => {
@@ -4724,7 +5176,7 @@ ${typeBreakdown}`,
             });
           });
         }
-        if (file instanceof import_obsidian10.TFolder) {
+        if (file instanceof import_obsidian11.TFolder) {
           menu.addSeparator();
           menu.addItem((item) => {
             item.setTitle("Classify every note in this folder").setIcon("brain").onClick(async () => {
@@ -4756,7 +5208,7 @@ ${typeBreakdown}`,
     );
   }
   showSemanticMenu(evt) {
-    const menu = new import_obsidian10.Menu();
+    const menu = new import_obsidian11.Menu();
     menu.addItem((item) => {
       item.setTitle("Classify current note").setIcon("brain").onClick(async () => {
         await this.runClassifier(this.app.workspace.getActiveFile());
@@ -4798,7 +5250,7 @@ ${typeBreakdown}`,
   }
   async runClassifierWithSelection(file) {
     if (!file) {
-      new import_obsidian10.Notice("No note is open.");
+      new import_obsidian11.Notice("No note is open.");
       return;
     }
     new TagSelectionModal(
@@ -4812,72 +5264,72 @@ ${typeBreakdown}`,
   }
   async runClassifierWithTypes(file, types) {
     if (!file) {
-      new import_obsidian10.Notice("No note is open.");
+      new import_obsidian11.Notice("No note is open.");
       return;
     }
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian10.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian11.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
-    const notice = new import_obsidian10.Notice("Classifying\u2026", 0);
+    const notice = new import_obsidian11.Notice("Classifying\u2026", 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classify(content, types, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian10.Notice("Nothing matched the selected categories.");
+        new import_obsidian11.Notice("Nothing matched the selected categories.");
         return;
       }
       this.showResult(file, result.tags, () => this.settings.autoGenerateMermaid);
     } catch (error) {
       notice.hide();
-      new import_obsidian10.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian11.Notice(this.errorMessage(error), 1e4);
     }
   }
   async classifyAs(file, type) {
     if (!file) {
-      new import_obsidian10.Notice("No note is open.");
+      new import_obsidian11.Notice("No note is open.");
       return;
     }
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian10.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian11.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
-    const notice = new import_obsidian10.Notice("Classifying\u2026", 0);
+    const notice = new import_obsidian11.Notice("Classifying\u2026", 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classifySingleType(content, type, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian10.Notice(`No ${this.promptManager.getTagTypeName(type).toLowerCase()} found.`);
+        new import_obsidian11.Notice(`No ${this.promptManager.getTagTypeName(type).toLowerCase()} found.`);
         return;
       }
       this.showResult(file, result.tags, () => false);
     } catch (error) {
       notice.hide();
-      new import_obsidian10.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian11.Notice(this.errorMessage(error), 1e4);
     }
   }
   async runCustomClassifier(file, keyword) {
     if (!file) {
-      new import_obsidian10.Notice("No note is open.");
+      new import_obsidian11.Notice("No note is open.");
       return;
     }
-    const notice = new import_obsidian10.Notice(`Running "${keyword}"\u2026`, 0);
+    const notice = new import_obsidian11.Notice(`Running "${keyword}"\u2026`, 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classifyCustom(content, keyword, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian10.Notice(`"${keyword}" found nothing.`);
+        new import_obsidian11.Notice(`"${keyword}" found nothing.`);
         return;
       }
       this.showResult(file, result.tags, () => false);
     } catch (error) {
       notice.hide();
-      new import_obsidian10.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian11.Notice(this.errorMessage(error), 1e4);
     }
   }
   /** Preview the tags, then write them if the user confirms. */
@@ -4889,7 +5341,7 @@ ${typeBreakdown}`,
       file.path,
       async () => {
         await writeTags(this.app.vault, file, tags);
-        new import_obsidian10.Notice(`Applied ${tags.length} tag${tags.length === 1 ? "" : "s"}`);
+        new import_obsidian11.Notice(`Applied ${tags.length} tag${tags.length === 1 ? "" : "s"}`);
         if (this.conceptRegistry.isDirty()) {
           await this.conceptRegistry.save();
         }
@@ -4911,7 +5363,7 @@ ${typeBreakdown}`,
   /* ---------------------------------------------------------------------- */
   async openSemanticMap(file) {
     if (!file) {
-      new import_obsidian10.Notice("No note is open.");
+      new import_obsidian11.Notice("No note is open.");
       return;
     }
     const leaf = await this.revealLeaf(MERMAID_VIEW_TYPE);
@@ -4926,12 +5378,12 @@ ${typeBreakdown}`,
   }
   async regenerateGraph(file) {
     if (!file) {
-      new import_obsidian10.Notice("No note is open.");
+      new import_obsidian11.Notice("No note is open.");
       return;
     }
     const tags = await readTags(this.app.vault, file);
     if (tags.length === 0) {
-      new import_obsidian10.Notice("This note has no tags yet.");
+      new import_obsidian11.Notice("This note has no tags yet.");
       return;
     }
     if (this.settings.mermaidPosition === "panel") {
@@ -4966,13 +5418,13 @@ ${typeBreakdown}`,
   async batchClassifyFolder(folder) {
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian10.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian11.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
     const prefix = folder.isRoot() ? "" : `${folder.path}/`;
     const files = this.app.vault.getMarkdownFiles().filter((f) => f.path.startsWith(prefix));
     if (files.length === 0) {
-      new import_obsidian10.Notice("No markdown notes in that folder.");
+      new import_obsidian11.Notice("No markdown notes in that folder.");
       return;
     }
     const types = enabledCategoryIds(this.settings);
@@ -5011,7 +5463,7 @@ ${typeBreakdown}`,
             continue;
           }
           const file = this.app.vault.getAbstractFileByPath(path);
-          if (file instanceof import_obsidian10.TFile) {
+          if (file instanceof import_obsidian11.TFile) {
             await writeTags(this.app.vault, file, result.tags);
           }
         }
@@ -5061,20 +5513,30 @@ ${typeBreakdown}`,
           progressModal.updateProgress(current, total, fileName);
         }
       );
+      const graphFolder = folderPath || "";
+      const graphCount = await this.registerGraphForScope(graphFolder);
+      const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, graphFolder);
       progressModal.complete({
         files: index.metadata.totalFiles,
         concepts: index.metadata.totalConcepts,
         relations: index.relations.length,
         timeMs: index.metadata.processingTimeMs || 0
       });
+      new import_obsidian11.Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? "" : "s"} to ${graphPaths.markdownPath}`);
       await this.openConceptTracker();
     } catch (error) {
       progressModal.close();
-      new import_obsidian10.Notice(`Indexing failed: ${this.errorMessage(error)}`);
+      new import_obsidian11.Notice(`Indexing failed: ${this.errorMessage(error)}`);
     }
   }
+  async registerGraphForScope(folderPath) {
+    const files = this.app.vault.getMarkdownFiles().filter(
+      (file) => !folderPath || file.path === folderPath || file.path.startsWith(`${folderPath}/`)
+    );
+    return this.supraInfraqueGraph.registerFolder(files, (file) => readTags(this.app.vault, file));
+  }
   async showFolderSelectionForIndex() {
-    const folders = this.app.vault.getAllLoadedFiles().filter((f) => f instanceof import_obsidian10.TFolder);
+    const folders = this.app.vault.getAllLoadedFiles().filter((f) => f instanceof import_obsidian11.TFolder);
     new FolderSelectionModal(
       this.app,
       folders,
@@ -5095,7 +5557,7 @@ ${typeBreakdown}`,
     }
     const leaf = this.app.workspace.getRightLeaf(false);
     if (!leaf) {
-      new import_obsidian10.Notice("Could not open the side panel.");
+      new import_obsidian11.Notice("Could not open the side panel.");
       return null;
     }
     await leaf.setViewState({ type: viewType, active: true });
@@ -5104,7 +5566,7 @@ ${typeBreakdown}`,
   }
   openFileByPath(filePath) {
     const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (file instanceof import_obsidian10.TFile) {
+    if (file instanceof import_obsidian11.TFile) {
       this.app.workspace.getLeaf().openFile(file);
     }
   }
@@ -5174,7 +5636,7 @@ ${typeBreakdown}`,
    */
   async generateConceptForwardLinks(journey) {
     if (journey.occurrences.length < 2) {
-      new import_obsidian10.Notice("A concept needs at least two occurrences to link them up.");
+      new import_obsidian11.Notice("A concept needs at least two occurrences to link them up.");
       return;
     }
     let linksAdded = 0;
@@ -5182,7 +5644,7 @@ ${typeBreakdown}`,
       const current = journey.occurrences[i];
       const next = journey.occurrences[i + 1];
       const file = this.app.vault.getAbstractFileByPath(current.file);
-      if (!(file instanceof import_obsidian10.TFile)) {
+      if (!(file instanceof import_obsidian11.TFile)) {
         continue;
       }
       const forwardLink = `
@@ -5204,6 +5666,6 @@ ${typeBreakdown}`,
         linksAdded++;
       }
     }
-    new import_obsidian10.Notice(`Added ${linksAdded} forward link${linksAdded === 1 ? "" : "s"} for "${journey.concept}"`);
+    new import_obsidian11.Notice(`Added ${linksAdded} forward link${linksAdded === 1 ? "" : "s"} for "${journey.concept}"`);
   }
 };

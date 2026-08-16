@@ -47,6 +47,8 @@ import {
   ConceptJourney,
   JourneyAnalysis
 } from './ui/concept-journey-view';
+import { SupraInfraqueGraphRegistry } from './epistemic/graph-registry';
+import { writeGraphExports } from './epistemic/graph-exporter';
 import {
   IndexConfirmationModal,
   IndexProgressModal,
@@ -61,6 +63,7 @@ export default class SemanticAIPlugin extends Plugin {
   classifier: AIClassifier;
   vaultIndexer: VaultIndexer;
   conceptRegistry: ConceptRegistry;
+  supraInfraqueGraph: SupraInfraqueGraphRegistry;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -73,6 +76,8 @@ export default class SemanticAIPlugin extends Plugin {
     this.conceptRegistry = new ConceptRegistry(this.app.vault, this.manifest.dir);
     await this.conceptRegistry.load();
     setConceptRegistry(this.conceptRegistry);
+    this.supraInfraqueGraph = new SupraInfraqueGraphRegistry(this.app.vault, this.manifest.dir);
+    await this.supraInfraqueGraph.load();
 
     this.registerView(
       MERMAID_VIEW_TYPE,
@@ -105,6 +110,7 @@ export default class SemanticAIPlugin extends Plugin {
     if (this.conceptRegistry?.isDirty()) {
       await this.conceptRegistry.save();
     }
+    if (this.supraInfraqueGraph) await this.supraInfraqueGraph.save();
   }
 
   async loadSettings(): Promise<void> {
@@ -233,9 +239,11 @@ export default class SemanticAIPlugin extends Plugin {
 
         try {
           const index = await this.vaultIndexer.buildIndex('folder', folder.path);
+          const graphCount = await this.registerGraphForScope(folder.path);
           const markdownPath = await writeIndexMarkdown(this.app.vault, index, folder.path);
           const jsonPath = await writeIndexJSON(this.app.vault, index, folder.path);
-          new Notice(`Saved ${markdownPath} and ${jsonPath}`);
+          const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
+          new Notice(`Saved ${markdownPath}, ${jsonPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
           await this.openConceptTracker();
         } catch (error) {
           new Notice(`Index export failed: ${this.errorMessage(error)}`);
@@ -316,6 +324,33 @@ export default class SemanticAIPlugin extends Plugin {
       callback: async () => {
         await this.conceptRegistry.save();
         new Notice('Concept registry saved');
+      }
+    });
+
+    this.addCommand({
+      id: 'supra-infraque-register-note',
+      name: 'Supra Infraque: register current note as candidate object',
+      editorCallback: async (_editor: Editor, view: MarkdownView) => {
+        if (!view.file) {
+          new Notice('No note is open.');
+          return;
+        }
+        const object = await this.supraInfraqueGraph.registerNote(view.file);
+        new Notice(`Registered ${object.humanCode} as a proposed candidate; source note unchanged.`);
+      }
+    });
+
+    this.addCommand({
+      id: 'supra-infraque-export-folder',
+      name: 'Supra Infraque: export current folder graph',
+      callback: async () => {
+        const folder = this.app.workspace.getActiveFile()?.parent;
+        if (!folder) {
+          new Notice('Open a note first, so there is a folder to export.');
+          return;
+        }
+        const paths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
+        new Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
       }
     });
   }
@@ -802,6 +837,10 @@ export default class SemanticAIPlugin extends Plugin {
         }
       );
 
+      const graphFolder = folderPath || '';
+      const graphCount = await this.registerGraphForScope(graphFolder);
+      const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, graphFolder);
+
       progressModal.complete({
         files: index.metadata.totalFiles,
         concepts: index.metadata.totalConcepts,
@@ -809,11 +848,20 @@ export default class SemanticAIPlugin extends Plugin {
         timeMs: index.metadata.processingTimeMs || 0
       });
 
+      new Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? '' : 's'} to ${graphPaths.markdownPath}`);
+
       await this.openConceptTracker();
     } catch (error) {
       progressModal.close();
       new Notice(`Indexing failed: ${this.errorMessage(error)}`);
     }
+  }
+
+  private async registerGraphForScope(folderPath: string): Promise<number> {
+    const files = this.app.vault.getMarkdownFiles().filter((file) =>
+      !folderPath || file.path === folderPath || file.path.startsWith(`${folderPath}/`)
+    );
+    return this.supraInfraqueGraph.registerFolder(files, (file) => readTags(this.app.vault, file));
   }
 
   async showFolderSelectionForIndex(): Promise<void> {
