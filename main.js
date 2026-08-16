@@ -5519,6 +5519,13 @@ ${typeBreakdown}`,
       }
     });
     this.addCommand({
+      id: "supra-infraque-sync-graph",
+      name: "Supra Infraque: sync graph to PostgreSQL helper",
+      callback: async () => {
+        await this.syncSupraInfraqueGraph();
+      }
+    });
+    this.addCommand({
       id: "supra-infraque-bridge-dossier",
       name: "Supra Infraque: build neutral bridge dossier proposal",
       editorCallback: async (_editor, view) => {
@@ -5897,6 +5904,8 @@ ${typeBreakdown}`,
         timeMs: index.metadata.processingTimeMs || 0
       });
       new import_obsidian11.Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? "" : "s"} to ${graphPaths.markdownPath}`);
+      if (this.settings.enablePostgresSync)
+        await this.syncSupraInfraqueGraph();
       await this.openConceptTracker();
     } catch (error) {
       progressModal.close();
@@ -5908,6 +5917,35 @@ ${typeBreakdown}`,
       (file) => !folderPath || file.path === folderPath || file.path.startsWith(`${folderPath}/`)
     );
     return this.supraInfraqueGraph.registerFolder(files, (file) => readTags(this.app.vault, file));
+  }
+  async syncSupraInfraqueGraph() {
+    const serviceUrl = (this.settings.pythonServiceUrl || "").replace(/\/$/, "");
+    const connection = this.settings.postgresConnections.find((item) => item.id === this.settings.activeConnectionId);
+    if (!serviceUrl || !(connection == null ? void 0 : connection.connectionString)) {
+      new import_obsidian11.Notice("Set the PostgreSQL helper URL and an active connection first.");
+      return;
+    }
+    try {
+      const response = await (0, import_obsidian11.requestUrl)({
+        url: `${serviceUrl}/sync/graph`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          connectionString: connection.connectionString,
+          vaultId: this.app.vault.getName(),
+          graph: this.supraInfraqueGraph.getData()
+        }),
+        throw: false
+      });
+      const result = response.json;
+      if (response.status !== 200 || !(result == null ? void 0 : result.success)) {
+        new import_obsidian11.Notice(`Graph sync failed: ${(result == null ? void 0 : result.detail) || (result == null ? void 0 : result.error) || `HTTP ${response.status}`}`);
+        return;
+      }
+      new import_obsidian11.Notice(`Graph sync complete: ${result.recordsUpserted || 0} records.`);
+    } catch (error) {
+      new import_obsidian11.Notice(`Could not reach PostgreSQL helper: ${this.errorMessage(error)}`);
+    }
   }
   async buildBridgeDossierProposal(file) {
     var _a;

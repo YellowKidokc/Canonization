@@ -13,6 +13,7 @@ import {
   Menu,
   Editor,
   WorkspaceLeaf
+  , requestUrl
 } from 'obsidian';
 
 import {
@@ -354,6 +355,14 @@ export default class SemanticAIPlugin extends Plugin {
         }
         const paths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
         new Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
+      }
+    });
+
+    this.addCommand({
+      id: 'supra-infraque-sync-graph',
+      name: 'Supra Infraque: sync graph to PostgreSQL helper',
+      callback: async () => {
+        await this.syncSupraInfraqueGraph();
       }
     });
 
@@ -860,6 +869,7 @@ export default class SemanticAIPlugin extends Plugin {
       });
 
       new Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? '' : 's'} to ${graphPaths.markdownPath}`);
+      if (this.settings.enablePostgresSync) await this.syncSupraInfraqueGraph();
 
       await this.openConceptTracker();
     } catch (error) {
@@ -873,6 +883,36 @@ export default class SemanticAIPlugin extends Plugin {
       !folderPath || file.path === folderPath || file.path.startsWith(`${folderPath}/`)
     );
     return this.supraInfraqueGraph.registerFolder(files, (file) => readTags(this.app.vault, file));
+  }
+
+  private async syncSupraInfraqueGraph(): Promise<void> {
+    const serviceUrl = (this.settings.pythonServiceUrl || '').replace(/\/$/, '');
+    const connection = this.settings.postgresConnections.find((item) => item.id === this.settings.activeConnectionId);
+    if (!serviceUrl || !connection?.connectionString) {
+      new Notice('Set the PostgreSQL helper URL and an active connection first.');
+      return;
+    }
+    try {
+      const response = await requestUrl({
+        url: `${serviceUrl}/sync/graph`,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          connectionString: connection.connectionString,
+          vaultId: this.app.vault.getName(),
+          graph: this.supraInfraqueGraph.getData()
+        }),
+        throw: false
+      });
+      const result = response.json;
+      if (response.status !== 200 || !result?.success) {
+        new Notice(`Graph sync failed: ${result?.detail || result?.error || `HTTP ${response.status}`}`);
+        return;
+      }
+      new Notice(`Graph sync complete: ${result.recordsUpserted || 0} records.`);
+    } catch (error) {
+      new Notice(`Could not reach PostgreSQL helper: ${this.errorMessage(error)}`);
+    }
   }
 
   private async buildBridgeDossierProposal(file: TFile | null): Promise<void> {
