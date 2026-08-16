@@ -51,8 +51,32 @@ export const EPISTEMIC_AXES = [
   'warrant_type', 'formal_status', 'empirical_status', 'epistemic_status', 'bridge_strength'
 ] as const;
 
+/** BRQ01-BRQ20 from SUPRA_INFRAQUE_UNIVERSAL_BRIDGE_LAYER_v1.md. */
+export const BRIDGE_QUESTIONS: string[] = [
+  'BRQ01. What does the source expression mean inside its own domain before comparison begins?',
+  'BRQ02. What does the target expression mean inside its own domain before comparison begins?',
+  'BRQ03. Which meanings are essential, contextual, disputed, or metaphorical?',
+  'BRQ04. Can both expressions be rewritten using only typed entities, relations, operations, constraints, and transformations?',
+  'BRQ05. Does the neutralization preserve the important content or remove the very feature being compared?',
+  'BRQ06. Would investigators from both domains accept the neutral descriptions as fair?',
+  'BRQ07. What is the smallest mathematical object capable of representing the neutral structures?',
+  'BRQ08. Do both domains independently justify the variables, relations, and operations assigned to them?',
+  'BRQ09. Which invariants are shared?',
+  'BRQ10. Could the same mathematical object fit many unrelated systems trivially?',
+  'BRQ11. What additional structure makes this match nontrivial?',
+  'BRQ12. What can be reconstructed in Domain A after passing through the middle?',
+  'BRQ13. What can be reconstructed in Domain B?',
+  'BRQ14. Which meanings are lost, added, or distorted on return?',
+  'BRQ15. Is the reverse translation unique?',
+  'BRQ16. Does the bridge predict an unobserved relation or constrain a previously open interpretation?',
+  'BRQ17. What label-removal, swap, permutation, and counter-domain tests does it survive?',
+  'BRQ18. What rival mapping preserves equal or greater structure?',
+  'BRQ19. What result would reduce the bridge grade?',
+  'BRQ20. What exact claim remains if the mathematical mapping fails?'
+];
+
 export function promptCatalogMarkdown(): string {
   const rows = Object.entries(EPISTEMIC_TYPE_PROMPTS)
     .map(([type, prompt]) => `| ${type} | ${prompt} |`).join('\n');
-  return `# Supra Infraque Neutral Prompt Catalog\n\nThese prompts populate information slots. They do not adjudicate truth.\n\n## Object types\n\n| Type | Prompt |\n|---|---|\n${rows}\n\n## Independent axes\n\n${EPISTEMIC_AXES.map((axis) => `- ${axis}`).join('\n')}\n`;
+  return `# Supra Infraque Neutral Prompt Catalog\n\nThese prompts populate information slots. They do not adjudicate truth.\n\n## Object types\n\n| Type | Prompt |\n|---|---|\n${rows}\n\n## Independent axes\n\n${EPISTEMIC_AXES.map((axis) => `- ${axis}`).join('\n')}\n\n## Bridge dossier questions\n\n${BRIDGE_QUESTIONS.map((question) => `- ${question}`).join('\n')}\n`;
 }

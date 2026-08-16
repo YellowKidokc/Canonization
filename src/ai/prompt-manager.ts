@@ -18,6 +18,7 @@ import {
   getPreset,
   topicsActive
 } from '../types';
+import { BRIDGE_QUESTIONS } from '../epistemic/prompts';
 
 export class PromptManager {
   private settings: SemanticAISettings;
@@ -258,6 +259,22 @@ ${content}
 ---
 
 JSON Response:`;
+  }
+
+  buildBridgeDossierPrompt(content: string): string {
+    return `You are a neutral bridge-dossier analyst. Do not assume that the proposed bridge is true, false, theological, physical, mathematical, or merely metaphorical. Preserve the source wording and distinguish definition, analogy, formalization, evidence, interpretation, and identity claims.
+
+For each question below, return an object with: question_id, response, source_spans_or_quotes, assumptions, uncertainty, rival_interpretations, defeat_conditions, and status. Use status CANDIDATE when the source does not establish the answer. Do not invent measurements, proofs, or citations. Return ONLY valid JSON with a top-level "bridge_questions" array.
+
+Neutral bridge questions:
+${BRIDGE_QUESTIONS.join('\n')}
+
+SOURCE TEXT:
+---
+${content}
+---
+
+JSON RESPONSE:`;
   }
 
   buildCustomClassifierPrompt(content: string, classifier: CustomClassifier): string {

@@ -685,6 +685,106 @@ var import_obsidian3 = require("obsidian");
 // src/ai/classifier.ts
 var import_obsidian = require("obsidian");
 
+// src/epistemic/prompts.ts
+var EPISTEMIC_TYPE_PROMPTS = {
+  AXIOM: "What is stipulated as a starting commitment, and what is explicitly not included in it?",
+  CONSTITUTIVE_DISCLOSURE: "Is this content constitutive of the parent axiom, and what audit supports that classification?",
+  PRIMITIVE: "What term or entity is introduced without derivation, and what scope does it have?",
+  DEFINITION: "What meaning is assigned, with boundaries and excluded meanings?",
+  DISTINCTION: "What two or more things are distinguished, and what relation is preserved between them?",
+  QUESTION: "What neutral question is being asked, what slot does it target, and what answers would count?",
+  QUESTION_FAMILY: "What related questions share a target slot or adjudication rule?",
+  RESPONSE: "What response was given verbatim, under what question and context?",
+  OBSERVATION: "What was observed, where, by what method, and without adding interpretation?",
+  CLAIM: "What is the smallest complete assertion, with scope, modality, polarity, and defeat conditions?",
+  PREMISE: "What does an argument assume, and is the assumption stipulated, observed, or inferred?",
+  LEMMA: "What limited result is established relative to which premises and rules?",
+  THEOREM: "What result is proven, in which formal system, with which premises?",
+  PROOF: "What proof artifact establishes this result, under which formal system and premises?",
+  COROLLARY: "Which prior result entails this statement and under what additional conditions?",
+  DERIVATION: "What ordered steps connect premises to conclusion, and where could the chain fail?",
+  INFERENCE_RULE: "What rule licenses the transition, and is it deductive, inductive, abductive, or analogical?",
+  MODEL: "What structure represents the target, what does it preserve, and what does it omit?",
+  FORMAL_EXPRESSION: "What does this notation formalize, with symbols, types, units, and assumptions?",
+  ANALOGY: "Which similarities are proposed, and which dissimilarities limit the analogy?",
+  METAPHOR: "What interpretive image is used, and what must not be inferred from it?",
+  INTERPRETATION: "What meaning is assigned to the evidence, and what rival interpretations remain?",
+  BRIDGE: "What source and target registers are connected, with mapping, preservation, loss, and tests?",
+  TRANSLATION: "What transformation carries content between registers, and what changes in translation?",
+  CORRESPONDENCE: "Which structures correspond, and is the relation partial, directional, or reversible?",
+  IDENTITY_CLAIM: "What identity is asserted across domains, and what would distinguish it from analogy?",
+  EVIDENCE_UNIT: "What exact observation or source passage is available, with custody and limitations?",
+  PREDICTION: "What outcome is predicted before testing, under what conditions and with what discriminator?",
+  PROTOCOL: "How can the test be repeated, including apparatus, sample, procedure, and stopping rules?",
+  TEST: "What protocol was executed, and what question or claim did it test?",
+  RESULT: "What raw result occurred, separate from the interpretation applied to it?",
+  FALSIFIER: "What observation would count against the claim within its stated scope?",
+  DEFEATER: "What logical, empirical, source, scope, or bridge condition would defeat this object?",
+  OBJECTION: "What specific objection is raised, against which object, and with what force?",
+  COUNTEREXAMPLE: "What instance challenges a universal or necessary statement?",
+  COUNTERMODEL: "What coherent model satisfies the premises but rejects the proposed conclusion?",
+  ALTERNATIVE_EXPLANATION: "What rival explanation accounts for the same evidence, and what discriminates them?",
+  LIMITATION: "What boundary, uncertainty, missing evidence, or category error limits the object?",
+  LAW: "What regularity or governing principle is claimed, and what domain and test support it?",
+  PRINCIPLE: "What general organizing commitment is proposed, and how does it differ from an axiom or law?",
+  SYNTHESIS: "Which objects are combined, what is preserved, and what new commitments are introduced?",
+  APPLICATION: "How is the object applied, to what case, and what assumptions enter during application?"
+};
+var EPISTEMIC_AXES = [
+  "logical_role",
+  "ontological_domain",
+  "relation_to_A0",
+  "ontological_mode",
+  "warrant_type",
+  "formal_status",
+  "empirical_status",
+  "epistemic_status",
+  "bridge_strength"
+];
+var BRIDGE_QUESTIONS = [
+  "BRQ01. What does the source expression mean inside its own domain before comparison begins?",
+  "BRQ02. What does the target expression mean inside its own domain before comparison begins?",
+  "BRQ03. Which meanings are essential, contextual, disputed, or metaphorical?",
+  "BRQ04. Can both expressions be rewritten using only typed entities, relations, operations, constraints, and transformations?",
+  "BRQ05. Does the neutralization preserve the important content or remove the very feature being compared?",
+  "BRQ06. Would investigators from both domains accept the neutral descriptions as fair?",
+  "BRQ07. What is the smallest mathematical object capable of representing the neutral structures?",
+  "BRQ08. Do both domains independently justify the variables, relations, and operations assigned to them?",
+  "BRQ09. Which invariants are shared?",
+  "BRQ10. Could the same mathematical object fit many unrelated systems trivially?",
+  "BRQ11. What additional structure makes this match nontrivial?",
+  "BRQ12. What can be reconstructed in Domain A after passing through the middle?",
+  "BRQ13. What can be reconstructed in Domain B?",
+  "BRQ14. Which meanings are lost, added, or distorted on return?",
+  "BRQ15. Is the reverse translation unique?",
+  "BRQ16. Does the bridge predict an unobserved relation or constrain a previously open interpretation?",
+  "BRQ17. What label-removal, swap, permutation, and counter-domain tests does it survive?",
+  "BRQ18. What rival mapping preserves equal or greater structure?",
+  "BRQ19. What result would reduce the bridge grade?",
+  "BRQ20. What exact claim remains if the mathematical mapping fails?"
+];
+function promptCatalogMarkdown() {
+  const rows = Object.entries(EPISTEMIC_TYPE_PROMPTS).map(([type, prompt]) => `| ${type} | ${prompt} |`).join("\n");
+  return `# Supra Infraque Neutral Prompt Catalog
+
+These prompts populate information slots. They do not adjudicate truth.
+
+## Object types
+
+| Type | Prompt |
+|---|---|
+${rows}
+
+## Independent axes
+
+${EPISTEMIC_AXES.map((axis) => `- ${axis}`).join("\n")}
+
+## Bridge dossier questions
+
+${BRIDGE_QUESTIONS.map((question) => `- ${question}`).join("\n")}
+`;
+}
+
 // src/ai/prompt-manager.ts
 var PromptManager = class {
   constructor(settings) {
@@ -889,6 +989,21 @@ ${content}
 ---
 
 JSON Response:`;
+  }
+  buildBridgeDossierPrompt(content) {
+    return `You are a neutral bridge-dossier analyst. Do not assume that the proposed bridge is true, false, theological, physical, mathematical, or merely metaphorical. Preserve the source wording and distinguish definition, analogy, formalization, evidence, interpretation, and identity claims.
+
+For each question below, return an object with: question_id, response, source_spans_or_quotes, assumptions, uncertainty, rival_interpretations, defeat_conditions, and status. Use status CANDIDATE when the source does not establish the answer. Do not invent measurements, proofs, or citations. Return ONLY valid JSON with a top-level "bridge_questions" array.
+
+Neutral bridge questions:
+${BRIDGE_QUESTIONS.join("\n")}
+
+SOURCE TEXT:
+---
+${content}
+---
+
+JSON RESPONSE:`;
   }
   buildCustomClassifierPrompt(content, classifier) {
     return `You are a semantic analysis assistant analyzing text against custom criteria.${this.contextLine()}
@@ -4539,80 +4654,6 @@ var SupraInfraqueGraphRegistry = class {
   }
 };
 
-// src/epistemic/prompts.ts
-var EPISTEMIC_TYPE_PROMPTS = {
-  AXIOM: "What is stipulated as a starting commitment, and what is explicitly not included in it?",
-  CONSTITUTIVE_DISCLOSURE: "Is this content constitutive of the parent axiom, and what audit supports that classification?",
-  PRIMITIVE: "What term or entity is introduced without derivation, and what scope does it have?",
-  DEFINITION: "What meaning is assigned, with boundaries and excluded meanings?",
-  DISTINCTION: "What two or more things are distinguished, and what relation is preserved between them?",
-  QUESTION: "What neutral question is being asked, what slot does it target, and what answers would count?",
-  QUESTION_FAMILY: "What related questions share a target slot or adjudication rule?",
-  RESPONSE: "What response was given verbatim, under what question and context?",
-  OBSERVATION: "What was observed, where, by what method, and without adding interpretation?",
-  CLAIM: "What is the smallest complete assertion, with scope, modality, polarity, and defeat conditions?",
-  PREMISE: "What does an argument assume, and is the assumption stipulated, observed, or inferred?",
-  LEMMA: "What limited result is established relative to which premises and rules?",
-  THEOREM: "What result is proven, in which formal system, with which premises?",
-  PROOF: "What proof artifact establishes this result, under which formal system and premises?",
-  COROLLARY: "Which prior result entails this statement and under what additional conditions?",
-  DERIVATION: "What ordered steps connect premises to conclusion, and where could the chain fail?",
-  INFERENCE_RULE: "What rule licenses the transition, and is it deductive, inductive, abductive, or analogical?",
-  MODEL: "What structure represents the target, what does it preserve, and what does it omit?",
-  FORMAL_EXPRESSION: "What does this notation formalize, with symbols, types, units, and assumptions?",
-  ANALOGY: "Which similarities are proposed, and which dissimilarities limit the analogy?",
-  METAPHOR: "What interpretive image is used, and what must not be inferred from it?",
-  INTERPRETATION: "What meaning is assigned to the evidence, and what rival interpretations remain?",
-  BRIDGE: "What source and target registers are connected, with mapping, preservation, loss, and tests?",
-  TRANSLATION: "What transformation carries content between registers, and what changes in translation?",
-  CORRESPONDENCE: "Which structures correspond, and is the relation partial, directional, or reversible?",
-  IDENTITY_CLAIM: "What identity is asserted across domains, and what would distinguish it from analogy?",
-  EVIDENCE_UNIT: "What exact observation or source passage is available, with custody and limitations?",
-  PREDICTION: "What outcome is predicted before testing, under what conditions and with what discriminator?",
-  PROTOCOL: "How can the test be repeated, including apparatus, sample, procedure, and stopping rules?",
-  TEST: "What protocol was executed, and what question or claim did it test?",
-  RESULT: "What raw result occurred, separate from the interpretation applied to it?",
-  FALSIFIER: "What observation would count against the claim within its stated scope?",
-  DEFEATER: "What logical, empirical, source, scope, or bridge condition would defeat this object?",
-  OBJECTION: "What specific objection is raised, against which object, and with what force?",
-  COUNTEREXAMPLE: "What instance challenges a universal or necessary statement?",
-  COUNTERMODEL: "What coherent model satisfies the premises but rejects the proposed conclusion?",
-  ALTERNATIVE_EXPLANATION: "What rival explanation accounts for the same evidence, and what discriminates them?",
-  LIMITATION: "What boundary, uncertainty, missing evidence, or category error limits the object?",
-  LAW: "What regularity or governing principle is claimed, and what domain and test support it?",
-  PRINCIPLE: "What general organizing commitment is proposed, and how does it differ from an axiom or law?",
-  SYNTHESIS: "Which objects are combined, what is preserved, and what new commitments are introduced?",
-  APPLICATION: "How is the object applied, to what case, and what assumptions enter during application?"
-};
-var EPISTEMIC_AXES = [
-  "logical_role",
-  "ontological_domain",
-  "relation_to_A0",
-  "ontological_mode",
-  "warrant_type",
-  "formal_status",
-  "empirical_status",
-  "epistemic_status",
-  "bridge_strength"
-];
-function promptCatalogMarkdown() {
-  const rows = Object.entries(EPISTEMIC_TYPE_PROMPTS).map(([type, prompt]) => `| ${type} | ${prompt} |`).join("\n");
-  return `# Supra Infraque Neutral Prompt Catalog
-
-These prompts populate information slots. They do not adjudicate truth.
-
-## Object types
-
-| Type | Prompt |
-|---|---|
-${rows}
-
-## Independent axes
-
-${EPISTEMIC_AXES.map((axis) => `- ${axis}`).join("\n")}
-`;
-}
-
 // src/epistemic/graph-exporter.ts
 var START2 = "<!-- SUPRA_INFRAQUE:GENERATED:START -->";
 var END2 = "<!-- SUPRA_INFRAQUE:GENERATED:END -->";
@@ -5161,6 +5202,13 @@ ${typeBreakdown}`,
         new import_obsidian11.Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
       }
     });
+    this.addCommand({
+      id: "supra-infraque-bridge-dossier",
+      name: "Supra Infraque: build neutral bridge dossier proposal",
+      editorCallback: async (_editor, view) => {
+        await this.buildBridgeDossierProposal(view.file);
+      }
+    });
   }
   /* ---------------------------------------------------------------------- */
   /* Menus                                                                  */
@@ -5544,6 +5592,48 @@ ${typeBreakdown}`,
       (file) => !folderPath || file.path === folderPath || file.path.startsWith(`${folderPath}/`)
     );
     return this.supraInfraqueGraph.registerFolder(files, (file) => readTags(this.app.vault, file));
+  }
+  async buildBridgeDossierProposal(file) {
+    var _a;
+    if (!file) {
+      new import_obsidian11.Notice("No note is open.");
+      return;
+    }
+    const validation = this.classifier.validateConfiguration();
+    if (!validation.valid) {
+      new import_obsidian11.Notice(`Cannot build bridge dossier: ${validation.error}.`);
+      return;
+    }
+    try {
+      const content = await this.app.vault.read(file);
+      const response = await this.classifier.complete(this.promptManager.buildBridgeDossierPrompt(content), 8192);
+      const safeName = file.basename.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "note";
+      const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) ? `${file.parent.path}/SUPRA_INFRAQUE` : "SUPRA_INFRAQUE";
+      try {
+        await this.app.vault.createFolder(folderPath);
+      } catch (e) {
+      }
+      const outputPath = `${folderPath}/BRIDGE_DOSSIER_PROPOSAL_${safeName}_${Date.now()}.md`;
+      const proposal = [
+        `# Bridge Dossier Proposal: ${file.basename}`,
+        "",
+        "- Status: CANDIDATE",
+        `- Source: [[${file.path.replace(/\.md$/i, "")}]]`,
+        `- Generated: ${(/* @__PURE__ */ new Date()).toISOString()}`,
+        "- Boundary: AI proposal only; no bridge, proof, evidence, or identity claim is admitted by this file.",
+        "",
+        "## Neutral BRQ Responses",
+        "",
+        "~~~json",
+        response.trim(),
+        "~~~",
+        ""
+      ].join("\n");
+      await this.app.vault.create(outputPath, proposal);
+      new import_obsidian11.Notice(`Saved neutral bridge dossier proposal: ${outputPath}`);
+    } catch (error) {
+      new import_obsidian11.Notice(`Bridge dossier failed: ${this.errorMessage(error)}`);
+    }
   }
   async showFolderSelectionForIndex() {
     const folders = this.app.vault.getAllLoadedFiles().filter((f) => f instanceof import_obsidian11.TFolder);

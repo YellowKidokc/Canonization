@@ -353,6 +353,14 @@ export default class SemanticAIPlugin extends Plugin {
         new Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
       }
     });
+
+    this.addCommand({
+      id: 'supra-infraque-bridge-dossier',
+      name: 'Supra Infraque: build neutral bridge dossier proposal',
+      editorCallback: async (_editor: Editor, view: MarkdownView) => {
+        await this.buildBridgeDossierProposal(view.file);
+      }
+    });
   }
 
   /* ---------------------------------------------------------------------- */
@@ -862,6 +870,37 @@ export default class SemanticAIPlugin extends Plugin {
       !folderPath || file.path === folderPath || file.path.startsWith(`${folderPath}/`)
     );
     return this.supraInfraqueGraph.registerFolder(files, (file) => readTags(this.app.vault, file));
+  }
+
+  private async buildBridgeDossierProposal(file: TFile | null): Promise<void> {
+    if (!file) {
+      new Notice('No note is open.');
+      return;
+    }
+    const validation = this.classifier.validateConfiguration();
+    if (!validation.valid) {
+      new Notice(`Cannot build bridge dossier: ${validation.error}.`);
+      return;
+    }
+    try {
+      const content = await this.app.vault.read(file);
+      const response = await this.classifier.complete(this.promptManager.buildBridgeDossierPrompt(content), 8192);
+      const safeName = file.basename.replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'note';
+      const folderPath = file.parent?.path ? `${file.parent.path}/SUPRA_INFRAQUE` : 'SUPRA_INFRAQUE';
+      try { await this.app.vault.createFolder(folderPath); } catch { /* generated folder already exists */ }
+      const outputPath = `${folderPath}/BRIDGE_DOSSIER_PROPOSAL_${safeName}_${Date.now()}.md`;
+      const proposal = [
+        `# Bridge Dossier Proposal: ${file.basename}`,
+        '', '- Status: CANDIDATE', `- Source: [[${file.path.replace(/\.md$/i, '')}]]`,
+        `- Generated: ${new Date().toISOString()}`,
+        '- Boundary: AI proposal only; no bridge, proof, evidence, or identity claim is admitted by this file.',
+        '', '## Neutral BRQ Responses', '', '~~~json', response.trim(), '~~~', ''
+      ].join('\n');
+      await this.app.vault.create(outputPath, proposal);
+      new Notice(`Saved neutral bridge dossier proposal: ${outputPath}`);
+    } catch (error) {
+      new Notice(`Bridge dossier failed: ${this.errorMessage(error)}`);
+    }
   }
 
   async showFolderSelectionForIndex(): Promise<void> {
