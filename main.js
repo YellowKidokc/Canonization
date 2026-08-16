@@ -4402,10 +4402,17 @@ var SupraInfraqueGraphRegistry = class {
         return ((_a = this.data.sourceSpans[o.spanId]) == null ? void 0 : _a.artifactId) === existing.artifactId;
       });
       if (occurrence2 && this.data.objects[occurrence2.objectId]) {
+        const existingObject = this.data.objects[occurrence2.objectId];
+        const inferredType = this.objectTypeFromTags(tags);
+        if (existingObject.status === "proposed" && existingObject.objectType === "CLAIM" && inferredType !== "CLAIM") {
+          existingObject.objectType = inferredType;
+          this.recordEvent("assessed", existingObject.objectId, `Proposal reclassified from existing Semantic AI tags as ${inferredType}.`, actor);
+          this.dirty = true;
+        }
         this.addTagClassifications(occurrence2.objectId, tags, occurrence2.spanId, actor);
         if (tags.length)
           await this.save();
-        return this.data.objects[occurrence2.objectId];
+        return existingObject;
       }
     }
     const now = (/* @__PURE__ */ new Date()).toISOString();

@@ -78,9 +78,16 @@ export class SupraInfraqueGraphRegistry {
     if (existing) {
       const occurrence = Object.values(this.data.occurrences).find((o) => this.data.sourceSpans[o.spanId]?.artifactId === existing.artifactId);
       if (occurrence && this.data.objects[occurrence.objectId]) {
+        const existingObject = this.data.objects[occurrence.objectId];
+        const inferredType = this.objectTypeFromTags(tags);
+        if (existingObject.status === 'proposed' && existingObject.objectType === 'CLAIM' && inferredType !== 'CLAIM') {
+          existingObject.objectType = inferredType;
+          this.recordEvent('assessed', existingObject.objectId, `Proposal reclassified from existing Semantic AI tags as ${inferredType}.`, actor);
+          this.dirty = true;
+        }
         this.addTagClassifications(occurrence.objectId, tags, occurrence.spanId, actor);
         if (tags.length) await this.save();
-        return this.data.objects[occurrence.objectId];
+        return existingObject;
       }
     }
 
