@@ -5077,6 +5077,9 @@ var SemanticAIPlugin = class extends import_obsidian11.Plugin {
     this.addRibbonIcon("brain", "Semantic AI", (evt) => {
       this.showSemanticMenu(evt);
     });
+    this.addRibbonIcon("vault", "Index whole vault", () => {
+      void this.indexVault();
+    });
     this.registerCommands();
     this.registerContextMenu();
   }

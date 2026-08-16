@@ -101,6 +101,9 @@ export default class SemanticAIPlugin extends Plugin {
     this.addRibbonIcon('brain', 'Semantic AI', (evt: MouseEvent) => {
       this.showSemanticMenu(evt);
     });
+    this.addRibbonIcon('vault', 'Index whole vault', () => {
+      void this.indexVault();
+    });
 
     this.registerCommands();
     this.registerContextMenu();
