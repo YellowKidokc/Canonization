@@ -19,7 +19,7 @@ function markdown(registry: SupraInfraqueGraphRegistry, folderPath: string): str
   };
   const objects = graph.objects as any[];
   const artifacts = graph.artifacts as any[];
-  const rows = objects.length ? objects.map((o) => `| ${o.humanCode} | ${o.objectType} | ${o.status} | ${String(o.canonicalText).replace(/\|/g, '\\|')} |`).join('\n') : '| _No objects registered._ | | | |';
+  const rows = objects.length ? objects.map((o) => `| ${o.humanCode} | \`${o.objectId}\` | ${o.objectType} | ${o.status} | ${String(o.canonicalText).replace(/\|/g, '\\|')} |`).join('\n') : '| _No objects registered._ | | | | |';
   const unresolved = objects.filter((o) => o.objectType === 'CLAIM' && !graph.relations.some((r: any) =>
     r.sourceObjectId === o.objectId && ['SUPPORTS', 'CONTRADICTS', 'UNDERDETERMINES'].includes(r.relationType) && r.status !== 'rejected'
   ));
@@ -51,8 +51,8 @@ ${unresolvedRows}
 
 ## Objects
 
-| Code | Type | Status | Candidate text |
-|---|---|---|---|
+| Code | UUID | Type | Status | Candidate text |
+|---|---|---|---|---|
 ${rows}
 
 ## Mind Map
@@ -113,7 +113,7 @@ async function writeRoutingIndexes(vault: Vault, registry: SupraInfraqueGraphReg
   for (const [name, objects] of Object.entries(buckets)) {
     const path = `${root}/${name.replace(/ /g, '_')}.md`;
     const body = objects.length
-      ? objects.map((o: any) => `- **${o.humanCode}** (${o.status}) — ${String(o.canonicalText).replace(/\n/g, ' ')} — source: [[${sourceFor(o.objectId).replace(/\.md$/i, '')}]]`).join('\n')
+      ? objects.map((o: any) => `- **${o.humanCode}** (\`${o.objectId}\`, ${o.status}) - ${String(o.canonicalText).replace(/\n/g, ' ')} - source: [[${sourceFor(o.objectId).replace(/\.md$/i, '')}]]`).join('\n')
       : '- None recorded.';
     const content = `# ${name}\n\nGenerated graph view. Source notes remain in their original series folders.\n\n${body}\n`;
     const existing = vault.getAbstractFileByPath(path);

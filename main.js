@@ -4425,8 +4425,9 @@ var SupraInfraqueGraphRegistry = class {
     const span = { spanId, artifactId, locator: { kind: "line", start: 1, end: lines.length }, exactText: content };
     this.data.sourceSpans[spanId] = span;
     const objectId = generateUUID();
-    const humanCode = `CLM-${String(Object.keys(this.data.objects).length + 1).padStart(3, "0")}`;
     const objectType = this.objectTypeFromTags(tags);
+    const prefix = objectType === "CLAIM" ? "CLM" : objectType === "EVIDENCE_UNIT" ? "EVD" : objectType === "PROOF" ? "PRF" : objectType === "QUESTION" ? "Q" : "OBJ";
+    const humanCode = `${prefix}-${String(Object.keys(this.data.objects).length + 1).padStart(3, "0")}`;
     const object = {
       objectId,
       humanCode,
@@ -4492,7 +4493,7 @@ var SupraInfraqueGraphRegistry = class {
   }
   objectTypeFromTags(tags) {
     const normalized = tags.map((tag) => `${tag.type} ${tag.label}`.toLowerCase());
-    if (normalized.some((value) => /evidence|observation|result/.test(value)))
+    if (normalized.some((value) => /evidence|observation|result|fact|quote|source/.test(value)))
       return "EVIDENCE_UNIT";
     if (normalized.some((value) => /proof|theorem|lemma|derivation|formal/.test(value)))
       return "PROOF";
@@ -4502,6 +4503,8 @@ var SupraInfraqueGraphRegistry = class {
       return "QUESTION";
     if (normalized.some((value) => /bridge|translation|correspondence/.test(value)))
       return "BRIDGE";
+    if (normalized.some((value) => /claim|idea|thesis|statement|premise|assertion/.test(value)))
+      return "CLAIM";
     return "CLAIM";
   }
   recordEvent(action, targetId, reason, actor) {
@@ -4619,7 +4622,7 @@ function markdown(registry, folderPath) {
   };
   const objects = graph.objects;
   const artifacts = graph.artifacts;
-  const rows = objects.length ? objects.map((o) => `| ${o.humanCode} | ${o.objectType} | ${o.status} | ${String(o.canonicalText).replace(/\|/g, "\\|")} |`).join("\n") : "| _No objects registered._ | | | |";
+  const rows = objects.length ? objects.map((o) => `| ${o.humanCode} | \`${o.objectId}\` | ${o.objectType} | ${o.status} | ${String(o.canonicalText).replace(/\|/g, "\\|")} |`).join("\n") : "| _No objects registered._ | | | | |";
   const unresolved = objects.filter((o) => o.objectType === "CLAIM" && !graph.relations.some(
     (r) => r.sourceObjectId === o.objectId && ["SUPPORTS", "CONTRADICTS", "UNDERDETERMINES"].includes(r.relationType) && r.status !== "rejected"
   ));
@@ -4647,8 +4650,8 @@ ${unresolvedRows}
 
 ## Objects
 
-| Code | Type | Status | Candidate text |
-|---|---|---|---|
+| Code | UUID | Type | Status | Candidate text |
+|---|---|---|---|---|
 ${rows}
 
 ## Mind Map
@@ -4723,7 +4726,7 @@ async function writeRoutingIndexes(vault, registry, folderPath) {
   }
   for (const [name, objects] of Object.entries(buckets)) {
     const path = `${root}/${name.replace(/ /g, "_")}.md`;
-    const body = objects.length ? objects.map((o) => `- **${o.humanCode}** (${o.status}) \u2014 ${String(o.canonicalText).replace(/\n/g, " ")} \u2014 source: [[${sourceFor(o.objectId).replace(/\.md$/i, "")}]]`).join("\n") : "- None recorded.";
+    const body = objects.length ? objects.map((o) => `- **${o.humanCode}** (\`${o.objectId}\`, ${o.status}) - ${String(o.canonicalText).replace(/\n/g, " ")} - source: [[${sourceFor(o.objectId).replace(/\.md$/i, "")}]]`).join("\n") : "- None recorded.";
     const content = `# ${name}
 
 Generated graph view. Source notes remain in their original series folders.

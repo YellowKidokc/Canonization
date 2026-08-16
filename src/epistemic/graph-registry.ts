@@ -97,8 +97,9 @@ export class SupraInfraqueGraphRegistry {
     this.data.sourceSpans[spanId] = span;
 
     const objectId = generateUUID();
-    const humanCode = `CLM-${String(Object.keys(this.data.objects).length + 1).padStart(3, '0')}`;
     const objectType = this.objectTypeFromTags(tags);
+    const prefix = objectType === 'CLAIM' ? 'CLM' : objectType === 'EVIDENCE_UNIT' ? 'EVD' : objectType === 'PROOF' ? 'PRF' : objectType === 'QUESTION' ? 'Q' : 'OBJ';
+    const humanCode = `${prefix}-${String(Object.keys(this.data.objects).length + 1).padStart(3, '0')}`;
     const object: EpistemicObject = {
       objectId, humanCode, objectType, canonicalText: this.candidateText(content), scope: `Note: ${file.path}`,
       modality: 'unclassified', polarity: 'unclassified', ownerFramework: 'unclassified', status: 'proposed',
@@ -152,11 +153,12 @@ export class SupraInfraqueGraphRegistry {
 
   private objectTypeFromTags(tags: SemanticTag[]): EpistemicObject['objectType'] {
     const normalized = tags.map((tag) => `${tag.type} ${tag.label}`.toLowerCase());
-    if (normalized.some((value) => /evidence|observation|result/.test(value))) return 'EVIDENCE_UNIT';
+    if (normalized.some((value) => /evidence|observation|result|fact|quote|source/.test(value))) return 'EVIDENCE_UNIT';
     if (normalized.some((value) => /proof|theorem|lemma|derivation|formal/.test(value))) return 'PROOF';
     if (normalized.some((value) => /axiom/.test(value))) return 'AXIOM';
     if (normalized.some((value) => /question/.test(value))) return 'QUESTION';
     if (normalized.some((value) => /bridge|translation|correspondence/.test(value))) return 'BRIDGE';
+    if (normalized.some((value) => /claim|idea|thesis|statement|premise|assertion/.test(value))) return 'CLAIM';
     return 'CLAIM';
   }
 
