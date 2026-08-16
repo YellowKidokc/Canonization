@@ -39,6 +39,7 @@ import {
   TagSelectionModal
 } from './ui/result-panel';
 import { VaultIndexer } from './indexing/vault-indexer';
+import { writeIndexMarkdown, writeIndexJSON } from './indexing/markdown-exporter';
 import { ConceptTrackerView, CONCEPT_TRACKER_VIEW_TYPE } from './ui/concept-tracker-view';
 import {
   ConceptJourneyView,
@@ -216,6 +217,28 @@ export default class SemanticAIPlugin extends Plugin {
           await this.indexFolder(folder);
         } else {
           new Notice('Open a note first, so there is a folder to index.');
+        }
+      }
+    });
+
+    this.addCommand({
+      id: 'index-and-export-current-folder',
+      name: 'Index and save current folder Markdown index',
+      callback: async () => {
+        const folder = this.app.workspace.getActiveFile()?.parent;
+        if (!folder) {
+          new Notice('Open a note first, so there is a folder to index.');
+          return;
+        }
+
+        try {
+          const index = await this.vaultIndexer.buildIndex('folder', folder.path);
+          const markdownPath = await writeIndexMarkdown(this.app.vault, index, folder.path);
+          const jsonPath = await writeIndexJSON(this.app.vault, index, folder.path);
+          new Notice(`Saved ${markdownPath} and ${jsonPath}`);
+          await this.openConceptTracker();
+        } catch (error) {
+          new Notice(`Index export failed: ${this.errorMessage(error)}`);
         }
       }
     });

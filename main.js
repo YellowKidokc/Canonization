@@ -3440,6 +3440,101 @@ var VaultIndexer = class {
   }
 };
 
+// src/indexing/markdown-exporter.ts
+var START = "<!-- SEMANTIC_AI:GENERATED_INDEX:START -->";
+var END = "<!-- SEMANTIC_AI:GENERATED_INDEX:END -->";
+function indexToJSON(index) {
+  return JSON.stringify({
+    metadata: index.metadata,
+    concepts: Object.fromEntries(index.concepts),
+    relations: index.relations,
+    fileIndex: Object.fromEntries(index.fileIndex)
+  }, null, 2);
+}
+function wikiLink(path) {
+  return `[[${path.replace(/\.md$/i, "")}]]`;
+}
+function generatedBlock(index) {
+  var _a, _b;
+  const { metadata, concepts, relations } = index;
+  const topConcepts = Array.from(concepts.values()).sort((a, b) => b.totalCount - a.totalCount).slice(0, 200);
+  const conceptRows = topConcepts.length ? topConcepts.map((concept) => {
+    const files = Array.from(new Set(concept.occurrences.map((o) => o.filePath))).slice(0, 8).map(wikiLink).join(", ");
+    return `| ${concept.label.replace(/\|/g, "\\|")} | ${concept.totalCount} | ${concept.fileCount} | ${concept.tagTypes.join(", ")} | ${files} |`;
+  }).join("\n") : "| _No concepts indexed._ |  |  |  |  |";
+  const relationRows = relations.length ? relations.slice(0, 500).map(
+    (relation) => `| ${wikiLink(relation.sourceFile)} | ${wikiLink(relation.targetFile)} | ${relation.sharedConcepts.join(", ").replace(/\|/g, "\\|")} | ${relation.relationshipStrength.toFixed(3)} |`
+  ).join("\n") : "| _No cross-file relations indexed._ |  |  |  |";
+  const warnings = ((_a = metadata.warnings) == null ? void 0 : _a.length) ? `
+> **Index warnings**
+> ${metadata.warnings.join("\n> ")}
+` : "";
+  return `${START}
+## Overview
+
+| Field | Value |
+|---|---:|
+| Scope | ${metadata.scope} |
+| Scope path | \`${metadata.scopePath}\` |
+| Last updated | ${metadata.lastUpdated} |
+| Files | ${metadata.totalFiles} |
+| Tags | ${metadata.totalTags} |
+| Concepts | ${metadata.totalConcepts} |
+| Relations | ${relations.length} |
+| Processing time | ${(_b = metadata.processingTimeMs) != null ? _b : 0} ms |
+${warnings}
+## Concepts
+
+The table is sorted by occurrence count. Use Obsidian search for the full indexed concept set.
+
+| Concept | Occurrences | Files | Categories | Notes |
+|---|---:|---:|---|---|
+${conceptRows}
+
+## Relations
+
+| Source note | Related note | Shared concepts | Strength |
+|---|---|---|---:|
+${relationRows}
+
+## Search
+
+This file is a durable snapshot of the Semantic AI index. Rebuild it after classification or source changes. The original notes and their UUID tags remain the source material.
+${END}`;
+}
+async function writeIndexMarkdown(vault, index, folderPath) {
+  const outputPath = folderPath ? `${folderPath}/OPENINTEL_INDEX.md` : "OPENINTEL_INDEX.md";
+  const existing = vault.getAbstractFileByPath(outputPath);
+  const block = generatedBlock(index);
+  if (existing && "path" in existing) {
+    await vault.process(existing, (content) => {
+      const pattern = new RegExp(`${START}[\\s\\S]*?${END}`);
+      return pattern.test(content) ? content.replace(pattern, block) : `${content.trimEnd()}
+
+${block}
+`;
+    });
+  } else {
+    const title = folderPath ? folderPath.split("/").pop() : "OpenIntel Vault";
+    await vault.create(outputPath, `# ${title} Semantic Index
+
+${block}
+`);
+  }
+  return outputPath;
+}
+async function writeIndexJSON(vault, index, folderPath) {
+  const outputPath = folderPath ? `${folderPath}/OPENINTEL_INDEX.json` : "OPENINTEL_INDEX.json";
+  const existing = vault.getAbstractFileByPath(outputPath);
+  const content = indexToJSON(index);
+  if (existing && "path" in existing) {
+    await vault.modify(existing, content);
+  } else {
+    await vault.create(outputPath, content);
+  }
+  return outputPath;
+}
+
 // src/ui/concept-tracker-view.ts
 var import_obsidian7 = require("obsidian");
 var CONCEPT_TRACKER_VIEW_TYPE = "semantic-ai-concept-tracker";
@@ -4515,6 +4610,27 @@ var SemanticAIPlugin = class extends import_obsidian10.Plugin {
           await this.indexFolder(folder);
         } else {
           new import_obsidian10.Notice("Open a note first, so there is a folder to index.");
+        }
+      }
+    });
+    this.addCommand({
+      id: "index-and-export-current-folder",
+      name: "Index and save current folder Markdown index",
+      callback: async () => {
+        var _a;
+        const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
+        if (!folder) {
+          new import_obsidian10.Notice("Open a note first, so there is a folder to index.");
+          return;
+        }
+        try {
+          const index = await this.vaultIndexer.buildIndex("folder", folder.path);
+          const markdownPath = await writeIndexMarkdown(this.app.vault, index, folder.path);
+          const jsonPath = await writeIndexJSON(this.app.vault, index, folder.path);
+          new import_obsidian10.Notice(`Saved ${markdownPath} and ${jsonPath}`);
+          await this.openConceptTracker();
+        } catch (error) {
+          new import_obsidian10.Notice(`Index export failed: ${this.errorMessage(error)}`);
         }
       }
     });
