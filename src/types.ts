@@ -384,6 +384,64 @@ const RESEARCH_PRESET: TaxonomyPreset = {
   ]
 };
 
+const EPISTEMIC_PRESET: TaxonomyPreset = {
+  id: 'epistemic',
+  name: 'Claims, evidence, and proofs',
+  description: 'Source-bound categories for questions, claims, evidence, formal work, bridges, and review.',
+  systemContext: 'Use neutral extraction first. Preserve exact source meaning and do not upgrade a candidate into proof, evidence, or truth merely because it is well written.',
+  axis2Label: 'Domain',
+  categories: [
+    category('Question', 'Question', 'Questions', 2,
+      'Identify explicit and implicit questions. Preserve the question without answering it. Mark what information slot or uncertainty it targets.'),
+    category('Axiom', 'Axiom', 'Axioms', 1,
+      'Identify statements presented as starting commitments. Do not infer that a definition or later explanation is an independent axiom.'),
+    category('ConstitutiveDisclosure', 'Constitutive disclosure', 'Constitutive disclosures', 1,
+      'Identify content presented as unpacking or disclosing an existing axiom. Record whether it is constitutive, definitional, entailed, inferred, analogical, or merely associated.'),
+    category('Definition', 'Definition', 'Definitions', 8,
+      'Identify terms whose meaning is fixed or bounded. Preserve the definition and distinguish it from a claim about what exists.'),
+    category('Claim', 'Claim', 'Claims', 2,
+      'Identify the smallest complete assertion. Preserve scope, modality, polarity, assumptions, and what would count against it.'),
+    category('Premise', 'Premise', 'Premises', 3,
+      'Identify statements used as premises in an argument. Record whether each is stipulated, defined, observed, cited, or inferred.'),
+    category('EvidenceUnit', 'Evidence unit', 'Evidence units', 4,
+      'Identify an observation, quotation, measurement, dataset, testimony, formal result, or other source-bound item that may bear on a claim. Do not call it support until the relation is assessed.'),
+    category('Observation', 'Observation', 'Observations', 5,
+      'Identify what was observed or reported before interpretation. Preserve the exact source span, method, uncertainty, and limitations.'),
+    category('Proof', 'Proof', 'Proofs', 6,
+      'Identify a proof artifact or formal justification. Record the proof system, premises, definitions, derivation, and whether the result is only relative to those premises.'),
+    category('Derivation', 'Derivation', 'Derivations', 6,
+      'Identify an ordered reasoning chain. Record each dependency and do not treat a notation change as a proof step.'),
+    category('Bridge', 'Bridge dossier', 'Bridge dossiers', 7,
+      'Identify a proposed cross-domain mapping. Separate native meanings, neutral form, mathematical structure, preserved structure, loss, reverse path, rivals, and tests.'),
+    category('Interpretation', 'Interpretation', 'Interpretations', 7,
+      'Identify what an author says an evidence unit, equation, or result means. Keep competing interpretations attached to the same source item.'),
+    category('Objection', 'Objection', 'Objections', 3,
+      'Identify a specific challenge, category error, hidden premise, source problem, or rival explanation.'),
+    category('Countermodel', 'Countermodel', 'Countermodels', 3,
+      'Identify a model or example that satisfies stated premises while rejecting a proposed conclusion.'),
+    category('Prediction', 'Prediction', 'Predictions', 4,
+      'Identify a prospective outcome stated before testing, including conditions, discriminator, and failure condition.'),
+    category('Protocol', 'Protocol', 'Protocols', 5,
+      'Identify a reproducible test procedure, sample, apparatus, controls, stopping rules, and measurement method.'),
+    category('Result', 'Result', 'Results', 5,
+      'Identify the raw outcome of a protocol separately from its interpretation.'),
+    category('Limitation', 'Limitation', 'Limitations', 8,
+      'Identify scope limits, uncertainty, missing provenance, underdetermination, translation loss, or reasons a conclusion cannot be carried further.'),
+    ...structuralCategories()
+  ],
+  topics: [
+    topic('Theology', 'Theology', 'God, Trinity, Scripture, doctrine, grace, sin, redemption'),
+    topic('Theophysics', 'Theophysics', 'Cross-domain Theophysics framework and synthesis'),
+    topic('Physics', 'Physics', 'Physical models, measurement, experiment, cosmology, fields'),
+    topic('Mathematics', 'Mathematics', 'Formal structures, equations, derivations, proof systems'),
+    topic('Information', 'Information', 'Information, encoding, entropy, computation, semantics'),
+    topic('Consciousness', 'Consciousness', 'Experience, integration, personhood, agency, meaning'),
+    topic('Moral', 'Moral', 'Good, evil, privation, virtue, obligation, repair'),
+    topic('Epistemology', 'Epistemology', 'Truth, warrant, evidence, uncertainty, interpretation'),
+    topic('Control', 'Control', 'Bunge, Ladyman-Ross, Hawking, methodological naturalism, domain theories')
+  ]
+};
+
 const WRITING_PRESET: TaxonomyPreset = {
   id: 'writing',
   name: 'Fiction and long-form writing',
@@ -471,6 +529,7 @@ const BLANK_PRESET: TaxonomyPreset = {
 export const TAXONOMY_PRESETS: TaxonomyPreset[] = [
   GENERAL_PRESET,
   RESEARCH_PRESET,
+  EPISTEMIC_PRESET,
   PROJECT_PRESET,
   WRITING_PRESET,
   BLANK_PRESET
