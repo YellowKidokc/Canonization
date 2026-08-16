@@ -21,7 +21,8 @@ import {
   TagType,
   SemanticTag,
   enabledCategoryIds,
-  migrateSettings
+  migrateSettings,
+  getPreset
 } from './types';
 
 import { SemanticAISettingTab } from './settings';
@@ -40,7 +41,7 @@ import {
   TagSelectionModal
 } from './ui/result-panel';
 import { VaultIndexer } from './indexing/vault-indexer';
-import { writeIndexMarkdown, writeIndexJSON } from './indexing/markdown-exporter';
+import { writeIndexMarkdown, writeIndexJSON, writeIndexReport } from './indexing/markdown-exporter';
 import { ConceptTrackerView, CONCEPT_TRACKER_VIEW_TYPE } from './ui/concept-tracker-view';
 import {
   ConceptJourneyView,
@@ -247,7 +248,8 @@ export default class SemanticAIPlugin extends Plugin {
           const markdownPath = await writeIndexMarkdown(this.app.vault, index, folder.path);
           const jsonPath = await writeIndexJSON(this.app.vault, index, folder.path);
           const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
-          new Notice(`Saved ${markdownPath}, ${jsonPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
+          const reportPath = await writeIndexReport(this.app.vault, index, folder.path, this.indexReportContext(this.supraInfraqueGraph.exportFolder(folder.path)));
+          new Notice(`Saved ${markdownPath}, ${jsonPath}, ${reportPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
           await this.openConceptTracker();
         } catch (error) {
           new Notice(`Index export failed: ${this.errorMessage(error)}`);
@@ -860,6 +862,7 @@ export default class SemanticAIPlugin extends Plugin {
       const graphFolder = folderPath || '';
       const graphCount = await this.registerGraphForScope(graphFolder);
       const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, graphFolder);
+      const reportPath = await writeIndexReport(this.app.vault, index, graphFolder, this.indexReportContext(this.supraInfraqueGraph.exportFolder(graphFolder)));
 
       progressModal.complete({
         files: index.metadata.totalFiles,
@@ -868,7 +871,7 @@ export default class SemanticAIPlugin extends Plugin {
         timeMs: index.metadata.processingTimeMs || 0
       });
 
-      new Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? '' : 's'} to ${graphPaths.markdownPath}`);
+      new Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? '' : 's'} to ${graphPaths.markdownPath}; report: ${reportPath}`);
       if (this.settings.enablePostgresSync) await this.syncSupraInfraqueGraph();
 
       await this.openConceptTracker();
@@ -883,6 +886,17 @@ export default class SemanticAIPlugin extends Plugin {
       !folderPath || file.path === folderPath || file.path.startsWith(`${folderPath}/`)
     );
     return this.supraInfraqueGraph.registerFolder(files, (file) => readTags(this.app.vault, file));
+  }
+
+  private indexReportContext(graph: object) {
+    const preset = getPreset(this.settings.presetId);
+    return {
+      presetName: preset?.name || this.settings.presetId || 'custom',
+      axis2Label: this.settings.axis2Label || 'Topics',
+      enabledCategories: this.settings.categories.filter((category) => category.enabled !== false).map((category) => category.name),
+      enabledTopics: this.settings.enableTopics ? this.settings.topics.filter((topic) => topic.enabled !== false).map((topic) => topic.name) : [],
+      graph: graph as Record<string, unknown>
+    };
   }
 
   private async syncSupraInfraqueGraph(): Promise<void> {

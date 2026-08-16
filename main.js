@@ -3862,6 +3862,104 @@ async function writeIndexJSON(vault, index, folderPath) {
   }
   return outputPath;
 }
+function reportCell(value) {
+  return value.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+}
+async function writeIndexReport(vault, index, folderPath, context) {
+  var _a;
+  const categoryCounts = /* @__PURE__ */ new Map();
+  const topicCounts = /* @__PURE__ */ new Map();
+  const noteRows = [];
+  for (const [filePath, tags] of index.fileIndex) {
+    for (const tag of tags) {
+      categoryCounts.set(tag.type, (categoryCounts.get(tag.type) || 0) + 1);
+      for (const topic2 of tag.topics || [])
+        topicCounts.set(topic2, (topicCounts.get(topic2) || 0) + 1);
+    }
+    const tagSummary = tags.length ? tags.map((tag) => `${tag.type}: ${tag.label} (${tag.uuid})`).join("<br>") : "_No semantic tags found_";
+    noteRows.push(`| ${wikiLink(filePath)} | ${tags.length} | ${reportCell(tagSummary)} |`);
+  }
+  const rows = (counts) => Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name, count]) => `| ${reportCell(name)} | ${count} |`).join("\n") || "| _None observed_ | 0 |";
+  const graph = context.graph || {};
+  const graphCount = (key) => Array.isArray(graph[key]) ? graph[key].length : graph[key] && typeof graph[key] === "object" ? Object.keys(graph[key]).length : 0;
+  const warnings = ((_a = index.metadata.warnings) == null ? void 0 : _a.length) ? index.metadata.warnings.map((warning) => `- ${warning}`).join("\n") : "- None";
+  const start = "<!-- SEMANTIC_AI:GENERATED_INDEX_REPORT:START -->";
+  const end = "<!-- SEMANTIC_AI:GENERATED_INDEX_REPORT:END -->";
+  const block = `${start}
+## Run summary
+
+| Field | Value |
+|---|---|
+| Scope | ${index.metadata.scope} |
+| Scope path | \`${reportCell(index.metadata.scopePath)}\` |
+| Completed | ${index.metadata.lastUpdated} |
+| Active preset | ${reportCell(context.presetName)} |
+| Axis 2 | ${reportCell(context.axis2Label)} |
+| Notes scanned | ${index.metadata.totalFiles} |
+| Tags observed | ${index.metadata.totalTags} |
+| Concepts observed | ${index.metadata.totalConcepts} |
+| Cross-note relations | ${index.relations.length} |
+| Processing time | ${index.metadata.processingTimeMs || 0} ms |
+
+## Classification configuration
+
+**Enabled categories:** ${context.enabledCategories.length ? context.enabledCategories.map(reportCell).join(", ") : "_None_"}  
+**Enabled ${reportCell(context.axis2Label)} values:** ${context.enabledTopics.length ? context.enabledTopics.map(reportCell).join(", ") : "_None_"}
+
+## Observed category counts
+
+| Category | Tags |
+|---|---:|
+${rows(categoryCounts)}
+
+## Observed ${reportCell(context.axis2Label)} counts
+
+| Value | Tags |
+|---|---:|
+${rows(topicCounts)}
+
+## Linked note detail
+
+| Note | Tags | Tag and UUID |
+|---|---:|---|
+${noteRows.join("\n") || "| _No notes scanned_ | 0 |  |"}
+
+## Supra Infraque graph records
+
+| Collection | Records |
+|---|---:|
+| Artifacts | ${graphCount("artifacts")} |
+| Source spans | ${graphCount("sourceSpans")} |
+| Objects | ${graphCount("objects")} |
+| Occurrences | ${graphCount("occurrences")} |
+| Relations | ${graphCount("relations")} |
+| Classifications | ${graphCount("classifications")} |
+
+## Warnings
+
+${warnings}
+
+> Generated receipt for the latest index run. Source notes remain the source of truth; proposed graph relationships are not proof or admitted support.
+${end}`;
+  const outputPath = folderPath ? `${folderPath}/SEMANTIC_AI_INDEX_REPORT.md` : "SEMANTIC_AI_INDEX_REPORT.md";
+  const existing = vault.getAbstractFileByPath(outputPath);
+  if (existing && "path" in existing) {
+    await vault.process(existing, (content) => {
+      const pattern = new RegExp(`${start}[\\s\\S]*?${end}`);
+      return pattern.test(content) ? content.replace(pattern, block) : `${content.trimEnd()}
+
+${block}
+`;
+    });
+  } else {
+    const title = folderPath ? folderPath.split("/").pop() : "OpenIntel Vault";
+    await vault.create(outputPath, `# ${title} Semantic AI Index Report
+
+${block}
+`);
+  }
+  return outputPath;
+}
 
 // src/ui/concept-tracker-view.ts
 var import_obsidian7 = require("obsidian");
@@ -5420,7 +5518,8 @@ var SemanticAIPlugin = class extends import_obsidian11.Plugin {
           const markdownPath = await writeIndexMarkdown(this.app.vault, index, folder.path);
           const jsonPath = await writeIndexJSON(this.app.vault, index, folder.path);
           const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
-          new import_obsidian11.Notice(`Saved ${markdownPath}, ${jsonPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
+          const reportPath = await writeIndexReport(this.app.vault, index, folder.path, this.indexReportContext(this.supraInfraqueGraph.exportFolder(folder.path)));
+          new import_obsidian11.Notice(`Saved ${markdownPath}, ${jsonPath}, ${reportPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
           await this.openConceptTracker();
         } catch (error) {
           new import_obsidian11.Notice(`Index export failed: ${this.errorMessage(error)}`);
@@ -5897,13 +5996,14 @@ ${typeBreakdown}`,
       const graphFolder = folderPath || "";
       const graphCount = await this.registerGraphForScope(graphFolder);
       const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, graphFolder);
+      const reportPath = await writeIndexReport(this.app.vault, index, graphFolder, this.indexReportContext(this.supraInfraqueGraph.exportFolder(graphFolder)));
       progressModal.complete({
         files: index.metadata.totalFiles,
         concepts: index.metadata.totalConcepts,
         relations: index.relations.length,
         timeMs: index.metadata.processingTimeMs || 0
       });
-      new import_obsidian11.Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? "" : "s"} to ${graphPaths.markdownPath}`);
+      new import_obsidian11.Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? "" : "s"} to ${graphPaths.markdownPath}; report: ${reportPath}`);
       if (this.settings.enablePostgresSync)
         await this.syncSupraInfraqueGraph();
       await this.openConceptTracker();
@@ -5917,6 +6017,16 @@ ${typeBreakdown}`,
       (file) => !folderPath || file.path === folderPath || file.path.startsWith(`${folderPath}/`)
     );
     return this.supraInfraqueGraph.registerFolder(files, (file) => readTags(this.app.vault, file));
+  }
+  indexReportContext(graph) {
+    const preset = getPreset(this.settings.presetId);
+    return {
+      presetName: (preset == null ? void 0 : preset.name) || this.settings.presetId || "custom",
+      axis2Label: this.settings.axis2Label || "Topics",
+      enabledCategories: this.settings.categories.filter((category2) => category2.enabled !== false).map((category2) => category2.name),
+      enabledTopics: this.settings.enableTopics ? this.settings.topics.filter((topic2) => topic2.enabled !== false).map((topic2) => topic2.name) : [],
+      graph
+    };
   }
   async syncSupraInfraqueGraph() {
     const serviceUrl = (this.settings.pythonServiceUrl || "").replace(/\/$/, "");
