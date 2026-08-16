@@ -4772,6 +4772,43 @@ async function writeRoutingIndexes(vault, registry, folderPath) {
     await vault.createFolder(root);
   } catch (e) {
   }
+  const metadataRoot = `${root}/Metadata`;
+  try {
+    await vault.createFolder(metadataRoot);
+  } catch (e) {
+  }
+  const yamlQuote = (value) => JSON.stringify(value != null ? value : "");
+  for (const object of graph.objects) {
+    const assignments = graph.classifications.filter((c) => c.objectId === object.objectId);
+    const sourcePath = sourceFor(object.objectId);
+    const yaml = [
+      'schema_version: "1.0"',
+      "schema_id: supra-infraque-object-v1",
+      `object_id: ${yamlQuote(object.objectId)}`,
+      `human_code: ${yamlQuote(object.humanCode)}`,
+      `object_type: ${yamlQuote(object.objectType)}`,
+      `status: ${yamlQuote(object.status)}`,
+      `version: ${yamlQuote(object.version)}`,
+      `canonical_text: ${yamlQuote(object.canonicalText)}`,
+      `scope: ${yamlQuote(object.scope)}`,
+      `source_path: ${yamlQuote(sourcePath)}`,
+      "classifications:",
+      ...assignments.length ? assignments.map((c) => `  - axis: ${yamlQuote(c.axis)}
+    term: ${yamlQuote(c.term)}
+    status: ${yamlQuote(c.status)}
+    source_span_ids: [${c.sourceSpanIds.map((id) => yamlQuote(id)).join(", ")}]`) : ["  []"],
+      "relations: []",
+      "assessment_status: proposed",
+      'boundary: "Generated metadata proposal; source note remains unchanged."',
+      ""
+    ].join("\n");
+    const metadataPath = `${metadataRoot}/${object.humanCode}_${object.objectId}.yaml`;
+    const existing = vault.getAbstractFileByPath(metadataPath);
+    if (existing && "path" in existing)
+      await vault.modify(existing, yaml);
+    else
+      await vault.create(metadataPath, yaml);
+  }
   for (const [name, objects] of Object.entries(buckets)) {
     const path = `${root}/${name.replace(/ /g, "_")}.md`;
     const body = objects.length ? objects.map((o) => `- **${o.humanCode}** (\`${o.objectId}\`, ${o.status}) - ${String(o.canonicalText).replace(/\n/g, " ")} - source: [[${sourceFor(o.objectId).replace(/\.md$/i, "")}]]`).join("\n") : "- None recorded.";

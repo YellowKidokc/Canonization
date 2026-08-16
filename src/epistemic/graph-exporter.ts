@@ -110,6 +110,35 @@ async function writeRoutingIndexes(vault: Vault, registry: SupraInfraqueGraphReg
     if (object.objectType === 'CLAIM' && !relationByObject.has(object.objectId)) buckets['Unresolved Claims'].push(object);
   }
   try { await vault.createFolder(root); } catch { /* generated folder already exists */ }
+  const metadataRoot = `${root}/Metadata`;
+  try { await vault.createFolder(metadataRoot); } catch { /* generated folder already exists */ }
+  const yamlQuote = (value: string): string => JSON.stringify(value ?? '');
+  for (const object of graph.objects) {
+    const assignments = graph.classifications.filter((c: any) => c.objectId === object.objectId);
+    const sourcePath = sourceFor(object.objectId);
+    const yaml = [
+      'schema_version: "1.0"',
+      'schema_id: supra-infraque-object-v1',
+      `object_id: ${yamlQuote(object.objectId)}`,
+      `human_code: ${yamlQuote(object.humanCode)}`,
+      `object_type: ${yamlQuote(object.objectType)}`,
+      `status: ${yamlQuote(object.status)}`,
+      `version: ${yamlQuote(object.version)}`,
+      `canonical_text: ${yamlQuote(object.canonicalText)}`,
+      `scope: ${yamlQuote(object.scope)}`,
+      `source_path: ${yamlQuote(sourcePath)}`,
+      'classifications:',
+      ...(assignments.length ? assignments.map((c: any) => `  - axis: ${yamlQuote(c.axis)}\n    term: ${yamlQuote(c.term)}\n    status: ${yamlQuote(c.status)}\n    source_span_ids: [${c.sourceSpanIds.map((id: string) => yamlQuote(id)).join(', ')}]`) : ['  []']),
+      'relations: []',
+      'assessment_status: proposed',
+      'boundary: "Generated metadata proposal; source note remains unchanged."',
+      ''
+    ].join('\n');
+    const metadataPath = `${metadataRoot}/${object.humanCode}_${object.objectId}.yaml`;
+    const existing = vault.getAbstractFileByPath(metadataPath);
+    if (existing && 'path' in existing) await vault.modify(existing as any, yaml);
+    else await vault.create(metadataPath, yaml);
+  }
   for (const [name, objects] of Object.entries(buckets)) {
     const path = `${root}/${name.replace(/ /g, '_')}.md`;
     const body = objects.length
