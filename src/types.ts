@@ -427,6 +427,8 @@ const EPISTEMIC_PRESET: TaxonomyPreset = {
       'Identify the raw outcome of a protocol separately from its interpretation.'),
     category('Limitation', 'Limitation', 'Limitations', 8,
       'Identify scope limits, uncertainty, missing provenance, underdetermination, translation loss, or reasons a conclusion cannot be carried further.'),
+    category('Canonization', 'Canonization candidate', 'Canonization candidates', 1,
+      'Identify one independently reviewable candidate packet. Record the exact claim or object, source span, object type, register, warrant, dependencies, possible support, defeat conditions, and OPEN fields. This is candidate-only: never create or imply admission, proof, or truth status.'),
     ...structuralCategories()
   ],
   topics: [
@@ -440,6 +442,36 @@ const EPISTEMIC_PRESET: TaxonomyPreset = {
     topic('Epistemology', 'Epistemology', 'Truth, warrant, evidence, uncertainty, interpretation'),
     topic('Control', 'Control', 'Bunge, Ladyman-Ross, Hawking, methodological naturalism, domain theories')
   ]
+};
+
+/**
+ * First pass for the three-stage candidate pipeline.  This preset intentionally
+ * avoids domain and truth labels: its job is to expose the source's structure
+ * before a later run classifies its warrant or proposes a bridge.
+ */
+const BFP_DISCOVERY_PRESET: TaxonomyPreset = {
+  id: 'bfp-discovery',
+  name: 'BFP blind discovery',
+  description: 'First-pass structural discovery without domain, truth, or admission labels.',
+  systemContext: 'Read the source without deciding whether it is physics, theology, mathematics, evidence, or proof. Extract only explicitly present structure. Do not grade truth, infer a domain, create a bridge, or treat an output as admitted. Preserve uncertainty and source wording.',
+  axis2Label: 'Context',
+  categories: [
+    category('Referent', 'Referent', 'Referents', 1, 'Identify what the passage is about or points to, using neutral wording and the exact source span.'),
+    category('Identity', 'Identity', 'Identities', 2, 'Identify assertions that something is, remains, equals, differs from, or is identified with something else. Do not decide whether the assertion is true.'),
+    category('Distinction', 'Distinction', 'Distinctions', 3, 'Identify distinctions, contrasts, exclusions, or non-equivalences the passage makes.'),
+    category('Relation', 'Relation', 'Relations', 4, 'Identify explicitly stated relations: ordering, dependence, comparison, membership, correspondence, or interaction.'),
+    category('Operation', 'Operation', 'Operations', 5, 'Identify actions, transformations, rules, procedures, or transitions described by the source.'),
+    category('Dependency', 'Dependency', 'Dependencies', 6, 'Identify what the passage says depends on, presupposes, requires, or is conditioned by something else.'),
+    category('Constraint', 'Constraint', 'Constraints', 7, 'Identify limits, prohibitions, boundary conditions, or conditions that restrict what may occur.'),
+    category('Invariant', 'Invariant', 'Invariants', 8, 'Identify what the passage presents as preserved, stable, repeated, or unchanged across a stated transformation or context.'),
+    category('CollapseCondition', 'Collapse condition', 'Collapse conditions', 1, 'Identify a stated failure, contradiction, loss, defeat, or condition under which the described structure no longer holds.'),
+    category('Consequence', 'Consequence', 'Consequences', 2, 'Identify stated consequences, outputs, implications, or downstream effects without judging whether the inference succeeds.'),
+    category('Representation', 'Representation', 'Representations', 3, 'Identify symbols, diagrams, equations, examples, metaphors, or other representational forms and what they stand for in the source.'),
+    category('FormalizationBoundary', 'Formalization boundary', 'Formalization boundaries', 4, 'Identify what would need definitions, premises, measurements, or a declared bridge before it could be formalized or tested.'),
+    category('OpenQuestion', 'Open question', 'Open questions', 5, 'Identify an explicit unknown, ambiguity, unresolved alternative, or missing condition. Preserve it as OPEN.'),
+    ...structuralCategories()
+  ],
+  topics: []
 };
 
 const BRIDGE_PRESET: TaxonomyPreset = {
@@ -494,6 +526,8 @@ const LEAN_PRESET: TaxonomyPreset = {
     category('FormalizationBlocker', 'Formalization blocker', 'Formalization blockers', 8, 'Identify undefined terms, type ambiguity, missing premises, inconsistent assumptions, undecidable scope, or semantic mismatch.'),
     category('FormalBoundary', 'Formal boundary', 'Formal boundaries', 5, 'Identify what formalization can establish and what remains empirical, theological, interpretive, or analogical.'),
     category('LeanChecked', 'Lean checked', 'Lean checked results', 6, 'Identify a result explicitly verified by Lean 4 and record the project, imports, theorem, and assumptions.'),
+    category('Canonization', 'Canonization candidate', 'Canonization candidates', 1,
+      'Identify an independently reviewable formalization candidate with its exact proposition, definitions, assumptions, proof boundary, source span, and OPEN blockers. A Lean-ready candidate is not a checked theorem, admission event, or claim about reality.'),
     ...structuralCategories()
   ],
   topics: [
@@ -595,6 +629,7 @@ export const TAXONOMY_PRESETS: TaxonomyPreset[] = [
   GENERAL_PRESET,
   RESEARCH_PRESET,
   EPISTEMIC_PRESET,
+  BFP_DISCOVERY_PRESET,
   BRIDGE_PRESET,
   LEAN_PRESET,
   PROJECT_PRESET,

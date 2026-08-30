@@ -147,6 +147,22 @@ src/
 
 Optional, and off by default. Tags carry UUIDs so they can be mirrored into PostgreSQL through a helper service you run yourself; the plugin never holds database credentials beyond passing the connection string to that local service.
 
+## Claim Atom intake assets
+
+Candidate-only Claim Atom Expansion v1.1 intake material lives in [docs/CLAIM_ATOM_PIPELINE_V1_1.md](docs/CLAIM_ATOM_PIPELINE_V1_1.md). These assets preserve the boundary between nondiscriminatory discovery, classification, bridge review, formalization, and separate human admission.
+
+### Candidate pipeline presets
+
+The taxonomy picker now includes **BFP blind discovery**. Use it first when a source needs to be opened without prematurely calling its contents theological, mathematical, empirical, or true. It extracts only referents, identities, distinctions, relations, operations, dependencies, constraints, invariants, collapse conditions, consequences, representations, formalization boundaries, and OPEN questions.
+
+Then deliberately choose the next pass:
+
+1. **Claims, evidence, and proofs** for classification and burden.
+2. **Bridge engineering** only when a cross-register mapping is actually proposed.
+3. **Lean and formalization triage** for definitions, assumptions, theorem candidates, proof artifacts, and formal boundaries.
+
+The new **Canonization candidate** category in the epistemic and Lean profiles can prepare a review packet, but it never admits a record. The current plugin remains a classifier: persistent candidate packets, stage receipts, and signed admission events require the companion pipeline service.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
