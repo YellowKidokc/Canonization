@@ -20,6 +20,7 @@
     "lean": { "type": "object", "additionalProperties": true }, "blastRadius": { "type": "object", "additionalProperties": true },
     "reviewHistory": { "$ref": "#/$defs/objects" }, "votes": { "$ref": "#/$defs/objects" }, "minorityReports": { "$ref": "#/$defs/objects" },
     "humanCouncilRuling": { "type": ["object", "null"], "additionalProperties": true }, "admissionEventReference": { "type": ["string", "null"] },
+    "reviewWorkbench": { "$ref": "#/$defs/reviewWorkbench" },
     "projections": { "type": "object", "additionalProperties": true }, "cache": { "type": "object", "additionalProperties": true }, "postgresSync": { "type": "object", "additionalProperties": true },
     "provenance": { "$ref": "#/$defs/objects" }, "hashes": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hash" } }
   },
@@ -35,6 +36,32 @@
     "classification": { "type": "object", "required": ["objectId", "labels"], "properties": { "objectId": { "type": "string" }, "labels": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": true },
     "classifications": { "type": "array", "items": { "$ref": "#/$defs/classification" } },
     "edge": { "type": "object", "required": ["from", "to", "type"], "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "type": { "type": "string" } }, "additionalProperties": true },
+    "propagationDisposition": { "enum": ["DO_NOT_PROPAGATE", "LOCAL_ONLY", "CANDIDATE_REUSABLE", "PROPOSE_GOVERNED_PROPAGATION"] },
+    "reviewEntry": {
+      "type": "object",
+      "required": ["entryId", "propagationDisposition", "propagationRationale", "verificationReceiptIds", "authority"],
+      "properties": {
+        "entryId": { "type": "string", "minLength": 1 },
+        "propagationDisposition": { "$ref": "#/$defs/propagationDisposition" },
+        "propagationRationale": { "type": "string" },
+        "verificationReceiptIds": { "type": "array", "items": { "type": "string" } },
+        "authority": { "const": "HUMAN_REVIEW_PROPOSAL_NOT_ADMISSION" }
+      },
+      "allOf": [{ "if": { "properties": { "propagationDisposition": { "const": "PROPOSE_GOVERNED_PROPAGATION" } } }, "then": { "properties": { "propagationRationale": { "type": "string", "minLength": 1 } } } }],
+      "additionalProperties": true
+    },
+    "reviewEntries": { "type": "array", "items": { "$ref": "#/$defs/reviewEntry" } },
+    "reviewWorkbench": {
+      "type": "object",
+      "properties": {
+        "neutralDiscovery": { "$ref": "#/$defs/reviewEntries" },
+        "classificationAssignments": { "$ref": "#/$defs/reviewEntries" },
+        "bridgeQuestionAnswers": { "$ref": "#/$defs/reviewEntries" },
+        "contradictionReviews": { "$ref": "#/$defs/reviewEntries" },
+        "publicationRouting": { "$ref": "#/$defs/reviewEntries" }
+      },
+      "additionalProperties": true
+    },
     "bridge": { "allOf": [{ "$ref": "#/$defs/atom" }, { "type": "object", "required": ["sourceDomain", "targetDomain", "preservedStructure", "lostStructure", "proofPropagation"], "properties": { "sourceDomain": { "type": "string" }, "targetDomain": { "type": "string" }, "preservedStructure": { "type": "array", "items": { "type": "string" } }, "lostStructure": { "type": "array", "items": { "type": "string" } }, "proofPropagation": { "const": false } } }] }
   },
   "additionalProperties": true

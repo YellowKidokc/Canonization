@@ -2,7 +2,21 @@ import { Atom, CanonizationRecord } from "../schema/types";
 export const CONTRADICTION_STATUSES = ["confirmed-logical-contradiction", "definition-mismatch", "scope-mismatch", "temporal-or-state-difference", "rival-interpretation", "premise-disagreement", "formal-countermodel", "apparent-tension", "superseded-claim", "unresolved-contradiction-candidate"] as const;
 export type ContradictionStatus = typeof CONTRADICTION_STATUSES[number];
 export interface ContradictionCandidate { leftId: string; rightId: string; proposedStatus: ContradictionStatus; finalStatus: ContradictionStatus | null; authority: "DETERMINISTIC_PROPOSAL_REQUIRES_HUMAN_REVIEW"; reasons: string[]; }
-const normalize = (text: string): string => text.toLowerCase().replace(/\b(not|never|no)\b/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const thirdPerson = (verb: string): string => {
+  if (verb === "have") return "has";
+  if (verb === "be") return "is";
+  if (/(?:s|x|z|ch|sh|o)$/.test(verb)) return `${verb}es`;
+  if (/[^aeiou]y$/.test(verb)) return `${verb.slice(0, -1)}ies`;
+  return `${verb}s`;
+};
+const normalize = (text: string): string => text
+  .toLowerCase()
+  .replace(/\bdoes\s+not\s+([a-z]+)\b/g, (_match, verb: string) => thirdPerson(verb))
+  .replace(/\b(?:do|did)\s+not\b/g, "")
+  .replace(/\b(?:is|are|was|were|has|have|had|can|could|will|would|shall|should|may|might|must)\s+not\b/g, (match) => match.replace(/\s+not\b/, ""))
+  .replace(/\b(?:not|never|no)\b/g, "")
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim();
 const negated = (text: string): boolean => /\b(not|never|no)\b/i.test(text);
 const claims = (record: CanonizationRecord): Atom[] => [...(record.claims ?? []), ...(record.bridges ?? [])];
 export function scanContradictionCandidates(records: CanonizationRecord[]): ContradictionCandidate[] { const atoms = records.reduce<Atom[]>((all, record) => all.concat(claims(record)), []), found: ContradictionCandidate[] = [];
