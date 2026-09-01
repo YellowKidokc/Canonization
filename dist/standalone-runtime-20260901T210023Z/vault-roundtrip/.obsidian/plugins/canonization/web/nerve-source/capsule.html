@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Truth Capsule</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0f0f14;
+  color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #2b2b3a;
+  border-radius: 10px;
+}
+
+header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #22222e;
+  cursor: move;
+  user-select: none;
+  flex: none;
+}
+header .glyph { font-size: 17px; color: #c0a0ff; }
+header .title { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; }
+header .node { font-size: 10px; color: #6d6d80; text-transform: uppercase; letter-spacing: 0.08em; }
+header .spacer { flex: 1; }
+header button.close {
+  background: transparent; border: none; color: #6d6d80;
+  font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1;
+}
+header button.close:hover { color: #ff8f8f; }
+
+.scroll { flex: 1; overflow-y: auto; padding: 12px; }
+.scroll::-webkit-scrollbar { width: 8px; }
+.scroll::-webkit-scrollbar-thumb { background: #2b2b3a; border-radius: 4px; }
+
+.source {
+  background: #14141c; border: 1px solid #22222e; border-radius: 7px;
+  padding: 9px 10px; margin-bottom: 12px;
+}
+.source .text {
+  font-size: 12.5px; line-height: 1.5; color: #d8d8e8;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 130px; overflow-y: auto;
+}
+.source .prov {
+  margin-top: 7px; padding-top: 6px; border-top: 1px solid #22222e;
+  font-size: 10px; color: #6d6d80; display: flex; flex-wrap: wrap; gap: 10px;
+}
+.source .prov b { color: #9a9ab0; font-weight: 600; }
+
+.field { margin-bottom: 10px; }
+.field label {
+  display: block; font-size: 10px; color: #8a8a9e;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;
+}
+.field input, .field select, .field textarea {
+  width: 100%; background: #16161f; color: #e0e0e0;
+  border: 1px solid #2b2b3a; border-radius: 5px;
+  padding: 6px 8px; font-size: 12.5px; font-family: inherit;
+}
+.field textarea { resize: vertical; min-height: 52px; line-height: 1.45; }
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: #3f7fbf;
+}
+.field .hint { font-size: 10px; color: #5c5c70; margin-top: 3px; }
+
+fieldset {
+  border: 1px solid #22222e; border-radius: 7px;
+  padding: 10px; margin-bottom: 12px;
+}
+legend {
+  font-size: 10px; color: #8a8a9e; padding: 0 6px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+.row { display: flex; gap: 8px; }
+.row .field { flex: 1; }
+
+footer {
+  flex: none; border-top: 1px solid #22222e; padding: 10px 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+footer .note { flex: 1; font-size: 10px; color: #6d6d80; line-height: 1.35; }
+button.primary {
+  background: #1e3a5f; color: #7fd8ff; border: 1px solid #2f5c8f;
+  border-radius: 6px; padding: 8px 16px;
+  font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer;
+}
+button.primary:hover { background: #264d73; }
+button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+button.ghost {
+  background: transparent; color: #9a9ab0; border: 1px solid #2b2b3a;
+  border-radius: 6px; padding: 8px 12px;
+  font-size: 12.5px; font-family: inherit; cursor: pointer;
+}
+button.ghost:hover { color: #e0e0e0; border-color: #3d3d50; }
+
+.result {
+  margin-bottom: 12px; padding: 9px 10px; border-radius: 7px;
+  font-size: 11.5px; line-height: 1.5; word-break: break-word;
+}
+.result.staged { background: #12202e; border: 1px solid #24485f; color: #7fd8ff; }
+.result.pending { background: #2a2414; border: 1px solid #5f4f24; color: #ffd68f; }
+.result.error { background: #2a1414; border: 1px solid #5f2424; color: #ff8f8f; }
+.result b { display: block; margin-bottom: 3px; }
+.result code {
+  font-family: Consolas, monospace; font-size: 10.5px;
+  color: #c0a0ff; word-break: break-all;
+}
+.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header id="drag">
+  <span class="glyph" id="glyph">◆</span>
+  <span class="title">Truth Capsule</span>
+  <span class="node" id="nodeLabel">claim</span>
+  <span class="spacer"></span>
+  <button class="close" onclick="dismiss()" title="Close (Esc)">✕</button>
+</header>
+
+<div class="scroll">
+  <div id="result" class="hidden"></div>
+
+  <div class="source">
+    <div class="text" id="sourceText">…</div>
+    <div class="prov" id="sourceProv"></div>
+  </div>
+
+  <div id="fields"></div>
+</div>
+
+<footer>
+  <div class="note">
+    Staging only. A candidate is immutable and awaits deterministic validation,
+    adversarial review, and a separate human promotion step.
+  </div>
+  <button class="ghost" onclick="dismiss()">Cancel</button>
+  <button class="primary" id="stageBtn" onclick="stage()">Stage candidate</button>
+</footer>
+
+<script>
+'use strict';
+
+const send = (msg) => window.ipc.postMessage(JSON.stringify(msg));
+
+const GLYPHS = {
+  claim: '◆', mathematics: '∫', definition: '≝', story: '✍',
+  evidence: 'E', bridge: '≅', kill: '⛔', proof: '⊢', paper: '▤',
+  translation: '☖', application: '↦', objection: '⚔',
+  prediction: '⧖', result: '⟡', source: '⊡'
+};
+
+let state = { capture: {}, nodeType: 'claim', ruleId: 'claim', canonEnabled: false };
+let inFlight = null;
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function dismiss() {
+  send({ type: 'selection_dismiss', panel: 'capsule' });
+}
+
+// ── Capsule schema ─────────────────────────────────────────────────────────
+// Collapsed fields are shared. Expanded fields are revealed progressively and
+// are driven by node type and claim species, so a definition is not asked for
+// an evidence burden it does not have.
+
+const CORE_FIELDS = [
+  { key: 'exact_statement', label: 'Exact technical statement', type: 'textarea',
+    hint: 'Precise wording as it should stand in canon.' },
+  { key: 'plain_statement', label: 'Plain statement', type: 'textarea',
+    hint: 'The same content in ordinary language.' }
+];
+
+const LOGICAL_TYPES = [
+  '', 'definitional', 'deductive', 'inductive', 'abductive',
+  'empirical', 'formal', 'interpretive', 'normative'
+];
+
+const SPECIES = {
+  claim: ['', 'formal-derivation', 'empirical-prediction', 'interpretive-reading',
+          'definitional-stipulation', 'historical-attestation', 'metaphysical-argument'],
+  evidence: ['', 'observation', 'experiment', 'document', 'testimony', 'dataset'],
+  bridge: ['', 'isomorphism', 'analogy', 'model-mapping', 'metaphor'],
+  mathematics: ['', 'theorem', 'lemma', 'definition', 'conjecture', 'derivation'],
+  definition: ['', 'stipulative', 'lexical', 'operational', 'theoretical'],
+  story: ['', 'narrative', 'illustration', 'exposition']
+};
+
+const STATUSES = ['proposed', 'under-review', 'contested', 'draft'];
+
+// Burden-of-evidence fields shown only where the species carries one.
+const BURDEN_SPECIES = new Set([
+  'empirical-prediction', 'historical-attestation', 'observation',
+  'experiment', 'document', 'testimony', 'dataset'
+]);
+
+function renderFields() {
+  const node = state.nodeType;
+  const speciesOptions = SPECIES[node] || SPECIES.claim;
+
+  let html = '';
+
+  html += '<div class="field">'
+        + '<label for="permanent_id">Permanent ID</label>'
+        + '<input id="permanent_id" value="" placeholder="assigned by the canon service" disabled>'
+        + '<div class="hint">Identity is assigned on staging. Nerve never mints canonical IDs.</div>'
+        + '</div>';
+
+  for (const f of CORE_FIELDS) {
+    html += '<div class="field">'
+          + '<label for="' + f.key + '">' + esc(f.label) + '</label>'
+          + '<textarea id="' + f.key + '"></textarea>'
+          + '<div class="hint">' + esc(f.hint) + '</div>'
+          + '</div>';
+  }
+
+  html += '<div class="row">'
+        + selectField('logical_type', 'Logical type', LOGICAL_TYPES)
+        + selectField('species', 'Species / burden', speciesOptions)
+        + '</div>';
+
+  html += '<div class="row">'
+        + selectField('status', 'Current status', STATUSES)
+        + '<div class="field"><label for="evidence_present">Evidence present</label>'
+        + '<input id="evidence_present" placeholder="none / cited / attached"></div>'
+        + '</div>';
+
+  // Progressive reveal: adversarial fields the canon layer expects up front.
+  html += '<fieldset>'
+        + '<legend>Adversarial position</legend>'
+        + '<div class="field"><label for="strongest_defeater">Strongest defeater</label>'
+        + '<textarea id="strongest_defeater" placeholder="The best reason this should fail."></textarea></div>'
+        + '<div class="field"><label for="open_gap">Largest open gap</label>'
+        + '<textarea id="open_gap" placeholder="What is missing that would settle it."></textarea></div>'
+        + '</fieldset>';
+
+  html += '<fieldset id="burdenSet" class="hidden">'
+        + '<legend>Evidence contract</legend>'
+        + '<div class="field"><label for="evidence_burden">Burden</label>'
+        + '<input id="evidence_burden" placeholder="What would have to be shown"></div>'
+        + '<div class="field"><label for="disconfirmation">Disconfirmation condition</label>'
+        + '<textarea id="disconfirmation" placeholder="What observation would defeat this."></textarea></div>'
+        + '</fieldset>';
+
+  document.getElementById('fields').innerHTML = html;
+
+  // Seed the exact statement with the capture, unedited.
+  const exact = document.getElementById('exact_statement');
+  if (exact) exact.value = state.capture.text || '';
+
+  document.getElementById('species').addEventListener('change', updateProgressive);
+  updateProgressive();
+}
+
+function selectField(id, label, options) {
+  let html = '<div class="field"><label for="' + id + '">' + esc(label) + '</label>'
+           + '<select id="' + id + '">';
+  for (const opt of options) {
+    html += '<option value="' + esc(opt) + '">' + esc(opt || '—') + '</option>';
+  }
+  return html + '</select></div>';
+}
+
+function updateProgressive() {
+  const species = document.getElementById('species').value;
+  const set = document.getElementById('burdenSet');
+  set.classList.toggle('hidden', !BURDEN_SPECIES.has(species));
+}
+
+// ── Wiring ──────────────────────────────────────────────────────────────────
+
+/// Called from Rust with the live capture.
+function onSelection(payload) {
+  state.capture = payload.capture || {};
+  state.canonEnabled = !!payload.canon_enabled;
+
+  const rules = payload.rules || [];
+  const node = payload.pending_node || state.nodeType || 'claim';
+  state.nodeType = node;
+
+  // Find the configured rule for this node type so we execute the user's own
+  // rule rather than a hardcoded one.
+  const rule = rules.find((r) => r.node_type === node && r.action === 'canon');
+  state.ruleId = rule ? rule.id : node;
+
+  document.getElementById('glyph').textContent = (rule && rule.glyph) || GLYPHS[node] || '◆';
+  document.getElementById('nodeLabel').textContent = node;
+
+  const capture = state.capture;
+  document.getElementById('sourceText').textContent = capture.text || '(nothing captured)';
+
+  const kinds = (capture.kinds || []).filter((k) => k !== 'any');
+  document.getElementById('sourceProv').innerHTML =
+      '<span><b>Source</b> ' + esc(capture.source_window || 'unknown') + '</span>'
+    + '<span><b>Hash</b> ' + esc(capture.content_hash || '—') + '</span>'
+    + '<span><b>Chars</b> ' + esc(capture.len || 0) + '</span>'
+    + (kinds.length ? '<span><b>Recognized</b> ' + esc(kinds.join(', ')) + '</span>' : '');
+
+  renderFields();
+
+  if (!state.canonEnabled) {
+    showResult('pending',
+      'Canon service is disabled in settings.',
+      'Staging will preserve this candidate to the local spool file instead of sending it.');
+  }
+}
+
+function collect() {
+  const value = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  };
+  return {
+    exact_statement: value('exact_statement'),
+    plain_statement: value('plain_statement'),
+    logical_type: value('logical_type'),
+    species: value('species'),
+    status: value('status'),
+    evidence_present: value('evidence_present'),
+    strongest_defeater: value('strongest_defeater'),
+    open_gap: value('open_gap'),
+    evidence_burden: value('evidence_burden'),
+    disconfirmation: value('disconfirmation')
+  };
+}
+
+function stage() {
+  const btn = document.getElementById('stageBtn');
+  const capsule = collect();
+
+  if (!capsule.exact_statement) {
+    showResult('error', 'Nothing to stage.',
+      'The exact technical statement is required — a candidate without a proposition cannot be validated.');
+    return;
+  }
+
+  inFlight = 'r' + Date.now() + Math.random().toString(36).slice(2, 7);
+  btn.disabled = true;
+  btn.textContent = 'Staging…';
+
+  send({
+    type: 'selection_run',
+    rule: state.ruleId,
+    request_id: inFlight,
+    capsule: capsule
+  });
+}
+
+/// Result of staging. This window never closes itself on success — the user
+/// must see the candidate ID and the fact that nothing has been promoted.
+function onActionResult(requestId, result) {
+  if (requestId !== inFlight) return;
+  inFlight = null;
+
+  const btn = document.getElementById('stageBtn');
+  btn.disabled = false;
+  btn.textContent = 'Stage candidate';
+
+  if (!result) {
+    showResult('error', 'No response.', 'The action returned nothing.');
+    return;
+  }
+
+  if (result.state === 'staged') {
+    btn.disabled = true;
+
+    // A pass with open conflicts is not a clean result, so the heading
+    // reflects the verdict rather than the fact that a POST succeeded.
+    const verdict = (result.verdict || '').toLowerCase();
+    const conflicts = result.conflicts || [];
+    const reasons = result.reasons || [];
+    const clean = verdict === 'pass' && !conflicts.length;
+
+    let body = esc(result.detail || '');
+    if (result.candidate_id) {
+      body += '<br><code>' + esc(result.candidate_id) + '</code>';
+    }
+    if (verdict) {
+      body += '<br>Verdict <b style="display:inline">' + esc(verdict) + '</b>'
+            + (result.status ? ' · status ' + esc(result.status) : '');
+    }
+
+    // Located reasons: check, trigger, smallest fix. Never a bare failure.
+    for (const r of reasons) {
+      body += '<br>· <b style="display:inline">' + esc(r.check_id || 'check') + '</b> — '
+            + esc(r.trigger || '')
+            + (r.smallest_fix ? '<br>&nbsp;&nbsp;smallest fix: ' + esc(r.smallest_fix) : '');
+    }
+    for (const c of conflicts) {
+      body += '<br>· conflict opened <code>' + esc(c) + '</code>';
+    }
+
+    showResult(clean ? 'staged' : 'pending',
+      clean ? 'Candidate staged.' : 'Staged with findings.',
+      body);
+    return;
+  }
+
+  if (result.state === 'pending_local') {
+    showResult('pending', 'Preserved locally — not staged.', esc(result.detail || ''));
+    return;
+  }
+
+  showResult('error', 'Staging failed.', esc(result.detail || 'Unknown error.'));
+}
+
+function showResult(kind, heading, detail) {
+  const el = document.getElementById('result');
+  el.className = 'result ' + kind;
+  el.innerHTML = '<b>' + esc(heading) + '</b>' + (detail || '');
+  el.classList.remove('hidden');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') dismiss();
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) stage();
+});
+
+function refresh() { send({ type: 'selection_get' }); }
+window.addEventListener('focus', refresh);
+refresh();
+</script>
+
+</body>
+</html>

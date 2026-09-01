@@ -1,5 +1,5 @@
 /**
- * Semantic AI
+ * Canonization
  * Classifies notes against a taxonomy you define, writes the results back as
  * UUID-stamped tags, and draws the result as a graph.
  */
@@ -107,7 +107,7 @@ export default class SemanticAIPlugin extends Plugin {
 
     this.addSettingTab(new SemanticAISettingTab(this.app, this));
 
-    this.addRibbonIcon('brain', 'Semantic AI', (evt: MouseEvent) => {
+    this.addRibbonIcon('brain', 'Canonization', (evt: MouseEvent) => {
       this.showSemanticMenu(evt);
     });
     this.addRibbonIcon('vault', 'Index whole vault', () => {
@@ -148,20 +148,20 @@ export default class SemanticAIPlugin extends Plugin {
   /* ---------------------------------------------------------------------- */
 
   private registerCommands(): void {
-    this.addCommand({ id: 'canonize-paper', name: 'Canonize this paper', editorCallback: async (_editor, view) => { if (view.file) { const record=await this.canonizationClient.canonizeFile(view.file); new Notice(`Created candidate ${record.recordId}; not admitted.`); } } });
-    this.addCommand({ id: 'canonize-folder', name: 'Canonize this folder', callback: async () => { const folder=this.app.workspace.getActiveFile()?.parent; if(!folder)return new Notice('Open a note in the folder first.'); const records=await this.canonizationClient.canonizeFolder(folder); new Notice(`Created ${records.length} candidate records; zero admissions.`); } });
-    this.addCommand({ id: 'canonize-complete', name: 'Run complete canonization', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,[...COMPLETE_STAGE_RUN]); new Notice('Complete candidate-stage packet created; not admitted.'); } });
-    this.addCommand({ id: 'canonize-selected-stages', name: 'Run selected canonization stages', editorCallback: async (_editor, view) => { if(!view.file)return; const file=view.file; new StageSelectionModal(this.app,async(stages)=>{const record=await this.canonizationClient.canonizeFile(file,stages);new Notice(`Executed ${stages.join(', ')} for candidate ${record.recordId}; not admitted.`);}).open(); } });
-    this.addCommand({ id: 'open-governed-review-registry', name: 'Open governed review registry', callback: () => new GovernedReviewRegistryModal(this.app).open() });
-    this.addCommand({ id: 'open-candidate-workbench', name: 'Open candidate in workbench', callback: () => {
+    this.addCommand({ id: 'canonization-canonize-paper', name: 'Canonize this paper', editorCallback: async (_editor, view) => { if (view.file) { const record=await this.canonizationClient.canonizeFile(view.file); new Notice(`Created candidate ${record.recordId}; not admitted.`); } } });
+    this.addCommand({ id: 'canonization-canonize-folder', name: 'Canonize this folder', callback: async () => { const folder=this.app.workspace.getActiveFile()?.parent; if(!folder)return new Notice('Open a note in the folder first.'); const records=await this.canonizationClient.canonizeFolder(folder); new Notice(`Created ${records.length} candidate records; zero admissions.`); } });
+    this.addCommand({ id: 'canonization-canonize-complete', name: 'Run complete canonization', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,[...COMPLETE_STAGE_RUN]); new Notice('Complete candidate-stage packet created; not admitted.'); } });
+    this.addCommand({ id: 'canonization-canonize-selected-stages', name: 'Run selected canonization stages', editorCallback: async (_editor, view) => { if(!view.file)return; const file=view.file; new StageSelectionModal(this.app,async(stages)=>{const record=await this.canonizationClient.canonizeFile(file,stages);new Notice(`Executed ${stages.join(', ')} for candidate ${record.recordId}; not admitted.`);}).open(); } });
+    this.addCommand({ id: 'canonization-open-governed-review-registry', name: 'Open governed review registry', callback: () => new GovernedReviewRegistryModal(this.app).open() });
+    this.addCommand({ id: 'canonization-open-candidate-workbench', name: 'Open candidate in workbench', callback: () => {
       const workbenchPath = normalizePath(`${this.manifest.dir}/web/workbench.html`);
       window.open(this.app.vault.adapter.getResourcePath(workbenchPath), '_blank', 'noopener');
     } });
-    this.addCommand({ id: 'export-candidate-json', name: 'Export candidate JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.importReviewed(view.file); new Notice('Candidate JSON validated and exported to Canonization/records.'); } });
-    this.addCommand({ id: 'import-reviewed-json', name: 'Import reviewed JSON', editorCallback: async (_editor, view) => { if(view.file) { const record=await this.canonizationClient.importReviewed(view.file); new Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`); } } });
-    this.addCommand({ id: 'refresh-candidate-markdown', name: 'Refresh candidate Markdown from JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.refreshFromJson(view.file); new Notice('Candidate Markdown projection refreshed from governed JSON.'); } });
+    this.addCommand({ id: 'canonization-export-candidate-json', name: 'Export candidate JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.importReviewed(view.file); new Notice('Candidate JSON validated and exported to Canonization/records.'); } });
+    this.addCommand({ id: 'canonization-import-reviewed-json', name: 'Import reviewed JSON', editorCallback: async (_editor, view) => { if(view.file) { const record=await this.canonizationClient.importReviewed(view.file); new Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`); } } });
+    this.addCommand({ id: 'canonization-refresh-candidate-markdown', name: 'Refresh candidate Markdown from JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.refreshFromJson(view.file); new Notice('Candidate Markdown projection refreshed from governed JSON.'); } });
     this.addCommand({
-      id: 'classify-note',
+      id: 'canonization-classify-note',
       name: 'Classify current note',
       editorCallback: async (_editor: Editor, view: MarkdownView) => {
         await this.runClassifier(view.file);
@@ -169,7 +169,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'classify-note-choose-categories',
+      id: 'canonization-classify-note-choose-categories',
       name: 'Classify current note, choosing categories',
       editorCallback: async (_editor: Editor, view: MarkdownView) => {
         await this.runClassifierWithSelection(view.file);
@@ -181,7 +181,7 @@ export default class SemanticAIPlugin extends Plugin {
     // effect after Obsidian reloads the plugin.
     for (const category of this.settings.categories) {
       this.addCommand({
-        id: `classify-as-${category.id.toLowerCase()}`,
+        id: `canonization-classify-as-${category.id.toLowerCase()}`,
         name: `Classify as: ${category.name.toLowerCase()}`,
         editorCallback: async (_editor: Editor, view: MarkdownView) => {
           await this.classifyAs(view.file, category.id);
@@ -191,7 +191,7 @@ export default class SemanticAIPlugin extends Plugin {
 
     for (const classifier of this.settings.customClassifiers) {
       this.addCommand({
-        id: `run-classifier-${classifier.id}`,
+        id: `canonization-run-classifier-${classifier.id}`,
         name: `Run classifier: ${classifier.keyword}`,
         editorCallback: async (_editor: Editor, view: MarkdownView) => {
           await this.runCustomClassifier(view.file, classifier.keyword);
@@ -200,7 +200,7 @@ export default class SemanticAIPlugin extends Plugin {
     }
 
     this.addCommand({
-      id: 'toggle-tag-visibility',
+      id: 'canonization-toggle-tag-visibility',
       name: 'Toggle tag block visibility',
       callback: async () => {
         this.settings.showHiddenTags = !this.settings.showHiddenTags;
@@ -210,7 +210,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'open-semantic-map',
+      id: 'canonization-open-semantic-map',
       name: 'Open semantic map for current note',
       editorCallback: async (_editor: Editor, view: MarkdownView) => {
         await this.openSemanticMap(view.file);
@@ -218,7 +218,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'regenerate-graph',
+      id: 'canonization-regenerate-graph',
       name: 'Regenerate graph for current note',
       editorCallback: async (_editor: Editor, view: MarkdownView) => {
         await this.regenerateGraph(view.file);
@@ -226,7 +226,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'batch-classify-folder',
+      id: 'canonization-batch-classify-folder',
       name: 'Classify every note in the current folder',
       callback: async () => {
         const folder = this.app.workspace.getActiveFile()?.parent;
@@ -239,7 +239,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'index-current-folder',
+      id: 'canonization-index-current-folder',
       name: 'Index the current folder',
       callback: async () => {
         const folder = this.app.workspace.getActiveFile()?.parent;
@@ -252,7 +252,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'index-and-export-current-folder',
+      id: 'canonization-index-and-export-current-folder',
       name: 'Index and save current folder Markdown index',
       callback: async () => {
         const folder = this.app.workspace.getActiveFile()?.parent;
@@ -277,7 +277,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'index-choose-folder',
+      id: 'canonization-index-choose-folder',
       name: 'Index a folder, choosing which',
       callback: async () => {
         await this.showFolderSelectionForIndex();
@@ -285,7 +285,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'index-vault',
+      id: 'canonization-index-vault',
       name: 'Index the whole vault',
       callback: async () => {
         await this.indexVault();
@@ -293,7 +293,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'open-concept-tracker',
+      id: 'canonization-open-concept-tracker',
       name: 'Open concept tracker',
       callback: async () => {
         await this.openConceptTracker();
@@ -301,7 +301,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'open-concept-journey',
+      id: 'canonization-open-concept-journey',
       name: 'Open concept journey',
       callback: async () => {
         await this.openConceptJourney();
@@ -309,7 +309,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'show-registry-stats',
+      id: 'canonization-show-registry-stats',
       name: 'Show concept registry statistics',
       callback: () => {
         const stats = this.conceptRegistry.getStats();
@@ -328,7 +328,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'export-registry',
+      id: 'canonization-export-registry',
       name: 'Export concept registry',
       callback: async () => {
         const filename = `concept-registry-${new Date().toISOString().split('T')[0]}.json`;
@@ -344,7 +344,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'save-registry',
+      id: 'canonization-save-registry',
       name: 'Save concept registry',
       callback: async () => {
         await this.conceptRegistry.save();
@@ -353,7 +353,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'supra-infraque-register-note',
+      id: 'canonization-supra-infraque-register-note',
       name: 'Supra Infraque: register current note as candidate object',
       editorCallback: async (_editor: Editor, view: MarkdownView) => {
         if (!view.file) {
@@ -366,7 +366,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'supra-infraque-export-folder',
+      id: 'canonization-supra-infraque-export-folder',
       name: 'Supra Infraque: export current folder graph',
       callback: async () => {
         const folder = this.app.workspace.getActiveFile()?.parent;
@@ -380,7 +380,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'supra-infraque-sync-graph',
+      id: 'canonization-supra-infraque-sync-graph',
       name: 'Supra Infraque: sync graph to PostgreSQL helper',
       callback: async () => {
         await this.syncSupraInfraqueGraph();
@@ -388,7 +388,7 @@ export default class SemanticAIPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: 'supra-infraque-bridge-dossier',
+      id: 'canonization-supra-infraque-bridge-dossier',
       name: 'Supra Infraque: build neutral bridge dossier proposal',
       editorCallback: async (_editor: Editor, view: MarkdownView) => {
         await this.buildBridgeDossierProposal(view.file);

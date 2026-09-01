@@ -15,7 +15,7 @@ import {
 } from '../types';
 import { buildTagHierarchy } from '../tagging/tag-writer';
 
-export const MERMAID_VIEW_TYPE = 'semantic-ai-mermaid-view';
+export const MERMAID_VIEW_TYPE = 'canonization-mermaid-view';
 
 /** One Mermaid node shape per palette slot. */
 const SHAPES: { open: string; close: string }[] = [
@@ -122,11 +122,11 @@ export class MermaidView extends ItemView {
   refresh(): void {
     const container = this.contentEl;
     container.empty();
-    container.addClass('semantic-ai-map-view');
+    container.addClass('canonization-map-view');
 
     if (this.currentTags.length === 0) {
       container.createDiv({
-        cls: 'semantic-ai-empty-state',
+        cls: 'canonization-empty-state',
         text: 'No tags in this note yet. Run a classification to fill this in.'
       });
       return;
@@ -136,24 +136,24 @@ export class MermaidView extends ItemView {
   }
 
   private renderView(container: HTMLElement): void {
-    const header = container.createDiv({ cls: 'semantic-ai-header' });
-    const headerRow = header.createDiv({ cls: 'semantic-ai-header-row' });
+    const header = container.createDiv({ cls: 'canonization-header' });
+    const headerRow = header.createDiv({ cls: 'canonization-header-row' });
 
     headerRow.createEl('h3', {
       text: this.currentFilePath.split('/').pop() || 'Semantic map'
     });
 
     const copyBtn = headerRow.createEl('button', {
-      cls: 'semantic-ai-copy-btn',
+      cls: 'canonization-copy-btn',
       text: 'Copy'
     });
     copyBtn.type = 'button';
     copyBtn.setAttribute('aria-label', 'Copy the map and diagram source to the clipboard');
     copyBtn.addEventListener('click', () => this.copyAllContent());
 
-    this.renderSummary(container.createDiv({ cls: 'semantic-ai-summary' }));
-    this.renderMermaid(container.createDiv({ cls: 'semantic-ai-diagram' }));
-    this.renderTagList(container.createDiv({ cls: 'semantic-ai-tag-list' }));
+    this.renderSummary(container.createDiv({ cls: 'canonization-summary' }));
+    this.renderMermaid(container.createDiv({ cls: 'canonization-diagram' }));
+    this.renderTagList(container.createDiv({ cls: 'canonization-tag-list' }));
   }
 
   private async copyAllContent(): Promise<void> {
@@ -202,13 +202,13 @@ ${this.generateMermaid()}
   }
 
   private renderSummary(container: HTMLElement): void {
-    const grid = container.createDiv({ cls: 'semantic-ai-summary-grid' });
+    const grid = container.createDiv({ cls: 'canonization-summary-grid' });
 
     for (const [type, count] of Object.entries(this.countByType())) {
-      const item = grid.createDiv({ cls: 'semantic-ai-summary-item' });
+      const item = grid.createDiv({ cls: 'canonization-summary-item' });
       item.dataset.color = String(categoryColor(this.settings, type));
-      item.createSpan({ cls: 'semantic-ai-count', text: String(count) });
-      item.createSpan({ cls: 'semantic-ai-type', text: categoryName(this.settings, type) });
+      item.createSpan({ cls: 'canonization-count', text: String(count) });
+      item.createSpan({ cls: 'canonization-type', text: categoryName(this.settings, type) });
     }
   }
 
@@ -218,17 +218,17 @@ ${this.generateMermaid()}
     const pre = container.createEl('pre', { cls: 'mermaid' });
     pre.setText(mermaidCode);
 
-    const codeBlock = container.createEl('pre', { cls: 'semantic-ai-code hidden' });
+    const codeBlock = container.createEl('pre', { cls: 'canonization-code hidden' });
     codeBlock.createEl('code', { text: mermaidCode });
 
     const toggleBtn = container.createEl('button', {
-      cls: 'semantic-ai-toggle-code',
+      cls: 'canonization-toggle-code',
       text: 'Show source'
     });
     toggleBtn.type = 'button';
     toggleBtn.setAttribute('aria-expanded', 'false');
-    toggleBtn.setAttribute('aria-controls', 'semantic-ai-mermaid-source');
-    codeBlock.id = 'semantic-ai-mermaid-source';
+    toggleBtn.setAttribute('aria-controls', 'canonization-mermaid-source');
+    codeBlock.id = 'canonization-mermaid-source';
 
     toggleBtn.addEventListener('click', () => {
       const hidden = codeBlock.hasClass('hidden');
@@ -244,7 +244,7 @@ ${this.generateMermaid()}
     const hierarchy = buildTagHierarchy(this.currentTags);
     const rootTags = hierarchy.get('root') || [];
 
-    const list = container.createEl('ul', { cls: 'semantic-ai-tag-tree' });
+    const list = container.createEl('ul', { cls: 'canonization-tag-tree' });
     this.renderTagLevel(list, rootTags, hierarchy);
   }
 
@@ -254,21 +254,21 @@ ${this.generateMermaid()}
     hierarchy: Map<string, SemanticTag[]>
   ): void {
     for (const tag of tags) {
-      const item = container.createEl('li', { cls: 'semantic-ai-tag-item' });
+      const item = container.createEl('li', { cls: 'canonization-tag-item' });
 
       const badge = item.createSpan({
-        cls: 'semantic-ai-tag-badge',
+        cls: 'canonization-tag-badge',
         text: categoryName(this.settings, tag.customType || tag.type)
       });
       badge.dataset.color = String(categoryColor(this.settings, tag.type));
 
-      item.createSpan({ cls: 'semantic-ai-tag-label', text: tag.label });
+      item.createSpan({ cls: 'canonization-tag-label', text: tag.label });
 
       if (tag.topics?.length) {
-        item.createSpan({ cls: 'semantic-ai-tag-topics', text: tag.topics.join(', ') });
+        item.createSpan({ cls: 'canonization-tag-topics', text: tag.topics.join(', ') });
       }
 
-      item.createSpan({ cls: 'semantic-ai-tag-uuid', text: tag.uuid.slice(0, 8) });
+      item.createSpan({ cls: 'canonization-tag-uuid', text: tag.uuid.slice(0, 8) });
 
       const children = hierarchy.get(tag.uuid);
       if (children && children.length > 0) {

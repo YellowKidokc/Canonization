@@ -7,7 +7,7 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { VaultIndex, ConceptEntry, CrossDocumentRelation } from '../indexing/vault-indexer';
 import { SemanticAISettings, TagType, categoryColor, categoryName } from '../types';
 
-export const CONCEPT_TRACKER_VIEW_TYPE = 'semantic-ai-concept-tracker';
+export const CONCEPT_TRACKER_VIEW_TYPE = 'canonization-concept-tracker';
 
 /**
  * Concept Tracker View
@@ -33,7 +33,7 @@ export class ConceptTrackerView extends ItemView {
   /** Open a note, from a click or an Enter/Space keypress. */
   private createFileLink(container: HTMLElement, text: string, filePath: string): HTMLElement {
     const link = container.createEl('button', {
-      cls: 'semantic-ai-file-link',
+      cls: 'canonization-file-link',
       text
     });
     link.type = 'button';
@@ -81,7 +81,7 @@ export class ConceptTrackerView extends ItemView {
    * Render empty state
    */
   private renderEmptyState(container: HTMLElement): void {
-    const empty = container.createEl('div', { cls: 'semantic-ai-empty-state' });
+    const empty = container.createEl('div', { cls: 'canonization-empty-state' });
     empty.createEl('h3', { text: 'No index yet' });
     empty.createEl('p', { text: 'Build an index to track concepts across your notes. From the command palette:' });
 
@@ -95,11 +95,11 @@ export class ConceptTrackerView extends ItemView {
    */
   private renderView(container: HTMLElement): void {
     // Header with tabs
-    const header = container.createEl('div', { cls: 'semantic-ai-tracker-header' });
+    const header = container.createEl('div', { cls: 'canonization-tracker-header' });
     this.renderTabs(header);
 
     // Content
-    const content = container.createEl('div', { cls: 'semantic-ai-tracker-content' });
+    const content = container.createEl('div', { cls: 'canonization-tracker-content' });
 
     switch (this.currentView) {
       case 'overview':
@@ -121,7 +121,7 @@ export class ConceptTrackerView extends ItemView {
    * Render tab navigation
    */
   private renderTabs(container: HTMLElement): void {
-    const tabs = container.createEl('div', { cls: 'semantic-ai-tracker-tabs' });
+    const tabs = container.createEl('div', { cls: 'canonization-tracker-tabs' });
     tabs.setAttribute('role', 'tablist');
     tabs.setAttribute('aria-label', 'Concept tracker sections');
 
@@ -135,7 +135,7 @@ export class ConceptTrackerView extends ItemView {
     for (const tab of tabItems) {
       const isActive = this.currentView === tab.id;
       const tabEl = tabs.createEl('button', {
-        cls: `semantic-ai-tracker-tab${isActive ? ' active' : ''}`,
+        cls: `canonization-tracker-tab${isActive ? ' active' : ''}`,
         text: tab.label
       });
       tabEl.type = 'button';
@@ -158,10 +158,10 @@ export class ConceptTrackerView extends ItemView {
     const meta = this.index.metadata;
 
     // Index info
-    const infoSection = container.createEl('div', { cls: 'semantic-ai-tracker-section' });
+    const infoSection = container.createEl('div', { cls: 'canonization-tracker-section' });
     infoSection.createEl('h4', { text: 'Index Information' });
 
-    const infoGrid = infoSection.createEl('div', { cls: 'semantic-ai-info-grid' });
+    const infoGrid = infoSection.createEl('div', { cls: 'canonization-info-grid' });
 
     this.addInfoItem(infoGrid, 'Scope', meta.scope === 'vault' ? 'Entire Vault' : `Folder: ${meta.scopePath}`);
     this.addInfoItem(infoGrid, 'Files Indexed', String(meta.totalFiles));
@@ -174,21 +174,21 @@ export class ConceptTrackerView extends ItemView {
     }
 
     // Top concepts
-    const topSection = container.createEl('div', { cls: 'semantic-ai-tracker-section' });
+    const topSection = container.createEl('div', { cls: 'canonization-tracker-section' });
     topSection.createEl('h4', { text: 'Top Concepts (by frequency)' });
 
     const topConcepts = Array.from(this.index.concepts.values())
       .sort((a, b) => b.totalCount - a.totalCount)
       .slice(0, 10);
 
-    const topList = topSection.createEl('div', { cls: 'semantic-ai-concept-list' });
+    const topList = topSection.createEl('div', { cls: 'canonization-concept-list' });
 
     for (const concept of topConcepts) {
       this.renderConceptItem(topList, concept);
     }
 
     // Cross-file concepts
-    const crossSection = container.createEl('div', { cls: 'semantic-ai-tracker-section' });
+    const crossSection = container.createEl('div', { cls: 'canonization-tracker-section' });
     crossSection.createEl('h4', { text: 'Concepts Appearing in Multiple Files' });
 
     const crossFileConcepts = Array.from(this.index.concepts.values())
@@ -197,9 +197,9 @@ export class ConceptTrackerView extends ItemView {
       .slice(0, 10);
 
     if (crossFileConcepts.length === 0) {
-      crossSection.createEl('p', { cls: 'semantic-ai-muted', text: 'No concepts found in multiple files yet.' });
+      crossSection.createEl('p', { cls: 'canonization-muted', text: 'No concepts found in multiple files yet.' });
     } else {
-      const crossList = crossSection.createEl('div', { cls: 'semantic-ai-concept-list' });
+      const crossList = crossSection.createEl('div', { cls: 'canonization-concept-list' });
 
       for (const concept of crossFileConcepts) {
         this.renderConceptItem(crossList, concept, true);
@@ -207,7 +207,7 @@ export class ConceptTrackerView extends ItemView {
     }
 
     // Strong relationships
-    const relSection = container.createEl('div', { cls: 'semantic-ai-tracker-section' });
+    const relSection = container.createEl('div', { cls: 'canonization-tracker-section' });
     relSection.createEl('h4', { text: 'Strongly Related Documents' });
 
     const strongRelations = this.index.relations
@@ -216,7 +216,7 @@ export class ConceptTrackerView extends ItemView {
       .slice(0, 5);
 
     if (strongRelations.length === 0) {
-      relSection.createEl('p', { cls: 'semantic-ai-muted', text: 'No strong relationships found yet.' });
+      relSection.createEl('p', { cls: 'canonization-muted', text: 'No strong relationships found yet.' });
     } else {
       for (const rel of strongRelations) {
         this.renderRelationItem(relSection, rel);
@@ -231,9 +231,9 @@ export class ConceptTrackerView extends ItemView {
     if (!this.index) return;
 
     // Filter controls
-    const controls = container.createEl('div', { cls: 'semantic-ai-tracker-controls' });
+    const controls = container.createEl('div', { cls: 'canonization-tracker-controls' });
 
-    const typeFilter = controls.createEl('select', { cls: 'semantic-ai-type-filter dropdown' });
+    const typeFilter = controls.createEl('select', { cls: 'canonization-type-filter dropdown' });
     typeFilter.setAttribute('aria-label', 'Filter concepts by category');
     typeFilter.createEl('option', { value: 'all', text: 'All categories' });
 
@@ -265,10 +265,10 @@ export class ConceptTrackerView extends ItemView {
 
     concepts.sort((a, b) => b.totalCount - a.totalCount);
 
-    const listContainer = container.createEl('div', { cls: 'semantic-ai-concept-list scrollable' });
+    const listContainer = container.createEl('div', { cls: 'canonization-concept-list scrollable' });
 
     container.createEl('p', {
-      cls: 'semantic-ai-count-info',
+      cls: 'canonization-count-info',
       text: `Showing ${concepts.length} concepts`
     });
 
@@ -285,7 +285,7 @@ export class ConceptTrackerView extends ItemView {
 
     container.createEl('h4', { text: 'Document Relationships' });
     container.createEl('p', {
-      cls: 'semantic-ai-muted',
+      cls: 'canonization-muted',
       text: 'Documents that share concepts are connected. Higher strength = more shared concepts.'
     });
 
@@ -298,11 +298,11 @@ export class ConceptTrackerView extends ItemView {
     }
 
     container.createEl('p', {
-      cls: 'semantic-ai-count-info',
+      cls: 'canonization-count-info',
       text: `${relations.length} relationships found`
     });
 
-    const relList = container.createEl('div', { cls: 'semantic-ai-relation-list scrollable' });
+    const relList = container.createEl('div', { cls: 'canonization-relation-list scrollable' });
 
     for (const rel of relations.slice(0, 50)) {
       this.renderRelationItem(relList, rel, true);
@@ -316,20 +316,20 @@ export class ConceptTrackerView extends ItemView {
     if (!this.index) return;
 
     // Search input
-    const searchBox = container.createEl('div', { cls: 'semantic-ai-search-box' });
+    const searchBox = container.createEl('div', { cls: 'canonization-search-box' });
 
     const input = searchBox.createEl('input', {
       type: 'search',
       placeholder: 'Search concepts',
-      cls: 'semantic-ai-search-input'
+      cls: 'canonization-search-input'
     });
     input.value = this.searchQuery;
     input.setAttribute('aria-label', 'Search concepts');
-    input.setAttribute('aria-controls', 'semantic-ai-search-results');
+    input.setAttribute('aria-controls', 'canonization-search-results');
 
     // Results
-    const resultsContainer = container.createEl('div', { cls: 'semantic-ai-search-results scrollable' });
-    resultsContainer.id = 'semantic-ai-search-results';
+    const resultsContainer = container.createEl('div', { cls: 'canonization-search-results scrollable' });
+    resultsContainer.id = 'canonization-search-results';
     resultsContainer.setAttribute('role', 'region');
     resultsContainer.setAttribute('aria-live', 'polite');
 
@@ -348,7 +348,7 @@ export class ConceptTrackerView extends ItemView {
     container.empty();
 
     if (!this.index || !this.searchQuery.trim()) {
-      container.createEl('p', { cls: 'semantic-ai-muted', text: 'Type to search concepts...' });
+      container.createEl('p', { cls: 'canonization-muted', text: 'Type to search concepts...' });
       return;
     }
 
@@ -366,7 +366,7 @@ export class ConceptTrackerView extends ItemView {
     }
 
     container.createEl('p', {
-      cls: 'semantic-ai-count-info',
+      cls: 'canonization-count-info',
       text: `${results.length} results`
     });
 
@@ -384,36 +384,36 @@ export class ConceptTrackerView extends ItemView {
     showFileCount: boolean = false,
     expandable: boolean = false
   ): void {
-    const item = container.createEl('div', { cls: 'semantic-ai-concept-item' });
+    const item = container.createEl('div', { cls: 'canonization-concept-item' });
 
-    const header = item.createEl('div', { cls: 'semantic-ai-concept-header' });
+    const header = item.createEl('div', { cls: 'canonization-concept-header' });
 
     // Type badges
-    const badges = header.createEl('div', { cls: 'semantic-ai-concept-badges' });
+    const badges = header.createEl('div', { cls: 'canonization-concept-badges' });
     for (const type of concept.tagTypes.slice(0, 3)) {
       const badge = badges.createEl('span', {
-        cls: 'semantic-ai-badge',
+        cls: 'canonization-badge',
         text: categoryName(this.settings, type)
       });
       badge.dataset.color = String(categoryColor(this.settings, type));
     }
 
     // Label
-    header.createEl('span', { cls: 'semantic-ai-concept-label', text: concept.label });
+    header.createEl('span', { cls: 'canonization-concept-label', text: concept.label });
 
     // Count
     const countText = showFileCount
       ? `${concept.totalCount}× in ${concept.fileCount} files`
       : `${concept.totalCount}×`;
 
-    header.createEl('span', { cls: 'semantic-ai-concept-count', text: countText });
+    header.createEl('span', { cls: 'canonization-concept-count', text: countText });
 
     // Expandable details
     if (expandable) {
-      const details = item.createEl('details', { cls: 'semantic-ai-concept-details' });
+      const details = item.createEl('details', { cls: 'canonization-concept-details' });
       details.createEl('summary', { text: 'Show occurrences' });
 
-      const occList = details.createEl('ul', { cls: 'semantic-ai-occurrence-list' });
+      const occList = details.createEl('ul', { cls: 'canonization-occurrence-list' });
 
       for (const occ of concept.occurrences.slice(0, 20)) {
         const occItem = occList.createEl('li');
@@ -421,21 +421,21 @@ export class ConceptTrackerView extends ItemView {
         this.createFileLink(occItem, occ.fileName, occ.filePath);
 
         occItem.createEl('span', {
-          cls: 'semantic-ai-occ-type',
+          cls: 'canonization-occ-type',
           text: ` (${occ.tagType})`
         });
       }
 
       if (concept.occurrences.length > 20) {
         occList.createEl('li', {
-          cls: 'semantic-ai-more',
+          cls: 'canonization-more',
           text: `... and ${concept.occurrences.length - 20} more`
         });
       }
 
       // Related concepts
       if (concept.relatedConcepts.length > 0) {
-        const relatedEl = details.createEl('div', { cls: 'semantic-ai-related' });
+        const relatedEl = details.createEl('div', { cls: 'canonization-related' });
         relatedEl.createEl('strong', { text: 'Related: ' });
         relatedEl.createEl('span', {
           text: concept.relatedConcepts.slice(0, 10).join(', ')
@@ -444,7 +444,7 @@ export class ConceptTrackerView extends ItemView {
 
       // First seen
       details.createEl('p', {
-        cls: 'semantic-ai-first-seen',
+        cls: 'canonization-first-seen',
         text: `First seen in: ${concept.firstSeen.fileName}`
       });
     }
@@ -458,19 +458,19 @@ export class ConceptTrackerView extends ItemView {
     relation: CrossDocumentRelation,
     showConcepts: boolean = false
   ): void {
-    const item = container.createEl('div', { cls: 'semantic-ai-relation-item' });
+    const item = container.createEl('div', { cls: 'canonization-relation-item' });
 
     const strength = Math.round(relation.relationshipStrength * 100);
     const strengthClass = strength > 50 ? 'strong' : strength > 25 ? 'medium' : 'weak';
 
     // Strength indicator
     item.createEl('span', {
-      cls: `semantic-ai-strength ${strengthClass}`,
+      cls: `canonization-strength ${strengthClass}`,
       text: `${strength}%`
     });
 
     // Files
-    const filesEl = item.createEl('div', { cls: 'semantic-ai-relation-files' });
+    const filesEl = item.createEl('div', { cls: 'canonization-relation-files' });
 
     this.createFileLink(
       filesEl,
@@ -488,15 +488,15 @@ export class ConceptTrackerView extends ItemView {
 
     // Shared concepts
     if (showConcepts && relation.sharedConcepts.length > 0) {
-      const shared = item.createEl('div', { cls: 'semantic-ai-shared-concepts' });
-      shared.createEl('span', { cls: 'semantic-ai-muted', text: 'Shared: ' });
+      const shared = item.createEl('div', { cls: 'canonization-shared-concepts' });
+      shared.createEl('span', { cls: 'canonization-muted', text: 'Shared: ' });
       shared.createEl('span', {
         text: relation.sharedConcepts.slice(0, 5).join(', ')
       });
 
       if (relation.sharedConcepts.length > 5) {
         shared.createEl('span', {
-          cls: 'semantic-ai-more',
+          cls: 'canonization-more',
           text: ` +${relation.sharedConcepts.length - 5} more`
         });
       }
@@ -507,9 +507,9 @@ export class ConceptTrackerView extends ItemView {
    * Add info item to grid
    */
   private addInfoItem(container: HTMLElement, label: string, value: string): void {
-    const item = container.createEl('div', { cls: 'semantic-ai-info-item' });
-    item.createEl('span', { cls: 'semantic-ai-info-label', text: label });
-    item.createEl('span', { cls: 'semantic-ai-info-value', text: value });
+    const item = container.createEl('div', { cls: 'canonization-info-item' });
+    item.createEl('span', { cls: 'canonization-info-label', text: label });
+    item.createEl('span', { cls: 'canonization-info-value', text: value });
   }
 
   async onOpen(): Promise<void> {

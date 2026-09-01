@@ -73,7 +73,7 @@ ${relationRows}
 
 ## Search
 
-This file is a durable snapshot of the Semantic AI index. Rebuild it after classification or source changes. The original notes and their UUID tags remain the source material.
+This file is a durable snapshot of the Canonization index. Rebuild it after classification or source changes. The original notes and their UUID tags remain the source material.
 ${END}`;
 }
 
@@ -182,7 +182,7 @@ export async function writeIndexReport(
 
 ## Classification configuration
 
-**Enabled categories:** ${context.enabledCategories.length ? context.enabledCategories.map(reportCell).join(', ') : '_None_'}  
+**Enabled categories:** ${context.enabledCategories.length ? context.enabledCategories.map(reportCell).join(', ') : '_None_'}
 **Enabled ${reportCell(context.axis2Label)} values:** ${context.enabledTopics.length ? context.enabledTopics.map(reportCell).join(', ') : '_None_'}
 
 ## Observed category counts
@@ -230,7 +230,7 @@ ${end}`;
     });
   } else {
     const title = folderPath ? folderPath.split('/').pop() : 'OpenIntel Vault';
-    await vault.create(outputPath, `# ${title} Semantic AI Index Report\n\n${block}\n`);
+    await vault.create(outputPath, `# ${title} Canonization Index Report\n\n${block}\n`);
   }
   return outputPath;
 }

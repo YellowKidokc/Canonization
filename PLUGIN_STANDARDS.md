@@ -6,7 +6,7 @@ Checked against the 27-rule kernel in `CLAUDE.md` plus the community-plugin subm
 
 | Check | Before | Now |
 |-------|--------|-----|
-| Plugin id must not contain "obsidian" | `obsidian-semantic-ai` | `semantic-ai` |
+| Plugin id must not contain "obsidian" | `obsidian-canonization` | `canonization` |
 | Description must not name Obsidian or start with "This plugin" | "AI-enhanced semantic plugin with academic-level tagging…" — passed, but named specific categories the plugin no longer hard-codes | Rewritten |
 | `LICENSE` file required | Missing, despite `"license": "MIT"` in `package.json` | MIT license added |
 | Release must ship `manifest.json` + `main.js` + `styles.css` at a tag matching the manifest version | `version-bump.mjs` was referenced by `npm version` but did not exist | Script added; `versions.json` records 2.0.0 |
@@ -35,7 +35,7 @@ The id change is the one breaking item: Obsidian keys installed plugins by id, s
 
 ### UI text (R9–R13)
 
-- All settings headings now use `new Setting(el).setHeading()`. `settings.ts` previously built 13 `h1`–`h4` elements directly, including a top-level "Semantic AI Settings" heading that repeated both the plugin name and the word "settings". Headings inside views stay as real `h3`/`h4` content headings, which is correct; modal titles moved from a hand-built `h2` to `titleEl`.
+- All settings headings now use `new Setting(el).setHeading()`. `settings.ts` previously built 13 `h1`–`h4` elements directly, including a top-level "Canonization Settings" heading that repeated both the plugin name and the word "settings". Headings inside views stay as real `h3`/`h4` content headings, which is correct; modal titles moved from a hand-built `h2` to `titleEl`.
 - Every user-facing string is sentence case: "Test connection", "Add a category", "Classify current note".
 - Command names no longer contain the word "command", no command id repeats the plugin id, and no default hotkeys are assigned.
 - Decorative emoji removed from buttons, tabs, headings, and notices, so screen readers are not read a stream of pictographs.
@@ -50,7 +50,7 @@ The id change is the one breaking item: Obsidian keys installed plugins by id, s
 | `setTimeout` returning `NodeJS.Timeout` | `window.setTimeout` | Correct DOM typing |
 | `console.log` on load and unload, `console.error`/`console.warn` in the registry and indexer | Removed; failures surface as a `Notice` or are collected into index warnings | R19 |
 | Duplicated provider request code in `main.ts` and `classifier.ts` | Single `AIClassifier.complete()` used by both | The duplicate had already drifted — it never supported the custom provider |
-| Registry path hard-coded to `.obsidian/plugins/obsidian-semantic-ai/…` and accessed through the Vault API | `manifest.dir` + `normalizePath()` + the adapter | Files under the config directory are not part of the vault file tree, so `getAbstractFileByPath` always returned null and the registry never persisted |
+| Registry path hard-coded to `.obsidian/plugins/obsidian-canonization/…` and accessed through the Vault API | `manifest.dir` + `normalizePath()` + the adapter | Files under the config directory are not part of the vault file tree, so `getAbstractFileByPath` always returned null and the registry never persisted |
 
 `Object.assign({}, DEFAULT_SETTINGS, await this.loadData())` is replaced by an explicit `migrateSettings()` function, because a shallow merge left legacy keys in place and could not fold a v1 prompt map into the new taxonomy.
 
@@ -59,7 +59,7 @@ The id change is the one breaking item: Obsidian keys installed plugins by id, s
 - 34 hard-coded hex and `rgba()` colours removed from `styles.css`. Category colours are now eight palette slots mapped to Obsidian's own `--color-blue`, `--color-orange`, … variables, addressed by `data-color` rather than by category name — which is what makes user-defined categories possible in the first place.
 - The Mermaid `classDef` block that emitted light-theme-only fills is gone; node shape now carries the distinction, which reads correctly in any theme.
 - The five inline `element.style.width` / `.fontFamily` assignments are replaced by CSS classes. The one genuinely dynamic value, the progress bar width, is passed as a CSS custom property via `setCssProps()`.
-- Selectors stay scoped to `semantic-ai-*` containers.
+- Selectors stay scoped to `canonization-*` containers.
 
 ### Accessibility (R22–R24)
 

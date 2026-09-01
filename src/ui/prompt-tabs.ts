@@ -20,7 +20,7 @@ export function createCustomClassifierSettings(
     text: 'A classifier is a prompt you can run on demand without adding a category. Results are tagged with the keyword you give it.'
   });
 
-  const listEl = containerEl.createDiv({ cls: 'semantic-ai-classifier-list' });
+  const listEl = containerEl.createDiv({ cls: 'canonization-classifier-list' });
 
   function renderClassifiers(): void {
     listEl.empty();
@@ -29,7 +29,7 @@ export function createCustomClassifierSettings(
 
     if (classifiers.length === 0) {
       listEl.createEl('p', {
-        cls: 'semantic-ai-empty',
+        cls: 'canonization-empty',
         text: 'No custom classifiers yet.'
       });
       return;
@@ -69,7 +69,7 @@ export function createCustomClassifierSettings(
           newPrompt = value;
         });
       text.inputEl.rows = 4;
-      text.inputEl.addClass('semantic-ai-wide-input');
+      text.inputEl.addClass('canonization-wide-input');
       text.inputEl.setAttribute('aria-label', 'Prompt for the new classifier');
     });
 
@@ -108,7 +108,7 @@ function createClassifierItem(
   onSave: () => void,
   rerender: () => void
 ): void {
-  const itemEl = containerEl.createDiv({ cls: 'semantic-ai-classifier-item' });
+  const itemEl = containerEl.createDiv({ cls: 'canonization-classifier-item' });
 
   new Setting(itemEl)
     .setName(classifier.keyword)
@@ -145,7 +145,7 @@ function createClassifierItem(
           onSave();
         });
       text.inputEl.rows = 3;
-      text.inputEl.addClass('semantic-ai-wide-input');
+      text.inputEl.addClass('canonization-wide-input');
       text.inputEl.setAttribute('aria-label', `Prompt for the ${classifier.keyword} classifier`);
     });
 }

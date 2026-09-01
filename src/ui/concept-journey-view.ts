@@ -8,7 +8,7 @@ import { SemanticTag, TagType, hashToColorSlot } from '../types';
 import { VaultIndex } from '../indexing/vault-indexer';
 import { ConceptRegistry } from '../tagging/concept-registry';
 
-export const CONCEPT_JOURNEY_VIEW_TYPE = 'concept-journey-view';
+export const CONCEPT_JOURNEY_VIEW_TYPE = 'canonization-concept-journey-view';
 
 export interface ConceptOccurrence {
   file: string;

@@ -50,7 +50,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.addClass('semantic-ai-settings-tab');
+    containerEl.addClass('canonization-settings-tab');
 
     this.createMainTabs(containerEl);
   }
@@ -75,12 +75,12 @@ export class SemanticAISettingTab extends PluginSettingTab {
       this.activeTabId = tabs[0].id;
     }
 
-    const tabContainer = containerEl.createDiv({ cls: 'semantic-ai-main-tabs' });
-    const tabNav = tabContainer.createDiv({ cls: 'semantic-ai-main-tab-nav' });
+    const tabContainer = containerEl.createDiv({ cls: 'canonization-main-tabs' });
+    const tabNav = tabContainer.createDiv({ cls: 'canonization-main-tab-nav' });
     tabNav.setAttribute('role', 'tablist');
     tabNav.setAttribute('aria-label', 'Settings sections');
 
-    const tabContent = tabContainer.createDiv({ cls: 'semantic-ai-main-tab-content' });
+    const tabContent = tabContainer.createDiv({ cls: 'canonization-main-tab-content' });
 
     const buttons: HTMLButtonElement[] = [];
     const panels: HTMLElement[] = [];
@@ -103,23 +103,23 @@ export class SemanticAISettingTab extends PluginSettingTab {
       const isActive = tab.id === this.activeTabId;
 
       const button = tabNav.createEl('button', {
-        cls: `semantic-ai-main-tab-btn${isActive ? ' active' : ''}`,
+        cls: `canonization-main-tab-btn${isActive ? ' active' : ''}`,
         text: tab.name
       });
       button.type = 'button';
       button.setAttribute('role', 'tab');
       button.setAttribute('aria-selected', String(isActive));
-      button.id = `semantic-ai-tab-${tab.id}`;
-      button.setAttribute('aria-controls', `semantic-ai-panel-${tab.id}`);
+      button.id = `canonization-tab-${tab.id}`;
+      button.setAttribute('aria-controls', `canonization-panel-${tab.id}`);
       button.tabIndex = isActive ? 0 : -1;
       buttons.push(button);
 
       const panel = tabContent.createDiv({
-        cls: `semantic-ai-main-tab-panel${isActive ? ' active' : ''}`
+        cls: `canonization-main-tab-panel${isActive ? ' active' : ''}`
       });
       panel.setAttribute('role', 'tabpanel');
-      panel.id = `semantic-ai-panel-${tab.id}`;
-      panel.setAttribute('aria-labelledby', `semantic-ai-tab-${tab.id}`);
+      panel.id = `canonization-panel-${tab.id}`;
+      panel.setAttribute('aria-labelledby', `canonization-tab-${tab.id}`);
       panels.push(panel);
 
       tab.render(panel);
@@ -194,7 +194,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
     const isActive = this.plugin.settings.provider === id;
 
     const section = containerEl.createDiv({
-      cls: `semantic-ai-provider-block${isActive ? ' is-active' : ''}`
+      cls: `canonization-provider-block${isActive ? ' is-active' : ''}`
     });
 
     new Setting(section)
@@ -216,7 +216,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
           text.inputEl.type = 'password';
           text.inputEl.setAttribute('aria-label', `${info.name} API key`);
           text.inputEl.autocomplete = 'off';
-          text.inputEl.addClass('semantic-ai-wide-input');
+          text.inputEl.addClass('canonization-wide-input');
         });
 
       const desc = keySetting.descEl;
@@ -245,7 +245,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
         text.inputEl.setAttribute('aria-label', `${info.name} model name`);
-        text.inputEl.addClass('semantic-ai-wide-input');
+        text.inputEl.addClass('canonization-wide-input');
       });
 
     new Setting(section)
@@ -262,7 +262,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
         text.inputEl.setAttribute('aria-label', `${info.name} endpoint URL`);
-        text.inputEl.addClass('semantic-ai-wide-input');
+        text.inputEl.addClass('canonization-wide-input');
       })
       .addExtraButton(button => {
         button
@@ -338,7 +338,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
         text.inputEl.rows = 3;
-        text.inputEl.addClass('semantic-ai-wide-input');
+        text.inputEl.addClass('canonization-wide-input');
         text.inputEl.setAttribute('aria-label', 'Vault context sentence');
       });
 
@@ -348,11 +348,11 @@ export class SemanticAISettingTab extends PluginSettingTab {
       text: 'Each category answers "what is this?". Enabled categories are the ones a normal classification run looks for. The id is written into your notes, so renaming an id leaves existing tags pointing at the old name.'
     });
 
-    const listEl = containerEl.createDiv({ cls: 'semantic-ai-category-list' });
+    const listEl = containerEl.createDiv({ cls: 'canonization-category-list' });
 
     if (this.plugin.settings.categories.length === 0) {
       listEl.createEl('p', {
-        cls: 'semantic-ai-empty',
+        cls: 'canonization-empty',
         text: 'No categories yet. Add one below, or load a preset.'
       });
     }
@@ -387,9 +387,9 @@ export class SemanticAISettingTab extends PluginSettingTab {
   }
 
   private renderCategoryItem(containerEl: HTMLElement, category: CategoryDefinition, index: number): void {
-    const itemEl = containerEl.createDiv({ cls: 'semantic-ai-category-item' });
+    const itemEl = containerEl.createDiv({ cls: 'canonization-category-item' });
 
-    const swatch = itemEl.createSpan({ cls: 'semantic-ai-color-swatch' });
+    const swatch = itemEl.createSpan({ cls: 'canonization-color-swatch' });
     swatch.dataset.color = String(category.color);
     swatch.setAttribute('aria-hidden', 'true');
 
@@ -417,7 +417,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
         button.extraSettingsEl.setAttribute('aria-label', `Delete the ${category.name} category`);
       });
 
-    const details = itemEl.createEl('details', { cls: 'semantic-ai-category-details' });
+    const details = itemEl.createEl('details', { cls: 'canonization-category-details' });
     details.createEl('summary', { text: 'Edit' });
 
     new Setting(details)
@@ -490,7 +490,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
         text.inputEl.rows = 5;
-        text.inputEl.addClass('semantic-ai-wide-input');
+        text.inputEl.addClass('canonization-wide-input');
         text.inputEl.setAttribute('aria-label', `Prompt for the ${category.name} category`);
       });
 
@@ -543,7 +543,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
             importText = value;
           });
         text.inputEl.rows = 4;
-        text.inputEl.addClass('semantic-ai-wide-input');
+        text.inputEl.addClass('canonization-wide-input');
         text.inputEl.setAttribute('aria-label', 'Taxonomy JSON to import');
       })
       .addButton(button => {
@@ -610,11 +610,11 @@ export class SemanticAISettingTab extends PluginSettingTab {
 
     new Setting(containerEl).setName(`${label} values`).setHeading();
 
-    const listEl = containerEl.createDiv({ cls: 'semantic-ai-topic-list' });
+    const listEl = containerEl.createDiv({ cls: 'canonization-topic-list' });
 
     if (this.plugin.settings.topics.length === 0) {
       listEl.createEl('p', {
-        cls: 'semantic-ai-empty',
+        cls: 'canonization-empty',
         text: 'No values yet. Add one below, or load a preset from the categories tab.'
       });
     }
@@ -654,7 +654,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
         text.inputEl.rows = 3;
-        text.inputEl.addClass('semantic-ai-wide-input');
+        text.inputEl.addClass('canonization-wide-input');
         text.inputEl.setAttribute('aria-label', 'Extra instructions for the second axis');
       });
   }
@@ -681,7 +681,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
             topic.description = value;
             await this.plugin.saveSettings();
           });
-        text.inputEl.addClass('semantic-ai-wide-input');
+        text.inputEl.addClass('canonization-wide-input');
         text.inputEl.setAttribute('aria-label', `Description for the ${topic.id} value`);
       })
       .addToggle(toggle => {
@@ -705,7 +705,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
         button.extraSettingsEl.setAttribute('aria-label', `Delete the ${topic.name} value`);
       });
 
-    setting.settingEl.addClass('semantic-ai-topic-item');
+    setting.settingEl.addClass('canonization-topic-item');
   }
 
   /* ---------------------------------------------------------------------- */
@@ -776,7 +776,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
           });
       });
 
-    const preview = containerEl.createEl('pre', { cls: 'semantic-ai-preview' });
+    const preview = containerEl.createEl('pre', { cls: 'canonization-preview' });
     const sample = this.plugin.settings.categories.slice(0, 3);
     const lines = [`graph ${this.plugin.settings.graphDirection}`];
     sample.forEach((category, i) => {
@@ -850,7 +850,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
             this.plugin.settings.pythonServiceUrl = value.trim();
             await this.plugin.saveSettings();
           });
-        text.inputEl.addClass('semantic-ai-wide-input');
+        text.inputEl.addClass('canonization-wide-input');
         text.inputEl.setAttribute('aria-label', 'Helper service URL');
       });
 
@@ -860,13 +860,13 @@ export class SemanticAISettingTab extends PluginSettingTab {
 
     if (connections.length === 0) {
       containerEl.createEl('p', {
-        cls: 'semantic-ai-empty',
+        cls: 'canonization-empty',
         text: 'No connections yet.'
       });
     }
 
     connections.forEach((conn, index) => {
-      const connEl = containerEl.createDiv({ cls: 'semantic-ai-connection-item' });
+      const connEl = containerEl.createDiv({ cls: 'canonization-connection-item' });
       const isActive = this.plugin.settings.activeConnectionId === conn.id;
 
       new Setting(connEl)
@@ -920,7 +920,7 @@ export class SemanticAISettingTab extends PluginSettingTab {
               await this.plugin.saveSettings();
             });
           text.inputEl.type = 'password';
-          text.inputEl.addClass('semantic-ai-wide-input semantic-ai-mono-input');
+          text.inputEl.addClass('canonization-wide-input canonization-mono-input');
           text.inputEl.setAttribute('aria-label', 'Connection string');
         })
         .addButton(button => {

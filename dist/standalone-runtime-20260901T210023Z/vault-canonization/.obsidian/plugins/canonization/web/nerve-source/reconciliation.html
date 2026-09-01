@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Classification Reconciliation — Stage 5</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#0c0c0c;--surf:#121212;--surf2:#171717;--surf3:#1c1c1c;
+--bd:#242424;--bd2:#2d2d2d;--bd3:#383838;
+--tx:#e2e2e2;--mu:#8a8a8a;--mu2:#a2a2a2;--mu3:#c4c4c4;
+--acc:#4a7fd4;--req:#c08828;--reqbg:#161000;--reqbd:#3d2a00;
+--grn:#3fd05f;--red:#e06060;--gld:#d0a030;--blu:#7fb0ff;--pur:#c09fff;
+--claim:#7fb0ff;--evid:#7fd090;--proof:#c09fff;--proc:#e0a860;
+--warn:#cdbb75;--warnbg:#171407;--warnbd:#544415;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px}
+
+header{background:var(--surf);border-bottom:1px solid var(--bd);padding:10px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200}
+header h1{font-size:15px;font-weight:700;color:#fff}
+header small{display:block;color:var(--mu);font-size:10px;letter-spacing:.05em}
+.hsp{flex:1}
+.badge{font-size:10px;font-weight:800;letter-spacing:.08em;border:1px solid var(--bd2);color:var(--mu2);padding:3px 9px;border-radius:3px}
+.navlink{font-size:12px;color:var(--mu2);text-decoration:none;padding:5px 10px;border:1px solid var(--bd2);border-radius:6px}
+.navlink:hover{color:var(--tx);border-color:var(--bd3)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--bd3);display:inline-block;margin-right:6px}
+.dot.up{background:var(--grn);box-shadow:0 0 6px #3fd05f55}
+.dot.down{background:var(--red)}
+
+.shell{max-width:1500px;margin:0 auto;padding:18px 22px 90px}
+.notice{border:1px solid var(--warnbd);background:var(--warnbg);border-radius:7px;padding:11px 14px;color:var(--warn);font-size:12.5px;line-height:1.7;margin-bottom:16px}
+.notice strong{color:#e8d79a}
+.notice.err{border-color:#5a2020;background:#160808;color:#e0a0a0}
+.notice.err strong{color:#f0c0c0}
+.notice.ok{border-color:#1d4a29;background:#08160c;color:#8fd0a0}
+.notice.ok strong{color:#b8e8c4}
+
+.panel{border:1px solid var(--bd);border-radius:8px;background:var(--surf);margin-bottom:14px;overflow:hidden}
+.p-head{padding:10px 15px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;background:var(--surf2)}
+.p-title{font-size:10px;font-weight:800;letter-spacing:.11em;color:var(--mu);text-transform:uppercase}
+.p-body{padding:14px 16px}
+
+label{font-size:10px;font-weight:800;color:var(--mu);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:5px}
+input,textarea,select{background:var(--bg);border:1px solid var(--bd2);border-radius:5px;color:var(--tx);font-size:13px;padding:7px 9px;outline:none;font-family:inherit;width:100%;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--acc)}
+textarea{resize:vertical;min-height:64px;line-height:1.6}
+.hint{font-size:11.5px;color:#8a8a8a;font-style:italic;margin-top:4px;line-height:1.55}
+.row-2{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+.btn{padding:7px 15px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:opacity .15s;font-family:inherit}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-b{background:var(--acc);color:#fff}
+.btn-g{background:transparent;border-color:var(--bd2);color:var(--mu2)}
+.btn-g:hover{color:var(--tx);border-color:var(--bd3)}
+.btn-w{background:#3a2c10;border-color:#5a4418;color:#e0c070}
+</style>
+</head>
+<style>
+/* RECONCILIATION TABLE */
+table.recon{width:100%;border-collapse:collapse;font-size:12.5px}
+table.recon th{text-align:left;font-size:9.5px;font-weight:800;letter-spacing:.1em;color:var(--mu);text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--bd2);background:var(--surf2);white-space:nowrap}
+table.recon td{padding:9px 10px;border-bottom:1px solid var(--bd);vertical-align:top}
+table.recon tr:last-child td{border-bottom:none}
+table.recon tr.conflict{background:#150d05}
+table.recon tr.blocked{background:#160808}
+.axis{font-weight:700;color:var(--mu3);font-size:12.5px}
+.axis code{font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px;color:var(--mu2);background:#1f1f1f;padding:1px 5px;border-radius:3px}
+.axis .why{font-size:10.5px;color:var(--mu);font-style:italic;font-weight:400;margin-top:3px;line-height:1.5}
+.val{font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px;color:var(--mu3)}
+.val.inh{color:var(--mu2)}
+.val.none{color:#5a5a5a;font-style:italic}
+.prop-cell input{font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px;padding:5px 7px}
+.src{display:inline-block;font-size:8.5px;font-weight:800;letter-spacing:.09em;padding:2px 6px;border-radius:3px;margin-top:5px}
+.src.INHERITED{background:#1a1a1a;color:var(--mu)}
+.src.DETERMINISTIC{background:#0d2416;color:var(--grn)}
+.src.AI{background:#241a08;color:var(--gld)}
+.src.LEAN{background:#1c1430;color:var(--pur)}
+.src.HUMAN{background:#0d1830;color:var(--blu)}
+.flag{font-size:11px;font-weight:800;letter-spacing:.06em}
+.flag.yes{color:var(--gld)}
+.flag.no{color:#4a7a55}
+.res-cell select{font-size:11.5px;padding:5px 7px}
+.res-note{font-size:10.5px;color:var(--mu);font-style:italic;margin-top:5px;line-height:1.5}
+.res-note.block{color:var(--red);font-style:normal;font-weight:600}
+
+/* BLAST RADIUS */
+.blast{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.metric{border:1px solid var(--bd2);border-radius:6px;background:var(--surf2);padding:10px 14px;min-width:120px}
+.metric .v{font-size:19px;font-weight:800;color:var(--tx);font-family:'Cascadia Code',Consolas,monospace}
+.metric .v.unk{color:var(--gld);font-size:13px}
+.metric .l{font-size:9.5px;color:var(--mu);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+.deplist{font-family:'Cascadia Code',Consolas,monospace;font-size:11px;color:var(--mu2);line-height:1.9}
+.deplist span{background:#1a1a1a;padding:2px 7px;border-radius:3px;margin-right:5px;display:inline-block}
+
+/* JSON / RECEIPT */
+pre.json{font-family:'Cascadia Code',Consolas,monospace;font-size:10.5px;color:#7fae86;background:#080808;border:1px solid var(--bd);border-radius:6px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;line-height:1.6;max-height:340px;overflow:auto}
+.receipt-line{font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px;color:var(--mu3);padding:5px 0;border-bottom:1px solid var(--bd);display:flex;gap:12px}
+.receipt-line:last-child{border-bottom:none}
+.receipt-line b{color:var(--mu);font-weight:700;min-width:130px;font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding-top:2px}
+.reason{border-left:2px solid var(--gld);padding:6px 0 6px 11px;margin:6px 0;font-size:11.5px;color:var(--mu2);line-height:1.65}
+.reason b{color:var(--gld);text-transform:none;letter-spacing:0;min-width:0;font-size:11.5px}
+
+/* ACTION BAR */
+.actions{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:1px solid var(--bd);padding:11px 22px;display:flex;align-items:center;gap:10px;z-index:150}
+.actions .sp{flex:1}
+.actions .stat{font-size:11.5px;color:var(--mu);font-style:italic}
+.gate{font-size:11px;color:var(--gld);font-weight:600}
+@media (max-width:900px){.shell{padding:14px}table.recon{font-size:11.5px}.row-3{grid-template-columns:1fr}}
+</style>
+<body>
+<header>
+  <div>
+    <h1>Classification Reconciliation</h1>
+    <small>STAGE 5 — EMERGENT vs INHERITED</small>
+  </div>
+  <div class="hsp"></div>
+  <span class="badge" id="engine-badge"><span class="dot" id="engine-dot"></span><span id="engine-txt">checking engine</span></span>
+  <span class="badge" id="draft-badge">draft: —</span>
+  <a class="navlink" href="atom-builder.html">Atom Builder →</a>
+  <a class="navlink" href="workbench.html">Canon Workbench →</a>
+</header>
+
+<main class="shell">
+
+<div class="notice">
+  <strong>This page produces a proposal. It performs no admission.</strong><br>
+  It compares classifications an atom already carries against classifications newly inferred, and stages the
+  difference as a candidate for human ruling. It never rewrites an atom, never edits canon, and never emits an
+  admission event. Nothing here moves anything into the admitted graph.
+</div>
+
+<div class="notice err" id="offline-notice" style="display:none">
+  <strong>Engine unreachable.</strong> <span id="offline-detail"></span><br>
+  You can still work: paste an atom below, build the proposal, and export it as JSON. Staging stays disabled
+  until the engine answers.
+</div>
+
+<!-- ── TARGET ────────────────────────────────────────────────── -->
+<div class="panel">
+  <div class="p-head"><span class="p-title">Target</span></div>
+  <div class="p-body">
+    <div class="row-2">
+      <div>
+        <label for="target-id">Atom or candidate id</label>
+        <input id="target-id" placeholder="A042 or CAN-..." autocomplete="off">
+        <div class="hint">Loads inherited classifications from the engine. Nothing is written by loading.</div>
+      </div>
+      <button class="btn btn-g" id="btn-load">Load target</button>
+    </div>
+
+    <div id="target-meta" style="display:none;margin-top:14px">
+      <div class="row-3">
+        <div><label>Content hash</label><div class="val" id="meta-hash">—</div></div>
+        <div><label>Source</label><div class="val" id="meta-source">—</div></div>
+        <div><label>Graph state</label><div class="val" id="meta-graph">—</div></div>
+      </div>
+    </div>
+
+    <details style="margin-top:14px">
+      <summary style="cursor:pointer;font-size:11.5px;color:var(--mu2)">Paste an atom instead (offline)</summary>
+      <textarea id="paste-atom" placeholder='{"atom_id":"A042","object_type":"CLAIM","register":"THEOLOGICAL"}' style="margin-top:9px;min-height:96px;font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px"></textarea>
+      <button class="btn btn-g" id="btn-paste" style="margin-top:8px">Use pasted atom</button>
+    </details>
+  </div>
+</div>
+<!-- ── RECONCILIATION TABLE ──────────────────────────────────── -->
+<div class="panel">
+  <div class="p-head">
+    <span class="p-title">Reconciliation</span>
+    <div class="hsp" style="flex:1"></div>
+    <button class="btn btn-g" id="btn-suggest">Ask Ollama for proposals</button>
+    <button class="btn btn-g" id="btn-addrow">Add axis</button>
+  </div>
+  <div class="p-body" style="padding:0">
+    <table class="recon">
+      <thead>
+        <tr>
+          <th style="width:23%">Classification</th>
+          <th style="width:16%">Inherited</th>
+          <th style="width:22%">Proposed</th>
+          <th style="width:9%">Conflict</th>
+          <th style="width:30%">Resolution</th>
+        </tr>
+      </thead>
+      <tbody id="recon-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── BLAST RADIUS ──────────────────────────────────────────── -->
+<div class="panel">
+  <div class="p-head"><span class="p-title">Blast radius</span></div>
+  <div class="p-body">
+    <div class="blast">
+      <div class="metric"><div class="v" id="br-conflicts">0</div><div class="l">Axes in conflict</div></div>
+      <div class="metric"><div class="v unk" id="br-dependents">unverified</div><div class="l">Dependent atoms</div></div>
+      <div class="metric"><div class="v unk" id="br-open">unverified</div><div class="l">Open conflicts</div></div>
+    </div>
+    <div class="deplist" id="br-list">Load a target from the engine to see what depends on it.</div>
+    <div class="hint" id="br-hint">Dependents are read from <code>/agenda</code>. Until the target is loaded from the engine,
+      blast radius is <b>unverified</b> — it is not zero, it is unknown, and the proposal will say so.</div>
+  </div>
+</div>
+
+<!-- ── RATIONALE ─────────────────────────────────────────────── -->
+<div class="panel">
+  <div class="p-head"><span class="p-title">Rationale</span></div>
+  <div class="p-body">
+    <label for="rationale">Why this reconciliation, in your words</label>
+    <textarea id="rationale" placeholder="What changed, what evidence moved it, and what you are deliberately leaving open."></textarea>
+    <div class="hint">Required. Travels with the proposal into the candidate graph and stays attached to whatever ruling follows.</div>
+    <div style="margin-top:12px"><label for="actor">Actor</label><input id="actor" value="david" style="max-width:240px"></div>
+  </div>
+</div>
+
+<!-- ── PREVIEW / RECEIPT ─────────────────────────────────────── -->
+<div class="panel">
+  <div class="p-head">
+    <span class="p-title">Proposal payload</span>
+    <div class="hsp" style="flex:1"></div>
+    <span class="badge">nested under <code style="color:var(--blu)">atom</code></span>
+  </div>
+  <div class="p-body"><pre class="json" id="preview">—</pre></div>
+</div>
+
+<div class="panel" id="receipt-panel" style="display:none">
+  <div class="p-head"><span class="p-title">Receipt</span></div>
+  <div class="p-body" id="receipt-body"></div>
+</div>
+
+</main>
+
+<div class="actions">
+  <span class="stat" id="draft-stat">—</span>
+  <span class="sp"></span>
+  <span class="gate" id="gate-msg"></span>
+  <button class="btn btn-g" id="btn-export">Export proposal JSON</button>
+  <button class="btn btn-g" id="btn-clear">Clear draft</button>
+  <button class="btn btn-b" id="btn-stage">Stage reconciliation proposal</button>
+</div>
+<script>
+"use strict";
+const ENGINE = "http://127.0.0.1:8765";
+const DRAFT_KEY = "canon.recon.draft.v1";
+
+/* ── AXES ──────────────────────────────────────────────────────
+   Each axis carries its own resolution vocabulary. A resolution is
+   never free text: it is one of a fixed set, because the ruling that
+   follows has to be machine-readable. `guard` runs before staging.   */
+const AXES = [
+  { id:"object_type", name:"Object type", code:"object_type",
+    why:"One primary type only. If content performs two functions it decomposes; it does not get two types.",
+    res:["Human ruling required","Preserve inherited","Accept proposed","Decompose into separate atoms","Defer — OPEN"] },
+  { id:"register", name:"Register", code:"register",
+    why:"Registers interact without merging. A cross-register move becomes an edge, not a relabel.",
+    res:["Preserve primary; add bridge edge","Preserve inherited","Accept proposed","Human ruling required","Defer — OPEN"] },
+  { id:"proof_label", name:"Proof label", code:"proof_label",
+    why:"Legacy vocabulary. Preserved untouched during classification; it maps only through an explicit registry.",
+    res:["Preserve","Map through registry","Human ruling required"] },
+  { id:"one_axiom_classification", name:"Axiom classification", code:"one_axiom_classification",
+    why:"OPEN to DERIVED is a dependency claim. It needs the dependency chain, not a label.",
+    res:["Review dependencies","Preserve inherited","Accept proposed","Defer — OPEN"] },
+  { id:"lean_state", name:"Lean state", code:"lean_state",
+    why:"A build state is a receipt claim. Without a receipt id it is a specification, whatever it is called.",
+    res:["Require receipt","Preserve inherited","Accept proposed","Human ruling required"],
+    guard:(row)=>{
+      const p=(row.proposed||"").toUpperCase();
+      const claimsBuild = p.includes("BUILT") || p.includes("ZERO_SORRY");
+      if(claimsBuild && !(row.receipt||"").trim() && row.resolution==="Accept proposed"){
+        return "A build state cannot be accepted without a receipt id. Enter one or resolve as Require receipt.";
+      }
+      return null; } },
+  { id:"adequacy", name:"Adequacy", code:"adequacy",
+    why:"Descriptive of coverage, not of truth.",
+    res:["Preserve","Accept proposed","Human ruling required"] },
+  { id:"graph", name:"Graph", code:"graph",
+    why:"This page cannot change graph state. Admission happens in the Workbench, by a human, with a token.",
+    res:["No admission here"], locked:true }
+];
+
+const RES_DEFAULT = { object_type:"Human ruling required", register:"Preserve primary; add bridge edge",
+  proof_label:"Preserve", one_axiom_classification:"Review dependencies", lean_state:"Require receipt",
+  adequacy:"Preserve", graph:"No admission here" };
+
+let state = { target:null, loadedFromEngine:false, dependents:[], openConflicts:null, rows:{}, extra:[] };
+let draftAvailable = true;
+
+/* ── DRAFT STORAGE ─────────────────────────────────────────────
+   file:// origins are opaque and localStorage behaviour varies by
+   browser. Probe once, and if it fails say so in the header rather
+   than pretending the draft is safe.                                */
+function probeDraft(){
+  try{ localStorage.setItem("__probe","1"); localStorage.removeItem("__probe"); draftAvailable=true; }
+  catch(e){ draftAvailable=false; }
+  const b=document.getElementById("draft-badge");
+  b.textContent = draftAvailable ? "draft: on" : "draft: UNAVAILABLE — export before closing";
+  b.style.color = draftAvailable ? "var(--mu2)" : "var(--red)";
+  b.style.borderColor = draftAvailable ? "var(--bd2)" : "#5a2020";
+}
+function saveDraft(){
+  if(!draftAvailable){ setStat("Draft storage unavailable. Export before closing the tab."); return; }
+  try{
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      state, rationale:val("rationale"), actor:val("actor"), targetId:val("target-id"), at:new Date().toISOString()
+    }));
+    setStat("Draft saved " + new Date().toLocaleTimeString());
+  }catch(e){ draftAvailable=false; probeDraft(); setStat("Draft save failed: "+e.message); }
+}
+function loadDraft(){
+  if(!draftAvailable) return;
+  try{
+    const raw = localStorage.getItem(DRAFT_KEY); if(!raw) return;
+    const d = JSON.parse(raw);
+    state = d.state || state;
+    document.getElementById("rationale").value = d.rationale||"";
+    document.getElementById("actor").value = d.actor||"david";
+    document.getElementById("target-id").value = d.targetId||"";
+    setStat("Draft restored from " + (d.at||"earlier"));
+  }catch(e){ setStat("Draft could not be read: "+e.message); }
+}
+const val = id => (document.getElementById(id).value||"").trim();
+const setStat = m => document.getElementById("draft-stat").textContent = m;
+
+/* ── ENGINE ────────────────────────────────────────────────────
+   No auto-retry anywhere. A candidate id is minted per request and
+   candidates are immutable, so a blind retry after a timeout that
+   actually succeeded writes a second record and opens a duplicate
+   conflict. Failures surface and wait for a person.                 */
+async function engine(path, opts){
+  const r = await fetch(ENGINE+path, Object.assign({ headers:{"content-type":"application/json"} }, opts||{}));
+  const text = await r.text();
+  let body; try{ body = JSON.parse(text); }catch(e){ body = { raw:text }; }
+  return { ok:r.ok, status:r.status, body };
+}
+async function checkEngine(){
+  const dot=document.getElementById("engine-dot"), txt=document.getElementById("engine-txt");
+  try{
+    const r = await engine("/health");
+    if(!r.ok) throw new Error("health returned "+r.status);
+    dot.className="dot up"; txt.textContent="engine up — "+(r.body.canon_root||"");
+    document.getElementById("offline-notice").style.display="none";
+    return true;
+  }catch(e){
+    dot.className="dot down"; txt.textContent="engine unreachable";
+    document.getElementById("offline-notice").style.display="";
+    document.getElementById("offline-detail").textContent =
+      e.message + ". If the engine is running, this is almost certainly CORS: a file:// page sends Origin: null, "
+      + "the JSON POST preflights, and a router with no OPTIONS route returns 405 with no allow-origin header.";
+    return false;
+  }
+}
+
+/* ── TARGET LOADING ────────────────────────────────────────── */
+function adoptAtom(atom, fromEngine){
+  state.target = atom;
+  state.loadedFromEngine = !!fromEngine;
+  AXES.forEach(a=>{
+    const inherited = atom[a.code] !== undefined && atom[a.code] !== null ? String(atom[a.code]) : "";
+    const cur = state.rows[a.id] || {};
+    state.rows[a.id] = {
+      inherited, proposed: cur.proposed !== undefined ? cur.proposed : inherited,
+      source: cur.source || "INHERITED", resolution: cur.resolution || RES_DEFAULT[a.id],
+      receipt: cur.receipt || "", note: cur.note || ""
+    };
+  });
+  document.getElementById("target-meta").style.display="";
+  document.getElementById("meta-hash").textContent = atom.content_hash || "— not supplied —";
+  document.getElementById("meta-source").textContent = atom.source_uri || "— not supplied —";
+  document.getElementById("meta-graph").textContent = fromEngine ? (atom.status||"candidate") : "unknown (pasted)";
+  render();
+}
+
+document.getElementById("btn-load").onclick = async () => {
+  const id = val("target-id");
+  if(!id){ setStat("Enter an atom or candidate id first."); return; }
+  setStat("Loading "+id+" ...");
+  try{
+    const r = await engine("/search?q="+encodeURIComponent(id)+"&limit=5");
+    if(!r.ok) throw new Error("search returned "+r.status);
+    const results = r.body.results||[];
+    if(!results.length){ setStat("No record matched "+id+". Nothing was created."); return; }
+    const hit = results[0];
+    const atom = Object.assign({}, hit.payload||{}, {
+      atom_id: hit.atom_id||id, content_hash: hit.content_hash, source_uri: hit.source_uri, status: hit.status
+    });
+    adoptAtom(atom, true);
+    await loadBlast(id);
+    setStat("Loaded "+id+" from the engine.");
+  }catch(e){ setStat("Load failed: "+e.message+" — nothing was written."); checkEngine(); }
+};
+
+document.getElementById("btn-paste").onclick = () => {
+  const raw = val("paste-atom"); if(!raw){ setStat("Paste an atom object first."); return; }
+  try{ adoptAtom(JSON.parse(raw), false); setStat("Using pasted atom. Blast radius stays unverified."); }
+  catch(e){ setStat("That is not valid JSON: "+e.message); }
+};
+
+/* Blast radius comes from /agenda. If it was not read, it is unknown —
+   never displayed as zero.                                            */
+async function loadBlast(id){
+  try{
+    const r = await engine("/agenda?limit=200");
+    if(!r.ok) throw new Error("agenda returned "+r.status);
+    const items = r.body.items || r.body || [];
+    const rel = (Array.isArray(items)?items:[]).filter(i =>
+      i.kind==="conflict" && (i.left===id || i.right===id || (i.affected||[]).includes(id)));
+    const dependents = new Set();
+    rel.forEach(i => (i.affected||[]).forEach(a => { if(a!==id) dependents.add(a); }));
+    state.dependents = [...dependents];
+    state.openConflicts = rel.length;
+    const dep=document.getElementById("br-dependents"), op=document.getElementById("br-open");
+    dep.textContent = state.dependents.length; dep.className="v";
+    op.textContent = rel.length; op.className="v";
+    document.getElementById("br-list").innerHTML = state.dependents.length
+      ? state.dependents.map(d=>"<span>"+esc(d)+"</span>").join("")
+      : "No dependents reported by the agenda for this id.";
+    document.getElementById("br-hint").textContent =
+      "Read from /agenda at " + new Date().toLocaleTimeString() + ". Dependents are those named in open conflicts touching this atom.";
+  }catch(e){ setStat("Blast radius not read: "+e.message+". It stays unverified."); }
+}
+
+/* ── RENDER ───────────────────────────────────────────────── */
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const allAxes = () => AXES.concat(state.extra);
+
+function render(){
+  const tb = document.getElementById("recon-body");
+  tb.innerHTML = allAxes().map(a=>{
+    const r = state.rows[a.id] || (state.rows[a.id]={inherited:"",proposed:"",source:"HUMAN",resolution:RES_DEFAULT[a.id]||"Human ruling required",receipt:"",note:""});
+    const conflict = isConflict(r);
+    const blocked = a.guard ? a.guard(r) : null;
+    return `<tr class="${blocked?"blocked":(conflict?"conflict":"")}">
+      <td><div class="axis">${esc(a.name)} <code>${esc(a.code)}</code>
+        <div class="why">${esc(a.why||"")}</div></div></td>
+      <td><div class="val inh ${r.inherited?"":"none"}">${esc(r.inherited||"not set")}</div></td>
+      <td class="prop-cell">
+        <input data-ax="${a.id}" data-f="proposed" value="${esc(r.proposed)}" ${a.locked?"disabled":""}>
+        <span class="src ${r.source==="AI-PROPOSED"?"AI":esc(r.source)}">${esc(r.source)}</span>
+        ${a.id==="lean_state"?`<input data-ax="${a.id}" data-f="receipt" placeholder="receipt id" value="${esc(r.receipt)}" style="margin-top:6px">`:""}
+      </td>
+      <td><span class="flag ${conflict?"yes":"no"}">${conflict?"Yes":"No"}</span></td>
+      <td class="res-cell">
+        <select data-ax="${a.id}" data-f="resolution" ${a.locked?"disabled":""}>
+          ${(a.res||["Human ruling required"]).map(o=>`<option${o===r.resolution?" selected":""}>${esc(o)}</option>`).join("")}
+        </select>
+        <input data-ax="${a.id}" data-f="note" placeholder="note (optional)" value="${esc(r.note)}" style="margin-top:6px">
+        ${blocked?`<div class="res-note block">${esc(blocked)}</div>`:""}
+      </td></tr>`;
+  }).join("");
+
+  tb.querySelectorAll("input,select").forEach(el=>{
+    el.oninput = el.onchange = () => {
+      const r = state.rows[el.dataset.ax]; const f = el.dataset.f;
+      r[f] = el.value;
+      if(f==="proposed" && r.source==="INHERITED" && el.value!==r.inherited) r.source="HUMAN";
+      render(); saveDraft();
+    };
+  });
+
+  const conflicts = allAxes().filter(a=>isConflict(state.rows[a.id])).length;
+  document.getElementById("br-conflicts").textContent = conflicts;
+  updatePreview(); updateGate();
+}
+
+function isConflict(r){
+  if(!r) return false;
+  const a=(r.inherited||"").trim().toUpperCase(), b=(r.proposed||"").trim().toUpperCase();
+  if(!b || b==="UNTOUCHED") return false;
+  return a!==b;
+}
+
+/* ── GATE ─────────────────────────────────────────────────────
+   Staging is blocked, with the reason named, rather than the button
+   silently doing nothing.                                            */
+function updateGate(){
+  const msgs=[];
+  if(!state.target) msgs.push("Load or paste a target atom.");
+  if(!val("rationale")) msgs.push("Rationale is required.");
+  allAxes().forEach(a=>{ const g=a.guard?a.guard(state.rows[a.id]):null; if(g) msgs.push(a.name+": "+g); });
+  const gate=document.getElementById("gate-msg"), btn=document.getElementById("btn-stage");
+  gate.textContent = msgs.length ? msgs[0] : "";
+  btn.disabled = msgs.length>0;
+}
+document.getElementById("rationale").oninput = () => { updateGate(); saveDraft(); };
+
+/* ── PROPOSAL ENVELOPE ─────────────────────────────────────────
+   Everything goes INSIDE `atom`. CandidateInput accepts only
+   {text, atom, atom_id, schema_version, source_uri, source_span,
+   author, depends_on, note} and silently discards anything else at
+   the top level — a clean 201 that stored nothing.                   */
+function buildProposal(){
+  const targetId = (state.target && (state.target.atom_id||state.target.id)) || val("target-id") || null;
+  const rows = allAxes().map(a=>{
+    const r = state.rows[a.id]||{};
+    return { axis:a.code, name:a.name, inherited:r.inherited||null, proposed:r.proposed||null,
+             proposal_source:r.source||"HUMAN", conflict:isConflict(r), resolution:r.resolution||null,
+             receipt_id:(a.id==="lean_state"&&r.receipt)?r.receipt:undefined, note:r.note||undefined };
+  });
+  return {
+    atom_id: targetId,
+    author: val("actor")||"david",
+    source_uri: (state.target&&state.target.source_uri)||undefined,
+    depends_on: targetId?[targetId]:[],
+    note: "Stage 5 classification reconciliation proposal. Not an admission.",
+    atom: {
+      object_type:"PROCESS",
+      record_kind:"CLASSIFICATION_RECONCILIATION_PROPOSAL",
+      canon_version:"1.1",
+      stage:5,
+      target:{ atom_id:targetId, content_hash:(state.target&&state.target.content_hash)||null,
+               loaded_from_engine:state.loadedFromEngine },
+      reconciliation:rows,
+      reconciliation_status: rows.some(x=>x.conflict) ? "CONFLICTS_PRESENT" : "NO_CONFLICT",
+      blast_radius:{
+        axes_in_conflict: rows.filter(x=>x.conflict).length,
+        dependents: state.loadedFromEngine ? state.dependents : null,
+        open_conflicts: state.loadedFromEngine ? state.openConflicts : null,
+        verified: state.loadedFromEngine,
+        note: state.loadedFromEngine ? "Read from /agenda." : "UNVERIFIED — target was not loaded from the engine. Unknown, not zero."
+      },
+      rationale: val("rationale"),
+      actor: val("actor")||"david",
+      admission:{ graph:"candidate", human_ruling:"pending",
+                  note:"This page performs no admission. Ruling happens in the Workbench." },
+      generated_at: new Date().toISOString()
+    }
+  };
+}
+function updatePreview(){
+  document.getElementById("preview").textContent = JSON.stringify(buildProposal(), null, 2);
+}
+
+/* ── STAGE ───────────────────────────────────────────────────── */
+document.getElementById("btn-stage").onclick = async () => {
+  const btn=document.getElementById("btn-stage");
+  btn.disabled=true; setStat("Staging ...");
+  try{
+    const r = await engine("/candidate", { method:"POST", body: JSON.stringify(buildProposal()) });
+    if(!r.ok){ renderFailure(r); setStat("Not staged. Draft kept."); btn.disabled=false; return; }
+    renderReceipt(r.body); setStat("Staged.");
+  }catch(e){
+    renderFailure({ status:"network", body:{ error:e.message } });
+    setStat("Network failure. Draft kept. Not retried automatically — the write may have succeeded.");
+    btn.disabled=false; checkEngine();
+  }
+};
+
+function renderFailure(r){
+  const p=document.getElementById("receipt-panel"), b=document.getElementById("receipt-body");
+  p.style.display="";
+  b.innerHTML = `<div class="notice err"><strong>Not staged (${esc(r.status)}).</strong>
+    ${esc(JSON.stringify(r.body))}<br><br>
+    Nothing was retried. A candidate id is minted per request and candidates are immutable, so an automatic retry
+    after a request that actually succeeded would write a second record and open a duplicate-identity conflict.
+    Your draft is intact. Fix the cause and stage again deliberately.</div>`;
+  p.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function renderReceipt(b){
+  const p=document.getElementById("receipt-panel"), body=document.getElementById("receipt-body");
+  p.style.display="";
+  const reasons=(b.reasons||[]).map(x=>`<div class="reason"><b>${esc(x.check_id)}</b><br>${esc(x.trigger)}<br>
+    <span style="color:var(--mu)">smallest fix:</span> ${esc(x.smallest_fix)}</div>`).join("");
+  body.innerHTML = `
+    <div class="notice ok"><strong>${esc(b.note||"accepted and staged. this is not canon.")}</strong></div>
+    <div class="receipt-line"><b>Candidate id</b><span>${esc(b.candidate_id)}</span></div>
+    <div class="receipt-line"><b>Content hash</b><span>${esc(b.content_hash)}</span></div>
+    <div class="receipt-line"><b>Status</b><span>${esc(b.status)}</span></div>
+    <div class="receipt-line"><b>Verdict</b><span>${esc(b.verdict)}</span></div>
+    <div class="receipt-line"><b>Receipt id</b><span>${esc(b.receipt_id)}</span></div>
+    <div class="receipt-line"><b>Conflicts opened</b><span>${(b.conflicts_opened||[]).length?esc((b.conflicts_opened||[]).join(", ")):"none"}</span></div>
+    ${reasons?`<div style="margin-top:12px">${reasons}</div>`:""}
+    <div class="hint" style="margin-top:12px">Open the Canon Workbench and read this candidate through <code>/agenda</code>
+      to review it and prepare the ruling. It is in the candidate graph. It is not canon.</div>`;
+  p.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* ── OLLAMA ────────────────────────────────────────────────────
+   Runs outside the engine, by design. Its output lands in the same
+   editable fields as anything else and is badged AI-PROPOSED. It
+   cannot set a resolution and it cannot stage.                       */
+document.getElementById("btn-suggest").onclick = async () => {
+  if(!state.target){ setStat("Load a target before asking for proposals."); return; }
+  setStat("Asking Ollama ...");
+  const prompt = "Classify this atom against the Claim Atom Canon v1.1. Reply ONLY with JSON: "
+    + '{"object_type":"","register":"","one_axiom_classification":"","lean_state":"","adequacy":"","reasoning":""}. '
+    + "Atom:\n" + JSON.stringify(state.target, null, 2);
+  try{
+    const r = await fetch("http://127.0.0.1:11434/api/generate", {
+      method:"POST", headers:{"content-type":"application/json"},
+      body: JSON.stringify({ model:"llama3.1", prompt, stream:false, format:"json" })
+    });
+    if(!r.ok) throw new Error("ollama returned "+r.status);
+    const out = await r.json();
+    const sug = JSON.parse(out.response||"{}");
+    let n=0;
+    AXES.forEach(a=>{
+      if(a.locked) return;
+      const v = sug[a.code];
+      if(v && String(v).trim()){ state.rows[a.id].proposed = String(v).trim(); state.rows[a.id].source="AI-PROPOSED"; n++; }
+    });
+    render(); saveDraft();
+    setStat(n+" field(s) filled by Ollama, badged AI-PROPOSED. Edit freely — nothing was staged.");
+  }catch(e){ setStat("Ollama unavailable: "+e.message+". Fields untouched."); }
+};
+
+/* ── EXTRA AXES ───────────────────────────────────────────────── */
+document.getElementById("btn-addrow").onclick = () => {
+  const code = prompt("Classification field name (e.g. ic_grade, why_outcome, lifecycle_state):");
+  if(!code) return;
+  const id = "x_"+code.replace(/\W+/g,"_");
+  if(allAxes().some(a=>a.id===id)){ setStat("That axis is already on the table."); return; }
+  state.extra.push({ id, name:code, code, why:"Added for this reconciliation.",
+    res:["Human ruling required","Preserve inherited","Accept proposed","Defer — OPEN"] });
+  const inh = state.target && state.target[code]!=null ? String(state.target[code]) : "";
+  state.rows[id] = { inherited:inh, proposed:inh, source:"INHERITED", resolution:"Human ruling required", receipt:"", note:"" };
+  render(); saveDraft();
+};
+
+/* ── EXPORT / CLEAR ───────────────────────────────────────────── */
+document.getElementById("btn-export").onclick = () => {
+  const blob = new Blob([JSON.stringify(buildProposal(),null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "reconciliation-" + ((state.target&&state.target.atom_id)||"draft") + ".json";
+  a.click(); URL.revokeObjectURL(a.href);
+  setStat("Exported. This is a file on disk, not a staged candidate.");
+};
+document.getElementById("btn-clear").onclick = () => {
+  if(!confirm("Clear the draft? The proposal on screen is discarded. Nothing already staged is affected.")) return;
+  try{ localStorage.removeItem(DRAFT_KEY); }catch(e){}
+  state = { target:null, loadedFromEngine:false, dependents:[], openConflicts:null, rows:{}, extra:[] };
+  document.getElementById("rationale").value=""; document.getElementById("target-meta").style.display="none";
+  document.getElementById("receipt-panel").style.display="none";
+  render(); setStat("Draft cleared.");
+};
+
+/* ── BOOT ─────────────────────────────────────────────────────── */
+probeDraft(); loadDraft();
+AXES.forEach(a=>{ if(!state.rows[a.id]) state.rows[a.id]={inherited:"",proposed:"",source:"INHERITED",resolution:RES_DEFAULT[a.id],receipt:"",note:""}; });
+state.rows.graph.inherited="CANDIDATE"; state.rows.graph.proposed="CANDIDATE";
+render(); checkEngine();
+setInterval(()=>{ if(state.target) saveDraft(); }, 20000);
+</script>
+</body>
+</html>

@@ -42,17 +42,17 @@ export class ClassificationResultModal extends Modal {
 
   onOpen(): void {
     const { contentEl, titleEl } = this;
-    contentEl.addClass('semantic-ai-result-modal');
+    contentEl.addClass('canonization-result-modal');
 
     titleEl.setText('Classification results');
 
     contentEl.createEl('p', {
-      cls: 'semantic-ai-file-path',
+      cls: 'canonization-file-path',
       text: this.filePath
     });
 
     const counts = getTagCounts(this.result.tags);
-    const summaryEl = contentEl.createDiv({ cls: 'semantic-ai-result-summary' });
+    const summaryEl = contentEl.createDiv({ cls: 'canonization-result-summary' });
 
     const total = this.result.tags.length;
     summaryEl.createEl('p', {
@@ -67,23 +67,23 @@ export class ClassificationResultModal extends Modal {
     }
 
     if (total > 0) {
-      const previewEl = contentEl.createDiv({ cls: 'semantic-ai-tag-preview' });
-      const previewList = previewEl.createDiv({ cls: 'semantic-ai-preview-list' });
+      const previewEl = contentEl.createDiv({ cls: 'canonization-tag-preview' });
+      const previewList = previewEl.createDiv({ cls: 'canonization-preview-list' });
 
       for (const tag of this.result.tags.slice(0, PREVIEW_LIMIT)) {
-        const tagEl = previewList.createDiv({ cls: 'semantic-ai-preview-tag' });
+        const tagEl = previewList.createDiv({ cls: 'canonization-preview-tag' });
 
         const badge = tagEl.createSpan({
-          cls: 'semantic-ai-tag-type',
+          cls: 'canonization-tag-type',
           text: categoryName(this.settings, tag.customType || tag.type)
         });
         badge.dataset.color = String(categoryColor(this.settings, tag.type));
 
-        tagEl.createSpan({ cls: 'semantic-ai-tag-label', text: tag.label });
+        tagEl.createSpan({ cls: 'canonization-tag-label', text: tag.label });
 
         if (tag.topics?.length) {
           tagEl.createSpan({
-            cls: 'semantic-ai-tag-topics',
+            cls: 'canonization-tag-topics',
             text: tag.topics.join(', ')
           });
         }
@@ -91,7 +91,7 @@ export class ClassificationResultModal extends Modal {
 
       if (total > PREVIEW_LIMIT) {
         previewList.createEl('p', {
-          cls: 'semantic-ai-more',
+          cls: 'canonization-more',
           text: `… and ${total - PREVIEW_LIMIT} more`
         });
       }
@@ -157,7 +157,7 @@ export class BatchProcessingModal extends Modal {
 
   onOpen(): void {
     const { contentEl, titleEl } = this;
-    contentEl.addClass('semantic-ai-batch-modal');
+    contentEl.addClass('canonization-batch-modal');
 
     titleEl.setText('Classify a folder');
 
@@ -166,7 +166,7 @@ export class BatchProcessingModal extends Modal {
     });
 
     if (this.showEstimate) {
-      const estimateEl = contentEl.createDiv({ cls: 'semantic-ai-estimate' });
+      const estimateEl = contentEl.createDiv({ cls: 'canonization-estimate' });
       const estimateList = estimateEl.createEl('ul');
       estimateList.createEl('li', {
         text: `Approximate tokens: ${(this.estimate.inputTokens + this.estimate.estimatedOutputTokens).toLocaleString()}`
@@ -178,20 +178,20 @@ export class BatchProcessingModal extends Modal {
       });
     }
 
-    const fileListEl = contentEl.createDiv({ cls: 'semantic-ai-file-list' });
+    const fileListEl = contentEl.createDiv({ cls: 'canonization-file-list' });
     const list = fileListEl.createEl('ul');
     for (const file of this.files.slice(0, 20)) {
       list.createEl('li', { text: file.path });
     }
     if (this.files.length > 20) {
       list.createEl('li', {
-        cls: 'semantic-ai-more',
+        cls: 'canonization-more',
         text: `… and ${this.files.length - 20} more`
       });
     }
 
-    this.progressEl = contentEl.createDiv({ cls: 'semantic-ai-progress hidden' });
-    this.resultsEl = this.progressEl.createDiv({ cls: 'semantic-ai-progress-results' });
+    this.progressEl = contentEl.createDiv({ cls: 'canonization-progress hidden' });
+    this.resultsEl = this.progressEl.createDiv({ cls: 'canonization-progress-results' });
     // Announce each file as it finishes for screen reader users.
     this.resultsEl.setAttribute('role', 'log');
     this.resultsEl.setAttribute('aria-live', 'polite');
@@ -232,9 +232,9 @@ export class BatchProcessingModal extends Modal {
   updateProgress(file: string, status: string, counts?: Record<string, number>): void {
     if (!this.resultsEl) return;
 
-    const itemEl = this.resultsEl.createDiv({ cls: 'semantic-ai-progress-item' });
+    const itemEl = this.resultsEl.createDiv({ cls: 'canonization-progress-item' });
     itemEl.createSpan({
-      cls: 'semantic-ai-progress-file',
+      cls: 'canonization-progress-file',
       text: file.split('/').pop() || file
     });
 
@@ -244,13 +244,13 @@ export class BatchProcessingModal extends Modal {
         .join(', ');
 
       itemEl.createSpan({
-        cls: 'semantic-ai-progress-counts',
+        cls: 'canonization-progress-counts',
         text: countsText || 'nothing found'
       });
     } else if (status === 'processing') {
-      itemEl.createSpan({ cls: 'semantic-ai-progress-counts', text: 'working…' });
+      itemEl.createSpan({ cls: 'canonization-progress-counts', text: 'working…' });
     } else {
-      itemEl.createSpan({ cls: 'semantic-ai-progress-error', text: status });
+      itemEl.createSpan({ cls: 'canonization-progress-error', text: status });
     }
 
     this.resultsEl.scrollTop = this.resultsEl.scrollHeight;
@@ -260,7 +260,7 @@ export class BatchProcessingModal extends Modal {
     this.isProcessing = false;
 
     this.progressEl?.createEl('p', {
-      cls: 'semantic-ai-complete',
+      cls: 'canonization-complete',
       text: `Done. ${totalTags} tag${totalTags === 1 ? '' : 's'} written.`
     });
 
@@ -299,7 +299,7 @@ export class TagSelectionModal extends Modal {
 
   onOpen(): void {
     const { contentEl, titleEl } = this;
-    contentEl.addClass('semantic-ai-selection-modal');
+    contentEl.addClass('canonization-selection-modal');
 
     titleEl.setText('Choose categories');
 
@@ -310,7 +310,7 @@ export class TagSelectionModal extends Modal {
       return;
     }
 
-    const typesEl = contentEl.createDiv({ cls: 'semantic-ai-type-selection' });
+    const typesEl = contentEl.createDiv({ cls: 'canonization-type-selection' });
     const toggles = new Map<TagType, (value: boolean) => void>();
 
     for (const category of this.categories) {

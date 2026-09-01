@@ -27,7 +27,7 @@ export class IndexConfirmationModal extends Modal {
 
   onOpen(): void {
     const { contentEl, titleEl } = this;
-    contentEl.addClass('semantic-ai-index-modal');
+    contentEl.addClass('canonization-index-modal');
 
     titleEl.setText(this.indexScope === 'vault' ? 'Index the whole vault' : 'Index a folder');
 
@@ -37,33 +37,33 @@ export class IndexConfirmationModal extends Modal {
         : `Scans every markdown note in ${this.scopePath} for tags this plugin has written.`
     });
 
-    const estimateSection = contentEl.createDiv({ cls: 'semantic-ai-estimate-section' });
-    const estimateGrid = estimateSection.createDiv({ cls: 'semantic-ai-estimate-grid' });
+    const estimateSection = contentEl.createDiv({ cls: 'canonization-estimate-section' });
+    const estimateGrid = estimateSection.createDiv({ cls: 'canonization-estimate-grid' });
 
     this.addEstimateItem(estimateGrid, 'Notes to scan', String(this.estimate.fileCount));
     this.addEstimateItem(estimateGrid, 'Characters', this.estimate.totalCharacters.toLocaleString());
     this.addEstimateItem(estimateGrid, 'Approximate tokens', this.estimate.estimatedTokens.toLocaleString());
 
     contentEl.createEl('p', {
-      cls: 'semantic-ai-cost-note',
+      cls: 'canonization-cost-note',
       text: 'Indexing reads tags that are already in your notes. It makes no AI requests and costs nothing.'
     });
 
     if (this.estimate.warning) {
       contentEl.createEl('p', {
-        cls: 'semantic-ai-index-warning',
+        cls: 'canonization-index-warning',
         text: this.estimate.warning
       });
     }
 
     if (this.indexScope === 'vault') {
       contentEl.createEl('p', {
-        cls: 'semantic-ai-muted',
+        cls: 'canonization-muted',
         text: 'Indexing one folder at a time is faster on a large vault.'
       });
     }
 
-    const infoSection = contentEl.createDiv({ cls: 'semantic-ai-index-info' });
+    const infoSection = contentEl.createDiv({ cls: 'canonization-index-info' });
     infoSection.createEl('p', { text: 'The index gives you:' });
     const infoList = infoSection.createEl('ul');
     infoList.createEl('li', { text: 'A cross-reference of every tagged concept' });
@@ -87,9 +87,9 @@ export class IndexConfirmationModal extends Modal {
   }
 
   private addEstimateItem(container: HTMLElement, label: string, value: string): void {
-    const item = container.createDiv({ cls: 'semantic-ai-estimate-item' });
-    item.createSpan({ cls: 'semantic-ai-estimate-label', text: label });
-    item.createSpan({ cls: 'semantic-ai-estimate-value', text: value });
+    const item = container.createDiv({ cls: 'canonization-estimate-item' });
+    item.createSpan({ cls: 'canonization-estimate-label', text: label });
+    item.createSpan({ cls: 'canonization-estimate-value', text: value });
   }
 
   onClose(): void {
@@ -104,16 +104,16 @@ export class IndexProgressModal extends Modal {
 
   onOpen(): void {
     const { contentEl, titleEl } = this;
-    contentEl.addClass('semantic-ai-progress-modal');
+    contentEl.addClass('canonization-progress-modal');
 
     titleEl.setText('Building index');
 
-    this.statusEl = contentEl.createEl('p', { cls: 'semantic-ai-progress-status' });
+    this.statusEl = contentEl.createEl('p', { cls: 'canonization-progress-status' });
     this.statusEl.setAttribute('role', 'status');
     this.statusEl.setAttribute('aria-live', 'polite');
     this.statusEl.setText('Starting…');
 
-    const progressContainer = contentEl.createDiv({ cls: 'semantic-ai-progress-bar-container' });
+    const progressContainer = contentEl.createDiv({ cls: 'canonization-progress-bar-container' });
     progressContainer.setAttribute('role', 'progressbar');
     progressContainer.setAttribute('aria-valuemin', '0');
     progressContainer.setAttribute('aria-valuemax', '100');
@@ -121,15 +121,15 @@ export class IndexProgressModal extends Modal {
     progressContainer.setAttribute('aria-label', 'Indexing progress');
 
     // Width comes from a CSS custom property; the stylesheet owns the rest.
-    this.progressBar = progressContainer.createDiv({ cls: 'semantic-ai-progress-bar' });
+    this.progressBar = progressContainer.createDiv({ cls: 'canonization-progress-bar' });
     this.setProgress(0);
 
-    this.currentFileEl = contentEl.createEl('p', { cls: 'semantic-ai-current-file' });
+    this.currentFileEl = contentEl.createEl('p', { cls: 'canonization-current-file' });
   }
 
   private setProgress(percent: number): void {
     const clamped = Math.max(0, Math.min(100, Math.round(percent)));
-    this.progressBar?.setCssProps({ '--semantic-ai-progress': `${clamped}%` });
+    this.progressBar?.setCssProps({ '--canonization-progress': `${clamped}%` });
     this.progressBar?.parentElement?.setAttribute('aria-valuenow', String(clamped));
   }
 
@@ -147,7 +147,7 @@ export class IndexProgressModal extends Modal {
     this.progressBar?.addClass('complete');
     this.currentFileEl?.setText('');
 
-    const statsEl = this.contentEl.createDiv({ cls: 'semantic-ai-index-stats' });
+    const statsEl = this.contentEl.createDiv({ cls: 'canonization-index-stats' });
     const list = statsEl.createEl('ul');
     list.createEl('li', { text: `Notes indexed: ${stats.files}` });
     list.createEl('li', { text: `Concepts found: ${stats.concepts}` });
@@ -181,16 +181,16 @@ export class FolderSelectionModal extends Modal {
 
   onOpen(): void {
     const { contentEl, titleEl } = this;
-    contentEl.addClass('semantic-ai-folder-modal');
+    contentEl.addClass('canonization-folder-modal');
 
     titleEl.setText('Choose a folder to index');
 
-    const folderList = contentEl.createDiv({ cls: 'semantic-ai-folder-list' });
+    const folderList = contentEl.createDiv({ cls: 'canonization-folder-list' });
     const sorted = [...this.folders].sort((a, b) => a.path.localeCompare(b.path));
 
     sorted.forEach((folder, index) => {
       const item = folderList.createEl('button', {
-        cls: 'semantic-ai-folder-item',
+        cls: 'canonization-folder-item',
         text: folder.isRoot() ? 'Vault root' : folder.path
       });
       item.type = 'button';

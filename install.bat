@@ -1,7 +1,6 @@
 @echo off
 echo ============================================
-echo   Semantic AI - Installer
-echo   Built with Claude (Anthropic)
+echo   Canonization - Standalone Installer
 echo ============================================
 echo.
 
@@ -39,7 +38,7 @@ echo.
 echo ============================================
 echo Installing dependencies...
 echo ============================================
-call npm install
+call npm ci
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] npm install failed!
@@ -81,8 +80,12 @@ echo.
 echo Next steps:
 echo   1. Restart Obsidian (or press Ctrl+Shift+R to reload)
 echo   2. Go to Settings ^> Community Plugins
-echo   3. Enable "Semantic AI"
-echo   4. Go to Settings ^> Semantic AI to configure your API key
+echo   3. Copy manifest.json, main.js, styles.css, and web into:
+echo      YOUR_VAULT\.obsidian\plugins\canonization
+echo   4. Enable "Canonization"
+echo   5. Go to Settings ^> Canonization to configure Canonization-owned provider settings
+echo.
+echo This installer does not read, migrate, or copy Semantic AI settings or credentials.
 echo.
 echo Supported AI Providers:
 echo   - OpenAI (GPT-4o, GPT-4o-mini)

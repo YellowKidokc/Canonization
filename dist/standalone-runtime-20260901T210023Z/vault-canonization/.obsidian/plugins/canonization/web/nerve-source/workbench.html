@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Canon Workbench — Claim Atom Canon v1.1</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0c;--surface:#121212;--surface2:#171717;--surface3:#1c1c1c;
+  --border:#242424;--border2:#313131;--text:#dcdcdc;--muted:#777;--muted2:#a0a0a0;
+  --blue:#4a7fd4;--blue2:#7fb0ff;--green:#3fd05f;--amber:#d0a030;--red:#e06060;--purple:#c09fff;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+header{height:54px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:14px;position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px}.mark{width:28px;height:28px;border:1px solid #36598e;border-radius:6px;display:grid;place-items:center;color:var(--blue2);font-weight:800}
+.brand h1{font-size:15px;color:#fff}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.spacer{flex:1}.badge{font-size:10px;font-weight:800;letter-spacing:.08em;border:1px solid var(--border2);border-radius:999px;padding:5px 9px;color:var(--muted2)}
+.badge.candidate{border-color:#594716;background:#1b1608;color:#e4b844}.navlink{color:var(--blue2);text-decoration:none;border:1px solid #29466f;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:700}.navlink:hover{background:#14243b}
+.shell{max-width:1500px;margin:0 auto;padding:18px 22px 70px}
+.notice{border:1px solid #544415;background:#171407;border-radius:7px;padding:11px 14px;color:#cdbb7e;display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;line-height:1.45}.notice strong{color:#f0cf65}.notice code{color:#f3d977}
+.workflow{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:18px;background:var(--surface)}
+.phase{border:0;border-right:1px solid var(--border);background:transparent;color:var(--muted);padding:13px 12px;text-align:left}.phase:last-child{border-right:0}.phase:hover{background:var(--surface2)}.phase.on{background:#142039;color:#fff}.phase.done{color:var(--green)}
+.phase .num{font-size:10px;font-weight:800;letter-spacing:.12em}.phase .name{font-size:13px;font-weight:800;margin-top:3px}.phase .hint{font-size:10px;color:var(--muted);margin-top:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(330px,.75fr);gap:18px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}.panel+.panel{margin-top:14px}
+.panel-head{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}.panel-head h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#bbb}.panel-head p{font-size:11px;color:var(--muted);margin-left:auto}
+.panel-body{padding:16px}.stage{display:none}.stage.on{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.field{margin-bottom:13px}.field label{display:flex;align-items:center;gap:7px;color:var(--muted2);font-size:11px;font-weight:700;margin-bottom:6px}.req{color:var(--amber);font-size:9px}.field .help{font-size:10px;color:#5f5f5f;margin-top:5px;line-height:1.4}
+input,select,textarea{width:100%;background:#090909;border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:8px 10px;outline:none}textarea{resize:vertical;min-height:76px;line-height:1.45}input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+input[readonly]{color:#888;background:#101010;border-style:dashed}.locked{position:relative}.locked:after{content:'LOCKED';position:absolute;right:8px;top:29px;font-size:8px;color:#6f6f6f;letter-spacing:.1em}
+.choice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.choice{background:#0b0b0b;border:1px solid var(--border);border-radius:6px;padding:11px;text-align:left;color:#aaa;min-height:73px}.choice:hover{border-color:#3b4d68}.choice.on{border-color:var(--blue);background:#111c2d;color:#fff}.choice b{display:block;font-size:12px}.choice span{display:block;font-size:10px;color:#666;margin-top:5px;line-height:1.35}
+.actions{display:flex;gap:8px;justify-content:flex-end;padding-top:5px}.btn{border:1px solid var(--border2);background:#171717;color:#aaa;border-radius:6px;padding:8px 13px;font-size:12px;font-weight:700}.btn:hover{color:#fff;border-color:#555}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.amber{background:#725b14;border-color:#8c711a;color:#fff}.btn:disabled{opacity:.35;cursor:not-allowed}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}.metric{background:#0a0a0a;border:1px solid var(--border);border-radius:6px;padding:10px}.metric .v{font-size:18px;font-weight:800;color:#fff}.metric .l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+.queue{display:flex;flex-direction:column;gap:8px}.queue-item{border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:6px;padding:10px;background:#0b0b0b;cursor:pointer}.queue-item:hover,.queue-item.on{border-color:#4b6190}.queue-item .qtop{display:flex;gap:8px;align-items:center}.qid{font-family:'Cascadia Code',Consolas,monospace;font-size:11px;color:var(--blue2);font-weight:800}.qstate{margin-left:auto;font-size:9px;color:var(--amber);letter-spacing:.08em}.qtext{font-size:11px;color:#aaa;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.empty{border:1px dashed var(--border2);border-radius:6px;padding:18px;text-align:center;color:#555;font-size:11px}
+.checks{display:grid;gap:7px}.check{display:flex;gap:9px;align-items:flex-start;background:#0b0b0b;border:1px solid var(--border);padding:9px;border-radius:5px}.check input{width:auto;margin-top:2px}.check label{font-size:11px;color:#aaa}.check small{display:block;color:#5e5e5e;margin-top:3px}
+.json{background:#080808;border:1px solid var(--border);border-radius:6px;color:#86ad8b;font:10.5px/1.5 'Cascadia Code',Consolas,monospace;padding:12px;white-space:pre-wrap;word-break:break-word;max-height:440px;overflow:auto}
+.impact{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.impact-card{border:1px solid var(--border);border-radius:6px;padding:10px;background:#0b0b0b}.impact-card b{font-size:10px;color:#aaa}.impact-card p{font-size:10px;color:#606060;margin-top:5px;line-height:1.4}
+.danger{border-color:#492828;background:#170d0d}.danger .panel-head h2{color:#df8c8c}.approval-lock{padding:12px;border:1px solid #4b3e16;background:#151205;border-radius:6px;color:#bba55c;font-size:11px;line-height:1.5;margin-bottom:12px}
+.module-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}.module{border:1px dashed #333;border-radius:7px;padding:13px;color:#666}.module b{display:block;color:#888;font-size:11px}.module p{font-size:10px;line-height:1.4;margin-top:5px}.module span{display:inline-block;margin-top:8px;font-size:9px;letter-spacing:.08em;color:#555}
+.footer-note{margin-top:16px;color:#555;font-size:10px;text-align:center}
+@media(max-width:950px){.layout{grid-template-columns:1fr}.choice-grid{grid-template-columns:1fr 1fr}.workflow{grid-template-columns:1fr}.phase{border-right:0;border-bottom:1px solid var(--border)}.grid3,.summary{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){header{padding:0 12px}.badge{display:none}.shell{padding:12px}.grid2,.grid3,.summary,.choice-grid,.impact,.module-slots{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="mark">◇</div><div><h1>Canon Workbench</h1><small>Claim Atom Canon v1.1</small></div></div>
+  <div class="spacer"></div>
+  <span class="badge">SCHEMA 1.1 TARGET</span>
+  <span class="badge candidate">CANDIDATE-ONLY</span>
+  <a class="navlink" href="atom-builder.html">Open Atom Builder →</a>
+</header>
+
+<main class="shell">
+  <div class="notice"><span>⚠</span><div><strong>No automatic canon mutation.</strong> This static prototype creates local candidate drafts and review packets only. It does not read or write <code>index.sqlite</code>, call an API, or admit an object.</div></div>
+
+  <nav class="workflow" aria-label="Canon workflow">
+    <button class="phase on" data-stage="0"><div class="num">01</div><div class="name">SELECT</div><div class="hint">Choose source and target</div></button>
+    <button class="phase" data-stage="1"><div class="num">02</div><div class="name">ACT</div><div class="hint">Name the proposed operation</div></button>
+    <button class="phase" data-stage="2"><div class="num">03</div><div class="name">STAGE</div><div class="hint">Expose gaps and impact</div></button>
+    <button class="phase" data-stage="3"><div class="num">04</div><div class="name">PREVIEW</div><div class="hint">Inspect candidate packet</div></button>
+    <button class="phase" data-stage="4"><div class="num">05</div><div class="name">APPROVE</div><div class="hint">Prepare human ruling</div></button>
+  </nav>
+
+  <div class="layout">
+    <section>
+      <div class="panel">
+        <div class="panel-head"><h2 id="stage-title">Select intake</h2><p id="stage-caption">Nothing is changed by selection.</p></div>
+        <div class="panel-body">
+          <div class="stage on" data-pane="0">
+            <div class="choice-grid" id="intake-choices">
+              <button class="choice on" data-value="NEW_OBJECT"><b>New object</b><span>Create a new Candidate Claim, Evidence, Proof, or Process atom.</span></button>
+              <button class="choice" data-value="NEW_VERSION"><b>New version</b><span>Propose a successor. Never overwrite a sealed version.</span></button>
+              <button class="choice" data-value="CORRECTION"><b>Correction</b><span>Print a defect and downstream impact where the claim printed.</span></button>
+              <button class="choice" data-value="EDGE_UPDATE"><b>Edge update</b><span>Propose a version-pinned relationship between existing objects.</span></button>
+            </div>
+            <div class="grid2" style="margin-top:14px">
+              <div class="field"><label>Source URI or local path <span class="req">REQUIRED</span></label><input id="source" placeholder="file path, URL, or source object ID"></div>
+              <div class="field"><label>Source span</label><input id="source-span" placeholder="lines 88–94 · §4.2 ¶3"></div>
+              <div class="field"><label>Target atom family</label><input id="atom-family" placeholder="A042 or leave NEW"></div>
+              <div class="field"><label>Current version</label><input id="current-version" placeholder="v1.0 · required for successor/correction"></div>
+            </div>
+          </div>
+
+          <div class="stage" data-pane="1">
+            <div class="grid2">
+              <div class="field"><label>Primary object type <span class="req">REQUIRED</span></label><select id="object-type"><option value="">Choose…</option><option>CLAIM</option><option>EVIDENCE</option><option>PROOF</option><option>PROCESS</option></select></div>
+              <div class="field"><label>Proposed version <span class="req">REQUIRED</span></label><input id="proposed-version" value="v1.0"></div>
+            </div>
+            <div class="field"><label>Technical statement <span class="req">REQUIRED</span></label><textarea id="statement" placeholder="One independently gradable assertion or exact object description…"></textarea></div>
+            <div class="field"><label>Plain statement</label><textarea id="plain" placeholder="Equivalent everyday-language rendering; do not add interpretation."></textarea></div>
+            <div class="grid2">
+              <div class="field locked"><label>Legacy proof_label</label><input id="proof-label" value="NOT_ESTABLISHED" readonly><div class="help">Preserved exactly. This field is never overwritten by one-axiom classification.</div></div>
+              <div class="field"><label>one_axiom_classification</label><select id="one-axiom"><option value="">UNREVIEWED</option><option>AXIOM</option><option>DERIVED</option><option>OPEN</option><option>NOT_APPLICABLE</option></select><div class="help">Independent field. A classification is not a proof label.</div></div>
+            </div>
+          </div>
+
+          <div class="stage" data-pane="2">
+            <div class="grid2">
+              <div class="field"><label>Interpretation boundary <span class="req">REQUIRED</span></label><textarea id="boundary" placeholder="What this does not establish…"></textarea></div>
+              <div class="field"><label>Unresolved fields <span class="req">REQUIRED WHEN OPEN</span></label><textarea id="unresolved" placeholder="OPEN questions, missing receipts, unknown references, undecided rivals…"></textarea></div>
+              <div class="field"><label>Kill condition / return condition</label><textarea id="kill" placeholder="This proposal must be returned or falsified if…"></textarea></div>
+              <div class="field"><label>Next discriminating test</label><textarea id="next-test" placeholder="The smallest test or receipt that would resolve the uncertainty…"></textarea></div>
+            </div>
+            <div class="impact">
+              <div class="impact-card"><b>UNAFFECTED</b><p id="impact-unaffected">No downstream objects selected.</p></div>
+              <div class="impact-card"><b>REVIEW REQUIRED</b><p id="impact-review">Dependency resolution has not run.</p></div>
+              <div class="impact-card"><b>BLOCKED / OPEN</b><p id="impact-open">Unresolved items remain visible in the packet.</p></div>
+            </div>
+            <div class="checks" style="margin-top:12px">
+              <div class="check"><input type="checkbox" id="check-source"><label for="check-source">Source is preserved or resolvable.<small>A path is a pointer, not proof of source integrity.</small></label></div>
+              <div class="check"><input type="checkbox" id="check-boundary"><label for="check-boundary">Interpretation boundary has been read.<small>Formal, empirical, bridge, and theological grades remain separate.</small></label></div>
+              <div class="check"><input type="checkbox" id="check-candidate"><label for="check-candidate">I understand this remains Candidate.<small>Staging does not authorize admission or database mutation.</small></label></div>
+            </div>
+          </div>
+
+          <div class="stage" data-pane="3">
+            <div class="summary">
+              <div class="metric"><div class="v" id="preview-type">—</div><div class="l">Object type</div></div>
+              <div class="metric"><div class="v" id="preview-version">—</div><div class="l">Version</div></div>
+              <div class="metric"><div class="v" style="color:var(--amber)">CANDIDATE</div><div class="l">Graph</div></div>
+              <div class="metric"><div class="v" id="preview-open">0</div><div class="l">Open items</div></div>
+            </div>
+            <pre class="json" id="preview-json">Complete SELECT, ACT, and STAGE to build a preview.</pre>
+            <div class="actions"><button class="btn" id="copy-btn">Copy JSON</button><button class="btn" id="download-btn">Download candidate</button><button class="btn primary" id="stage-btn">Add to local review queue</button></div>
+          </div>
+
+          <div class="stage" data-pane="4">
+            <div class="approval-lock"><strong>Human gate:</strong> this page does not perform admission. It prepares a ruling packet for a named reviewer. Applying that ruling requires a separate, authenticated implementation against a staged database—not this page and not the existing live SQLite file.</div>
+            <div class="grid2">
+              <div class="field"><label>Selected candidate</label><input id="approval-candidate" readonly placeholder="Choose an item from the update queue"></div>
+              <div class="field"><label>Ruling actor <span class="req">REQUIRED</span></label><input id="ruling-actor" placeholder="Named human reviewer"></div>
+              <div class="field"><label>Proposed ruling</label><select id="ruling"><option>RETURN_FOR_REVISION</option><option>ADMIT_TO_STAGED_GRAPH</option><option>WITHDRAW</option><option>SUPERSEDE</option></select></div>
+              <div class="field"><label>Ruling date</label><input id="ruling-date" type="date"></div>
+            </div>
+            <div class="field"><label>Rationale <span class="req">REQUIRED</span></label><textarea id="rationale" placeholder="Why this ruling is warranted; unresolved fields remain printed…"></textarea></div>
+            <div class="actions"><button class="btn amber" id="ruling-packet-btn">Prepare ruling packet</button></div>
+          </div>
+
+          <div class="actions" id="nav-actions"><button class="btn" id="back-btn" disabled>← Back</button><button class="btn primary" id="next-btn">Continue →</button></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Future modules</h2><p>Reserved without inventing behavior</p></div>
+        <div class="panel-body module-slots">
+          <div class="module"><b>Canon Drift</b><p>Compare sealed source/version fields and identify review-required changes.</p><span>MODULE SLOT 01 · NOT CONNECTED</span></div>
+          <div class="module"><b>Receipt Verifier</b><p>Validate proof and process receipts without promoting their interpretations.</p><span>MODULE SLOT 02 · NOT CONNECTED</span></div>
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <div class="panel-head"><h2>Canonical version</h2></div>
+        <div class="panel-body">
+          <div class="summary" style="grid-template-columns:1fr 1fr">
+            <div class="metric"><div class="v">1.1</div><div class="l">Target schema</div></div>
+            <div class="metric"><div class="v">4</div><div class="l">Object layers</div></div>
+          </div>
+          <p style="font-size:11px;color:#777;line-height:1.55">Contract: immutable family identity, versioned payloads, first-class edges and corrections, and separate Candidate/Admitted graph memberships.</p>
+          <div class="actions" style="justify-content:flex-start;margin-top:8px"><a class="navlink" href="../__1_Version_Last_Version/CLAIM_ATOM_SQL_SCHEMA_README.md">Schema notes</a></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Update queue</h2><p id="queue-count">0 local drafts</p></div>
+        <div class="panel-body"><div class="queue" id="queue"><div class="empty">No local candidate drafts. Complete the staged workflow to add one.</div></div><div class="actions" style="margin-top:10px"><button class="btn" id="clear-btn">Clear local drafts</button></div></div>
+      </div>
+
+      <div class="panel danger">
+        <div class="panel-head"><h2>Mutation boundary</h2></div>
+        <div class="panel-body" style="font-size:11px;color:#9d7777;line-height:1.55">
+          <p>Not connected to <code>index.sqlite</code>.</p><p>No promotion token is accepted.</p><p>No API request is sent.</p><p>No Candidate becomes Admitted here.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="footer-note">Canon Workbench prototype · local review state only · detailed atom authoring remains in Atom Builder</div>
+</main>
+
+<script>
+'use strict';
+const STORAGE_KEY='ftp_canon_workbench_v1_1_candidates';
+const stages=[
+  ['Select intake','Nothing is changed by selection.'],
+  ['Describe the action','Preserve legacy fields and state the proposed successor.'],
+  ['Stage for review','Expose unresolved fields and expected impact before preview.'],
+  ['Preview candidate packet','Candidate JSON is a review artifact, not canonical data.'],
+  ['Prepare human ruling','A ruling packet is not an applied admission event.']
+];
+let currentStage=0;
+let intake='NEW_OBJECT';
+let queue=readQueue();
+let selectedId='';
+
+const $=id=>document.getElementById(id);
+const val=id=>$(id).value.trim();
+const iso=()=>new Date().toISOString();
+function uuid(){return crypto.randomUUID?crypto.randomUUID():'draft-'+Date.now()+'-'+Math.random().toString(16).slice(2)}
+function readQueue(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch{return[]}}
+function saveQueue(){localStorage.setItem(STORAGE_KEY,JSON.stringify(queue));renderQueue()}
+function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+
+function setStage(n){
+  currentStage=Math.max(0,Math.min(4,n));
+  document.querySelectorAll('.phase').forEach((e,i)=>{e.classList.toggle('on',i===currentStage);e.classList.toggle('done',i<currentStage)});
+  document.querySelectorAll('.stage').forEach((e,i)=>e.classList.toggle('on',i===currentStage));
+  $('stage-title').textContent=stages[currentStage][0];$('stage-caption').textContent=stages[currentStage][1];
+  $('back-btn').disabled=currentStage===0;$('next-btn').style.display=currentStage===4?'none':'';
+  $('nav-actions').style.display=currentStage===3||currentStage===4?'none':'flex';
+  if(currentStage===3)renderPreview();
+}
+
+document.querySelectorAll('.phase').forEach((b,i)=>b.addEventListener('click',()=>setStage(i)));
+document.querySelectorAll('#intake-choices .choice').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#intake-choices .choice').forEach(x=>x.classList.remove('on'));b.classList.add('on');intake=b.dataset.value;
+}));
+$('back-btn').addEventListener('click',()=>setStage(currentStage-1));
+$('next-btn').addEventListener('click',()=>{
+  const error=validateStage(currentStage);if(error){alert(error);return}setStage(currentStage+1);
+});
+
+function validateStage(n){
+  if(n===0){if(!val('source'))return 'A source URI, local path, or source object ID is required.';if(intake!=='NEW_OBJECT'&&!val('atom-family'))return 'A target atom family is required for this action.';if(intake!=='NEW_OBJECT'&&!val('current-version'))return 'The current version is required so history is not overwritten.'}
+  if(n===1){if(!val('object-type'))return 'Choose exactly one primary object type.';if(!val('proposed-version'))return 'A proposed version is required.';if(!val('statement'))return 'The technical statement is required.'}
+  if(n===2){if(!val('boundary'))return 'The interpretation boundary is required.';if(!$('check-source').checked||!$('check-boundary').checked||!$('check-candidate').checked)return 'Complete all three staging acknowledgements.'}
+  return '';
+}
+
+function packet(){
+  const unresolved=val('unresolved').split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  return{
+    schema_version:'claim-atom-candidate-packet/1.1',
+    packet_id:selectedId||uuid(),
+    generated_at:iso(),
+    authority:{state:'CANDIDATE_DRAFT',validated:false,admitted:false,mutation_performed:false},
+    intake:{action:intake,source_uri:val('source'),source_span:val('source-span')||null,target_atom_family:val('atom-family')||'NEW',current_version:val('current-version')||null},
+    proposed_object:{primary_type:val('object-type'),proposed_version:val('proposed-version'),statement_technical:val('statement'),statement_plain:val('plain')||null,legacy_proof_label:val('proof-label'),one_axiom_classification:val('one-axiom')||'UNREVIEWED'},
+    review:{interpretation_boundary:val('boundary'),unresolved_items:unresolved,kill_or_return_condition:val('kill')||null,next_discriminating_test:val('next-test')||null},
+    graph_membership:{current:'NONE',requested:'CANDIDATE',admitted_membership_created:false},
+    warnings:['Local prototype packet only','Not schema-validated','Not admitted','No SQLite mutation performed']
+  };
+}
+function renderPreview(){
+  const p=packet();selectedId=p.packet_id;$('preview-json').textContent=JSON.stringify(p,null,2);$('preview-type').textContent=p.proposed_object.primary_type||'—';$('preview-version').textContent=p.proposed_object.proposed_version||'—';$('preview-open').textContent=p.review.unresolved_items.length;
+}
+function download(name,text){const blob=new Blob([text],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('copy-btn').addEventListener('click',async()=>{await navigator.clipboard.writeText($('preview-json').textContent);$('copy-btn').textContent='Copied';setTimeout(()=>$('copy-btn').textContent='Copy JSON',1000)});
+$('download-btn').addEventListener('click',()=>download('canon-candidate-'+selectedId+'.json',$('preview-json').textContent));
+$('stage-btn').addEventListener('click',()=>{const p=packet();p.packet_id=selectedId;const i=queue.findIndex(x=>x.packet_id===p.packet_id);if(i>=0)queue[i]=p;else queue.unshift(p);saveQueue();alert('Added to the local Candidate review queue. Nothing was admitted or written to SQLite.');setStage(4);selectQueue(p.packet_id)});
+
+function renderQueue(){
+  $('queue-count').textContent=queue.length+' local draft'+(queue.length===1?'':'s');
+  $('queue').innerHTML=queue.length?queue.map(p=>`<div class="queue-item${p.packet_id===selectedId?' on':''}" data-id="${esc(p.packet_id)}"><div class="qtop"><span class="qid">${esc(p.intake.target_atom_family)} · ${esc(p.proposed_object.proposed_version)}</span><span class="qstate">CANDIDATE</span></div><div class="qtext">${esc(p.proposed_object.statement_technical)}</div></div>`).join(''):'<div class="empty">No local candidate drafts. Complete the staged workflow to add one.</div>';
+  document.querySelectorAll('.queue-item').forEach(e=>e.addEventListener('click',()=>{selectQueue(e.dataset.id);setStage(4)}));
+}
+function selectQueue(id){selectedId=id;const p=queue.find(x=>x.packet_id===id);$('approval-candidate').value=p?`${p.intake.target_atom_family} · ${p.proposed_object.proposed_version} · ${id}`:'';renderQueue()}
+$('clear-btn').addEventListener('click',()=>{if(!queue.length||!confirm('Clear local browser drafts? This does not affect canon or SQLite.'))return;queue=[];selectedId='';saveQueue();$('approval-candidate').value=''});
+$('ruling-packet-btn').addEventListener('click',()=>{
+  const p=queue.find(x=>x.packet_id===selectedId);if(!p){alert('Select a Candidate from the local update queue.');return}if(!val('ruling-actor')||!val('rationale')){alert('A named ruling actor and rationale are required.');return}
+  const ruling={schema_version:'canon-ruling-proposal/1.1',ruling_packet_id:uuid(),created_at:iso(),candidate_packet_id:p.packet_id,actor:val('ruling-actor'),ruling_date:val('ruling-date')||new Date().toISOString().slice(0,10),proposed_ruling:val('ruling'),rationale:val('rationale'),unresolved_items_preserved:p.review.unresolved_items,authority:{applied:false,graph_mutation:false,note:'Review packet only. Requires separate authenticated application and receipt.'}};
+  download('ruling-proposal-'+p.packet_id+'.json',JSON.stringify(ruling,null,2));
+});
+
+renderQueue();setStage(0);
+</script>
+</body>
+</html>

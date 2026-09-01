@@ -1,4 +1,4 @@
-# Preserved Semantic AI files that already violate the repository no-explicit-any rule.
+# Preserved Canonization files that already violate the repository no-explicit-any rule.
 # They remain build/type checked; remediation is tracked in BUILD_AND_TEST_RECEIPT.md.
 src/epistemic/graph-exporter.ts
 src/indexing/markdown-exporter.ts

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Review Queue</title>
+<meta name="canon-surface" content='{"produces":"C2_CANDIDATE","writes_canon":false}'>
+<style>
+  :root{--bg:#0f0f0f;--fg:#e0e0e0;--dim:#888;--line:#262626;--accent:#60d0ff;
+        --ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--sel:#1d3a4a}
+  *{box-sizing:border-box}
+  body{margin:0;font:13px/1.45 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--fg);
+       display:flex;flex-direction:column;height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:16px;color:var(--accent)}
+  .badge{font-size:10px;letter-spacing:.08em;padding:3px 7px;border:1px solid var(--line);
+         border-radius:3px;color:var(--dim)}
+  .badge.tier{color:var(--warn);border-color:#4a3a10}
+  .spacer{flex:1}
+  #counts{color:var(--dim);font-size:12px}
+  #filter{background:#161616;border:1px solid var(--line);color:var(--fg);border-radius:4px;
+          padding:6px 10px;width:220px;font-size:12px}
+  main{flex:1;overflow:auto}
+  table{width:100%;border-collapse:collapse}
+  th{position:sticky;top:0;background:#141414;text-align:left;font-size:10px;letter-spacing:.08em;
+     color:var(--dim);padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600}
+  td{padding:5px 10px;border-bottom:1px solid #1a1a1a;white-space:nowrap;overflow:hidden;
+     text-overflow:ellipsis;max-width:0}
+  tr.row{cursor:pointer}
+  tr.row:hover{background:#151515}
+  tr.cursor{outline:1px solid var(--accent);outline-offset:-1px}
+  tr.picked{background:var(--sel)}
+  tr.blocked td:first-child{color:var(--bad)}
+  .conf{font-variant-numeric:tabular-nums;color:var(--dim)}
+  .reason{color:var(--bad);font-size:11px}
+  footer{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--line);
+         background:#111}
+  button{background:#1b1b1b;border:1px solid var(--line);color:var(--fg);padding:7px 13px;
+         border-radius:4px;cursor:pointer;font-size:12px}
+  button:hover:not(:disabled){border-color:var(--accent)}
+  button:disabled{opacity:.4;cursor:default}
+  button.primary{background:#12333f;border-color:#1d5f78;color:#bfe9ff}
+  kbd{background:#1c1c1c;border:1px solid var(--line);border-radius:3px;padding:1px 5px;
+      font:11px monospace;color:var(--dim)}
+  #hint{color:var(--dim);font-size:11px}
+  #empty{padding:48px 16px;text-align:center;color:var(--dim)}
+  #toast{padding:8px 16px;font-size:12px;border-top:1px solid var(--line);display:none}
+  #toast.show{display:block}
+  #toast.err{color:var(--bad)}
+  #toast.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Review Queue</h1>
+  <span class="badge tier">ACCEPT → C2_CANDIDATE</span>
+  <span class="badge">NO CANON WRITE</span>
+  <span class="spacer"></span>
+  <span id="counts"></span>
+  <input id="filter" placeholder="filter by path or id" />
+</header>
+
+<main>
+  <table>
+    <thead><tr>
+      <th style="width:26px"></th>
+      <th style="width:150px">Sidecar</th>
+      <th>Source</th>
+      <th style="width:60px">Conf</th>
+      <th style="width:150px">Captured</th>
+      <th style="width:300px">Status</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" hidden>Nothing waiting for review.</div>
+</main>
+
+<div id="toast"></div>
+
+<footer>
+  <button id="accept" class="primary" disabled>Accept to Candidate</button>
+  <button id="selectAll">Select all ready</button>
+  <button id="clear">Clear</button>
+  <span class="spacer"></span>
+  <span id="hint">
+    <kbd>J</kbd><kbd>K</kbd> move · <kbd>Space</kbd> pick · <kbd>A</kbd> all ready ·
+    <kbd>Enter</kbd> accept
+  </span>
+</footer>
+
+<script>
+// The queue arrives from Rust via loadQueue(). Admission (C3) is deliberately
+// absent from this surface: there is no control here that can reach it.
+let items = [], picked = new Set(), cursor = 0;
+
+const $ = id => document.getElementById(id);
+const visible = () => {
+  const q = $('filter').value.trim().toLowerCase();
+  return !q ? items
+    : items.filter(i => (i.source_path + ' ' + i.sidecar_id).toLowerCase().includes(q));
+};
+
+function render() {
+  const rows = visible();
+  $('rows').innerHTML = rows.map((it, idx) => {
+    const cls = ['row', idx === cursor ? 'cursor' : '', picked.has(it.sidecar_id) ? 'picked' : '',
+                 it.blocking_reasons.length ? 'blocked' : ''].filter(Boolean).join(' ');
+    // Blocked rows show the exact reason rather than a bare failure, so a
+    // refusal never needs to be investigated elsewhere.
+    const status = it.blocking_reasons.length
+      ? `<span class="reason">${esc(it.blocking_reasons.join('; '))}</span>`
+      : esc(it.status);
+    const conf = it.confidence == null ? '—' : it.confidence.toFixed(2);
+    return `<tr class="${cls}" data-id="${esc(it.sidecar_id)}">
+      <td>${picked.has(it.sidecar_id) ? '&#10003;' : ''}</td>
+      <td>${esc(it.sidecar_id)}</td>
+      <td title="${esc(it.source_path)}">${esc(it.source_path)}</td>
+      <td class="conf">${conf}</td>
+      <td>${esc(it.captured_at)}</td>
+      <td>${status}</td></tr>`;
+  }).join('');
+
+  $('empty').hidden = rows.length > 0;
+  const ready = items.filter(i => !i.blocking_reasons.length).length;
+  $('counts').textContent =
+    `${items.length} pending · ${ready} ready · ${items.length - ready} blocked · ${picked.size} picked`;
+  $('accept').disabled = picked.size === 0;
+  document.querySelector('tr.cursor')?.scrollIntoView({block: 'nearest'});
+}
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function toggle(id) {
+  const it = items.find(i => i.sidecar_id === id);
+  // Blocked rows cannot be picked: the bulk path would only refuse them again.
+  if (!it || it.blocking_reasons.length) return;
+  picked.has(id) ? picked.delete(id) : picked.add(id);
+  render();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.id === 'filter' && e.key !== 'Escape') return;
+  const rows = visible();
+  if (e.key === 'j' || e.key === 'ArrowDown') { cursor = Math.min(cursor + 1, rows.length - 1); render(); e.preventDefault(); }
+  else if (e.key === 'k' || e.key === 'ArrowUp') { cursor = Math.max(cursor - 1, 0); render(); e.preventDefault(); }
+  else if (e.key === ' ') { if (rows[cursor]) toggle(rows[cursor].sidecar_id); e.preventDefault(); }
+  else if (e.key === 'a') { selectAllReady(); e.preventDefault(); }
+  else if (e.key === 'Enter') { accept(); e.preventDefault(); }
+  else if (e.key === 'Escape') { picked.clear(); $('filter').blur(); render(); }
+});
+
+function selectAllReady() {
+  // Scoped to the current filter, so "all ready" means what is on screen.
+  visible().filter(i => !i.blocking_reasons.length).forEach(i => picked.add(i.sidecar_id));
+  render();
+}
+
+function accept() {
+  if (!picked.size) return;
+  send({action: 'accept_to_candidate', ids: [...picked]});
+}
+
+function send(msg) {
+  if (window.ipc) window.ipc.postMessage(JSON.stringify(msg));
+}
+
+$('rows').addEventListener('click', e => {
+  const tr = e.target.closest('tr.row');
+  if (tr) toggle(tr.dataset.id);
+});
+$('filter').addEventListener('input', () => { cursor = 0; render(); });
+$('accept').addEventListener('click', accept);
+$('selectAll').addEventListener('click', selectAllReady);
+$('clear').addEventListener('click', () => { picked.clear(); render(); });
+
+// ── Called from Rust ────────────────────────────────────────────────────
+window.loadQueue = q => { items = q.items || []; picked.clear(); cursor = 0; render(); };
+
+window.acceptResult = r => {
+  const t = $('toast');
+  const n = (r.accepted || []).length, bad = r.refused || [];
+  t.className = 'show ' + (bad.length ? 'err' : 'ok');
+  t.textContent = bad.length
+    ? `${n} accepted · ${bad.length} refused — ` + bad.map(x => `${x[0]}: ${x[1]}`).join(' · ')
+    : `${n} accepted to candidate.`;
+  send({action: 'reload'});
+};
+
+send({action: 'reload'});
+</script>
+</body>
+</html>

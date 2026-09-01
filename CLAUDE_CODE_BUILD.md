@@ -28,7 +28,7 @@ npm run build
 ## Deploy to Vault
 ```powershell
 # Target plugin folder (re-enable after disabled)
-$target = "O:\Theophysics_Master\THEOPHYSICS\.obsidian\plugins\semantic-ai"
+$target = "O:\Theophysics_Master\THEOPHYSICS\.obsidian\plugins\canonization"
 
 # Create if needed
 New-Item -ItemType Directory -Force -Path $target
@@ -43,7 +43,7 @@ Copy-Item "styles.css" $target
 User needs to:
 1. Open Obsidian
 2. Settings → Community Plugins
-3. Enable "Semantic AI"
+3. Enable "Canonization"
 
 ## What the Fix Does
 - Limits file processing to batches of 50

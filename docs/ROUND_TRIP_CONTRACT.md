@@ -1,6 +1,6 @@
 # Round-trip contract
 
-1. Semantic AI produces candidate JSON and Markdown projection.
+1. Canonization produces candidate JSON and Markdown projection.
 2. Workbench imports JSON, validates authority fields, and preserves the entire object including unknown fields.
 3. Only review-owned fields are edited. Protected blind discovery, record identity, schema version, candidate label, and admission reference are locked.
 4. Local Save is a recoverable draft, not a governed export.

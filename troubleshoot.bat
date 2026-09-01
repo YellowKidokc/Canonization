@@ -1,6 +1,6 @@
 @echo off
 echo ============================================
-echo   Semantic AI - Troubleshooter
+echo   Canonization - Troubleshooter
 echo   Built with Claude (Anthropic)
 echo ============================================
 echo.
@@ -165,7 +165,7 @@ echo ============================================
 echo.
 echo Package info:
 if exist "package.json" (
-    echo Name: semantic-ai
+    echo Name: canonization
     for /f "tokens=2 delims=:," %%a in ('findstr "version" package.json') do echo Version:%%a
 )
 echo.

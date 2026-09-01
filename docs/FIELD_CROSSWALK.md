@@ -1,6 +1,6 @@
 # Field crosswalk
 
-| Concern | Semantic AI | Governed JSON | Markdown | HTML | Cache | PostgreSQL |
+| Concern | Canonization | Governed JSON | Markdown | HTML | Cache | PostgreSQL |
 |---|---|---|---|---|---|---|
 | Identity/version | UUID client | `recordId`, `schemaVersion` | frontmatter | full record | stable key/version | records/versions |
 | Source/provenance | selected note/folder | `source`, provenance/hashes | links/hash | read-only | base hash | source artifacts |

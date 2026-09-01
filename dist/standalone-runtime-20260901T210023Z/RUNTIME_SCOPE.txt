@@ -1,0 +1,1 @@
+Static disposable fixture inspection only. Obsidian desktop was not launched. Browser file-picker and plugin enable/disable actions remain manual.

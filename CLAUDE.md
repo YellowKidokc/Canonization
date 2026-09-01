@@ -1,4 +1,4 @@
-# Theophysics Semantic AI — Obsidian Plugin Development Guide
+# Theophysics Canonization — Obsidian Plugin Development Guide
 
 > This file is the compressed specification for any AI programmer working on this plugin.
 > It contains: (1) the Obsidian Plugin Skill kernel (all 27 rules, submission requirements,

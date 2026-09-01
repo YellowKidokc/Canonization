@@ -53,7 +53,7 @@ export class ConceptRegistry {
    */
   constructor(vault: Vault, pluginDir?: string) {
     this.vault = vault;
-    const base = pluginDir || `${vault.configDir}/plugins/semantic-ai`;
+    const base = pluginDir || `${vault.configDir}/plugins/canonization`;
     this.registryPath = normalizePath(`${base}/${REGISTRY_FILENAME}`);
     this.data = this.createEmptyRegistry();
   }
@@ -110,7 +110,7 @@ export class ConceptRegistry {
     } catch (error) {
       // A corrupt registry must not stop the plugin loading; start fresh and
       // leave the old file alone so it can be recovered by hand.
-      new Notice('Semantic AI could not read its concept registry, so it started a new one.');
+      new Notice('Canonization could not read its concept registry, so it started a new one.');
       this.data = this.createEmptyRegistry();
       this.loaded = true;
     }
@@ -134,7 +134,7 @@ export class ConceptRegistry {
       await this.vault.adapter.write(this.registryPath, JSON.stringify(this.data, null, 2));
       this.dirty = false;
     } catch (error) {
-      new Notice('Semantic AI could not save its concept registry.');
+      new Notice('Canonization could not save its concept registry.');
     }
   }
 

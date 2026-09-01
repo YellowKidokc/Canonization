@@ -34,7 +34,7 @@ export class SupraInfraqueGraphRegistry {
 
   constructor(vault: Vault, pluginDir?: string) {
     this.vault = vault;
-    this.path = normalizePath(`${pluginDir || `${vault.configDir}/plugins/semantic-ai`}/${GRAPH_FILENAME}`);
+    this.path = normalizePath(`${pluginDir || `${vault.configDir}/plugins/canonization`}/${GRAPH_FILENAME}`);
   }
 
   async load(): Promise<void> {
@@ -82,7 +82,7 @@ export class SupraInfraqueGraphRegistry {
         const inferredType = this.objectTypeFromTags(tags);
         if (existingObject.status === 'proposed' && existingObject.objectType === 'CLAIM' && inferredType !== 'CLAIM') {
           existingObject.objectType = inferredType;
-          this.recordEvent('assessed', existingObject.objectId, `Proposal reclassified from existing Semantic AI tags as ${inferredType}.`, actor);
+          this.recordEvent('assessed', existingObject.objectId, `Proposal reclassified from existing Canonization tags as ${inferredType}.`, actor);
           this.dirty = true;
         }
         this.addTagClassifications(occurrence.objectId, tags, occurrence.spanId, actor);
@@ -185,8 +185,8 @@ export class SupraInfraqueGraphRegistry {
         if (duplicate) continue;
         this.data.classifications[generateUUID()] = {
           assignmentId: generateUUID(), objectId, axis: item.axis, term: item.term,
-          classifier: `semantic-ai:${actor}`, confidence: null,
-          rationale: 'Imported from an existing Semantic AI tag; requires epistemic review.',
+          classifier: `canonization:${actor}`, confidence: null,
+          rationale: 'Imported from an existing Canonization tag; requires epistemic review.',
           sourceSpanIds: [spanId], createdAt: new Date().toISOString(), status: 'proposed'
         };
         this.dirty = true;
