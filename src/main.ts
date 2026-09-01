@@ -52,6 +52,8 @@ import {
 import { SupraInfraqueGraphRegistry } from './epistemic/graph-registry';
 import { writeGraphExports } from './epistemic/graph-exporter';
 import { CanonizationClient } from './obsidian/canonization-client';
+import { COMPLETE_STAGE_RUN } from './engine/stages';
+import { StageSelectionModal } from './ui/stage-selection-modal';
 import {
   IndexConfirmationModal,
   IndexProgressModal,
@@ -146,8 +148,8 @@ export default class SemanticAIPlugin extends Plugin {
   private registerCommands(): void {
     this.addCommand({ id: 'canonize-paper', name: 'Canonize this paper', editorCallback: async (_editor, view) => { if (view.file) { const record=await this.canonizationClient.canonizeFile(view.file); new Notice(`Created candidate ${record.recordId}; not admitted.`); } } });
     this.addCommand({ id: 'canonize-folder', name: 'Canonize this folder', callback: async () => { const folder=this.app.workspace.getActiveFile()?.parent; if(!folder)return new Notice('Open a note in the folder first.'); const records=await this.canonizationClient.canonizeFolder(folder); new Notice(`Created ${records.length} candidate records; zero admissions.`); } });
-    this.addCommand({ id: 'canonize-complete', name: 'Run complete canonization', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,["discovery","classification","reconciliation","claims","definitions","mathematics","theology","bridges","defeaters","review"]); new Notice('Complete candidate-stage packet created; not admitted.'); } });
-    this.addCommand({ id: 'canonize-selected-stages', name: 'Run selected canonization stages', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,["discovery","classification","reconciliation"]); new Notice('Selected candidate stages created; not admitted.'); } });
+    this.addCommand({ id: 'canonize-complete', name: 'Run complete canonization', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,[...COMPLETE_STAGE_RUN]); new Notice('Complete candidate-stage packet created; not admitted.'); } });
+    this.addCommand({ id: 'canonize-selected-stages', name: 'Run selected canonization stages', editorCallback: async (_editor, view) => { if(!view.file)return; const file=view.file; new StageSelectionModal(this.app,async(stages)=>{const record=await this.canonizationClient.canonizeFile(file,stages);new Notice(`Executed ${stages.join(', ')} for candidate ${record.recordId}; not admitted.`);}).open(); } });
     this.addCommand({ id: 'open-candidate-workbench', name: 'Open candidate in workbench', callback: () => { window.open('web/workbench.html','_blank','noopener'); } });
     this.addCommand({ id: 'export-candidate-json', name: 'Export candidate JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.importReviewed(view.file); new Notice('Candidate JSON validated and exported to Canonization/records.'); } });
     this.addCommand({ id: 'import-reviewed-json', name: 'Import reviewed JSON', editorCallback: async (_editor, view) => { if(view.file) { const record=await this.canonizationClient.importReviewed(view.file); new Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`); } } });
@@ -399,6 +401,9 @@ export default class SemanticAIPlugin extends Plugin {
           menu.addSeparator();
 
           menu.addItem((item) => {
+            item.setTitle('Canonize note as candidate').setIcon('shield-check').onClick(async () => { const record=await this.canonizationClient.canonizeFile(file); new Notice(`Created candidate ${record.recordId}; not admitted.`); });
+          });
+          menu.addItem((item) => {
             item
               .setTitle('Classify note')
               .setIcon('brain')
@@ -429,6 +434,9 @@ export default class SemanticAIPlugin extends Plugin {
         if (file instanceof TFolder) {
           menu.addSeparator();
 
+          menu.addItem((item) => {
+            item.setTitle('Canonize folder as candidates').setIcon('shield-check').onClick(async () => { const records=await this.canonizationClient.canonizeFolder(file); new Notice(`Created ${records.length} candidates; zero admissions.`); });
+          });
           menu.addItem((item) => {
             item
               .setTitle('Classify every note in this folder')

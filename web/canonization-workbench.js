@@ -1,42 +1,16 @@
-(function () {
-  "use strict";
-  const STATUS = "CANDIDATE_DRAFT  NOT ADMITTED";
-  const allowedStates = ["Candidate", "Frozen", "Reviewed", "Voted", "Rejected", "Superseded"];
-  const key = "canonization.local-draft.v1";
-  let governed = null;
-  let draft = null;
-  const byId = (id) => document.getElementById(id);
-  const clone = (value) => JSON.parse(JSON.stringify(value));
-  const download = (name, text) => { const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type:"application/json"})); a.download=name; a.click(); URL.revokeObjectURL(a.href); };
-  function validate(value) {
-    const errors=[];
-    if (!value || typeof value !== "object") errors.push("Record must be an object.");
-    if (value?.schemaVersion !== "1.0.0") errors.push("schemaVersion must be 1.0.0.");
-    if (value?.statusLabel !== STATUS) errors.push(`statusLabel must remain ${STATUS}.`);
-    if (!value?.recordId || !value?.source?.contentHash) errors.push("recordId and source.contentHash are required.");
-    if (!value?.protectedBlindDiscovery?.immutable) errors.push("Protected blind discovery must be immutable.");
-    if (!allowedStates.includes(value?.workflowState)) errors.push("This workbench cannot create Admitted state.");
-    if (value?.admissionEventReference !== null) errors.push("Candidate/review exports cannot carry an admission event.");
-    return errors;
-  }
-  function render() {
-    byId("record").value=JSON.stringify(draft,null,2);
-    byId("state").value=draft?.workflowState ?? "Candidate";
-    byId("summary").value=String(draft?.summary ?? "");
-    byId("status").textContent=`${draft?.workflowState ?? "No record"} · ${STATUS}`;
-    byId("fields").textContent=draft ? JSON.stringify(draft,null,2) : "Import a governed JSON record.";
-  }
-  function applyPermittedFields() {
-    if (!draft) return;
-    draft.workflowState=byId("state").value; draft.summary=byId("summary").value;
-    draft.statusLabel=STATUS; draft.admissionEventReference=null;
-    draft.updated={at:new Date().toISOString(),by:"html-workbench"};
-    draft.protectedBlindDiscovery=clone(governed.protectedBlindDiscovery);
-  }
-  function save() { applyPermittedFields(); const errors=validate(draft); if(errors.length) return alert(errors.join("\n")); localStorage.setItem(key,JSON.stringify({savedAt:new Date().toISOString(),baseHash:governed.source.contentHash,record:draft})); render(); }
-  byId("save").onclick=save;
-  byId("export").onclick=()=>{ save(); if(draft) download(`${draft.recordId}.reviewed.json`,JSON.stringify(draft,null,2)); };
-  byId("reset").onclick=()=>{ if(!governed)return; draft=clone(governed); localStorage.removeItem(key); render(); };
-  byId("import").onchange=async(event)=>{ const file=event.target.files[0]; if(!file)return; const value=JSON.parse(await file.text()); const errors=validate(value); if(errors.length)return alert(errors.join("\n")); governed=clone(value); const cached=JSON.parse(localStorage.getItem(key)||"null"); draft=cached?.record?.recordId===value.recordId?cached.record:clone(value); render(); };
-  const cached=JSON.parse(localStorage.getItem(key)||"null"); if(cached?.record){ governed=clone(cached.record); draft=cached.record; render(); }
+(function(){"use strict";
+const STATUS="CANDIDATE_DRAFT  NOT ADMITTED",STATES=["Candidate","Frozen","Reviewed","Voted","Rejected","Superseded"],DB="canonization-non-authoritative-drafts",STORE="drafts";
+let governed=null,draft=null,version=0;const el=id=>document.getElementById(id),clone=v=>JSON.parse(JSON.stringify(v)),same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const download=(name,text)=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));a.download=name;a.click();URL.revokeObjectURL(a.href);};
+function db(){return new Promise((ok,no)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:"recordId"});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});}
+async function get(id){const d=await db();return new Promise((ok,no)=>{const r=d.transaction(STORE).objectStore(STORE).get(id);r.onsuccess=()=>ok(r.result||null);r.onerror=()=>no(r.error);});}
+async function put(value,expected){const d=await db();return new Promise((ok,no)=>{const tx=d.transaction(STORE,"readwrite"),s=tx.objectStore(STORE),r=s.get(value.recordId);r.onsuccess=()=>{const current=r.result;if((current?.version||0)!==expected){no(new Error("VERSION_CONFLICT: draft changed in another tab"));return;}s.put({...value,version:expected+1});};tx.oncomplete=()=>ok(expected+1);tx.onerror=()=>no(tx.error);});}
+async function remove(id){const d=await db();return new Promise((ok,no)=>{const tx=d.transaction(STORE,"readwrite");tx.objectStore(STORE).delete(id);tx.oncomplete=ok;tx.onerror=()=>no(tx.error);});}
+function validate(v){const e=[];if(!v||typeof v!=="object"||Array.isArray(v))return["Record must be an object."];if(v.schemaVersion!=="1.0.0")e.push("schemaVersion must be 1.0.0.");if(v.statusLabel!==STATUS)e.push(`statusLabel must remain ${STATUS}.`);if(!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(v.recordId||""))e.push("recordId must be a UUID.");if(!/^sha256:[0-9a-f]{64}$/i.test(v.source?.contentHash||""))e.push("source.contentHash must be SHA-256.");if(v.protectedBlindDiscovery?.immutable!==true||v.protectedBlindDiscovery?.inputPolicy!=="SOURCE_CONTENT_ONLY_NO_INHERITED_METADATA")e.push("Protected blind discovery contract is invalid.");if(!STATES.includes(v.workflowState))e.push("This workbench cannot create Admitted state.");if(v.admissionEventReference!==null)e.push("Candidate/review exports cannot carry an admission event.");return e;}
+function render(){el("record").value=draft?JSON.stringify(draft,null,2):"";el("state").value=draft?.workflowState||"Candidate";el("summary").value=String(draft?.summary||"");el("status").textContent=`${draft?.workflowState||"No record"} · CANDIDATE_DRAFT — NOT ADMITTED`;el("fields").textContent=draft?JSON.stringify(draft,null,2):"Import a governed JSON record.";el("draft-info").textContent=draft?`Non-authoritative browser draft version ${version}; record ${draft.recordId}.`:"No cached draft.";}
+function apply(){if(!draft)return;draft.workflowState=el("state").value;draft.summary=el("summary").value;const note=el("review-note").value.trim();if(note){draft.reviewHistory=Array.isArray(draft.reviewHistory)?draft.reviewHistory:[];draft.reviewHistory.push({at:new Date().toISOString(),by:"human-workbench-user",note,authority:"HUMAN_REVIEW_NOT_ADMISSION"});el("review-note").value="";}draft.statusLabel=STATUS;draft.admissionEventReference=null;draft.updated={at:new Date().toISOString(),by:"html-workbench"};draft.protectedBlindDiscovery=clone(governed.protectedBlindDiscovery);}
+async function save(){if(!draft)return false;apply();const errors=validate(draft);if(errors.length){alert(errors.join("\n"));return false;}try{version=await put({recordId:draft.recordId,baseHash:governed.source.contentHash,baseUpdated:governed.updated,savedAt:new Date().toISOString(),governedExport:false,record:clone(draft)},version);render();return true;}catch(e){alert(e.message);return false;}}
+el("save").onclick=()=>void save();el("export").onclick=async()=>{if(await save())download(`${draft.recordId}.reviewed.json`,JSON.stringify(draft,null,2));};el("reset").onclick=async()=>{if(!governed)return;await remove(governed.recordId);draft=clone(governed);version=0;render();};
+el("import").onchange=async ev=>{try{const f=ev.target.files[0];if(!f)return;const value=JSON.parse(await f.text()),errors=validate(value);if(errors.length){alert(errors.join("\n"));return;}const cached=await get(value.recordId);if(cached&&cached.baseHash!==value.source.contentHash)throw new Error("SOURCE_CONFLICT: governed source hash and cached draft base differ.");if(cached&&!same(cached.baseUpdated,value.updated)&&!same(cached.record,value))throw new Error("VERSION_CONFLICT: governed JSON and browser draft both changed. Export or reset explicitly.");governed=clone(value);draft=cached?clone(cached.record):clone(value);version=cached?.version||0;render();}catch(e){alert(`Import refused: ${e.message}`);}};
+window.CanonizationWorkbench={validate};
 }());
