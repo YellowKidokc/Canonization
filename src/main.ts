@@ -51,6 +51,7 @@ import {
 } from './ui/concept-journey-view';
 import { SupraInfraqueGraphRegistry } from './epistemic/graph-registry';
 import { writeGraphExports } from './epistemic/graph-exporter';
+import { CanonizationClient } from './obsidian/canonization-client';
 import {
   IndexConfirmationModal,
   IndexProgressModal,
@@ -66,6 +67,7 @@ export default class SemanticAIPlugin extends Plugin {
   vaultIndexer: VaultIndexer;
   conceptRegistry: ConceptRegistry;
   supraInfraqueGraph: SupraInfraqueGraphRegistry;
+  canonizationClient: CanonizationClient;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -73,6 +75,7 @@ export default class SemanticAIPlugin extends Plugin {
     this.promptManager = new PromptManager(this.settings);
     this.classifier = new AIClassifier(this.settings, this.promptManager);
     this.vaultIndexer = new VaultIndexer(this.app.vault);
+    this.canonizationClient = new CanonizationClient(this.app);
 
     // Shared registry so the same concept keeps the same UUID across notes.
     this.conceptRegistry = new ConceptRegistry(this.app.vault, this.manifest.dir);
@@ -141,6 +144,14 @@ export default class SemanticAIPlugin extends Plugin {
   /* ---------------------------------------------------------------------- */
 
   private registerCommands(): void {
+    this.addCommand({ id: 'canonize-paper', name: 'Canonize this paper', editorCallback: async (_editor, view) => { if (view.file) { const record=await this.canonizationClient.canonizeFile(view.file); new Notice(`Created candidate ${record.recordId}; not admitted.`); } } });
+    this.addCommand({ id: 'canonize-folder', name: 'Canonize this folder', callback: async () => { const folder=this.app.workspace.getActiveFile()?.parent; if(!folder)return new Notice('Open a note in the folder first.'); const records=await this.canonizationClient.canonizeFolder(folder); new Notice(`Created ${records.length} candidate records; zero admissions.`); } });
+    this.addCommand({ id: 'canonize-complete', name: 'Run complete canonization', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,["discovery","classification","reconciliation","claims","definitions","mathematics","theology","bridges","defeaters","review"]); new Notice('Complete candidate-stage packet created; not admitted.'); } });
+    this.addCommand({ id: 'canonize-selected-stages', name: 'Run selected canonization stages', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,["discovery","classification","reconciliation"]); new Notice('Selected candidate stages created; not admitted.'); } });
+    this.addCommand({ id: 'open-candidate-workbench', name: 'Open candidate in workbench', callback: () => { window.open('web/workbench.html','_blank','noopener'); } });
+    this.addCommand({ id: 'export-candidate-json', name: 'Export candidate JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.importReviewed(view.file); new Notice('Candidate JSON validated and exported to Canonization/records.'); } });
+    this.addCommand({ id: 'import-reviewed-json', name: 'Import reviewed JSON', editorCallback: async (_editor, view) => { if(view.file) { const record=await this.canonizationClient.importReviewed(view.file); new Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`); } } });
+    this.addCommand({ id: 'refresh-candidate-markdown', name: 'Refresh candidate Markdown from JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.refreshFromJson(view.file); new Notice('Candidate Markdown projection refreshed from governed JSON.'); } });
     this.addCommand({
       id: 'classify-note',
       name: 'Classify current note',

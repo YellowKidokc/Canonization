@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://faiththruphysics.com/schemas/canonization-record/1.0.0",
+  "title": "Governed Canonization Candidate Record",
+  "type": "object",
+  "required": ["schemaVersion", "recordId", "statusLabel", "workflowState", "source", "created", "updated", "protectedBlindDiscovery", "admissionEventReference", "provenance", "hashes"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "recordId": { "type": "string", "format": "uuid" },
+    "statusLabel": { "const": "CANDIDATE_DRAFT  NOT ADMITTED" },
+    "workflowState": { "enum": ["Candidate", "Frozen", "Reviewed", "Voted", "Admitted", "Rejected", "Superseded"] },
+    "source": { "type": "object", "required": ["sourceId", "contentHash", "coordinates"], "properties": { "sourceId": { "type": "string", "minLength": 1 }, "contentHash": { "$ref": "#/$defs/hash" }, "coordinates": { "type": "object", "additionalProperties": true }, "title": { "type": "string" }, "uri": { "type": "string" } }, "additionalProperties": true },
+    "created": { "$ref": "#/$defs/stamp" }, "updated": { "$ref": "#/$defs/stamp" },
+    "protectedBlindDiscovery": { "type": "object", "required": ["immutable", "recordedAt", "inputPolicy", "result"], "properties": { "immutable": { "const": true }, "recordedAt": { "type": "string", "format": "date-time" }, "inputPolicy": { "const": "SOURCE_CONTENT_ONLY_NO_INHERITED_METADATA" }, "result": {} }, "additionalProperties": true },
+    "recoveredObjects": { "$ref": "#/$defs/atoms" }, "claims": { "$ref": "#/$defs/atoms" }, "definitions": { "$ref": "#/$defs/atoms" }, "evidence": { "$ref": "#/$defs/atoms" }, "proofs": { "$ref": "#/$defs/atoms" }, "mathematics": { "$ref": "#/$defs/atoms" }, "theologicalDeclarations": { "$ref": "#/$defs/atoms" }, "formalConsequences": { "$ref": "#/$defs/atoms" }, "empiricalAssertions": { "$ref": "#/$defs/atoms" }, "assumptions": { "$ref": "#/$defs/atoms" }, "countermodels": { "$ref": "#/$defs/atoms" }, "strongestDefeaters": { "$ref": "#/$defs/atoms" }, "openGaps": { "$ref": "#/$defs/atoms" },
+    "blindClassification": { "$ref": "#/$defs/classifications" }, "inheritedClassification": { "$ref": "#/$defs/classifications" },
+    "comparison": { "type": "object", "additionalProperties": true }, "reconciliationProposal": { "type": "object", "additionalProperties": true },
+    "bridges": { "type": "array", "items": { "$ref": "#/$defs/bridge" } }, "dependencies": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+    "lostStructure": { "type": "array", "items": { "type": "string" } },
+    "lean": { "type": "object", "additionalProperties": true }, "blastRadius": { "type": "object", "additionalProperties": true },
+    "reviewHistory": { "$ref": "#/$defs/objects" }, "votes": { "$ref": "#/$defs/objects" }, "minorityReports": { "$ref": "#/$defs/objects" },
+    "humanCouncilRuling": { "type": ["object", "null"], "additionalProperties": true }, "admissionEventReference": { "type": ["string", "null"] },
+    "projections": { "type": "object", "additionalProperties": true }, "cache": { "type": "object", "additionalProperties": true }, "postgresSync": { "type": "object", "additionalProperties": true },
+    "provenance": { "$ref": "#/$defs/objects" }, "hashes": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hash" } }
+  },
+  "allOf": [
+    { "if": { "properties": { "workflowState": { "const": "Admitted" } } }, "then": { "properties": { "admissionEventReference": { "type": "string", "minLength": 1 } } } },
+    { "if": { "properties": { "workflowState": { "enum": ["Candidate", "Frozen", "Reviewed", "Voted"] } } }, "then": { "properties": { "admissionEventReference": { "type": "null" } } } }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$" },
+    "stamp": { "type": "object", "required": ["at", "by"], "properties": { "at": { "type": "string", "format": "date-time" }, "by": { "type": "string" } }, "additionalProperties": true },
+    "atom": { "type": "object", "required": ["id", "kind", "statement"], "properties": { "id": { "type": "string", "format": "uuid" }, "kind": { "type": "string" }, "statement": { "type": "string" }, "supportStatus": { "type": "string" }, "sourceCoordinates": { "type": "object", "additionalProperties": true } }, "additionalProperties": true },
+    "atoms": { "type": "array", "items": { "$ref": "#/$defs/atom" } }, "objects": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "classification": { "type": "object", "required": ["objectId", "labels"], "properties": { "objectId": { "type": "string" }, "labels": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": true },
+    "classifications": { "type": "array", "items": { "$ref": "#/$defs/classification" } },
+    "edge": { "type": "object", "required": ["from", "to", "type"], "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "type": { "type": "string" } }, "additionalProperties": true },
+    "bridge": { "allOf": [{ "$ref": "#/$defs/atom" }, { "type": "object", "required": ["sourceDomain", "targetDomain", "preservedStructure", "lostStructure", "proofPropagation"], "properties": { "sourceDomain": { "type": "string" }, "targetDomain": { "type": "string" }, "preservedStructure": { "type": "array", "items": { "type": "string" } }, "lostStructure": { "type": "array", "items": { "type": "string" } }, "proofPropagation": { "const": false } } }] }
+  },
+  "additionalProperties": true
+}

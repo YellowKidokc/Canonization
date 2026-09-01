@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Claim Atom Builder — Canon v1.1 Walkthrough</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#0c0c0c;--surf:#121212;--surf2:#171717;--surf3:#1c1c1c;
+--bd:#242424;--bd2:#2d2d2d;--bd3:#383838;
+--tx:#e2e2e2;--mu:#8a8a8a;--mu2:#a2a2a2;--mu3:#c4c4c4;
+--acc:#4a7fd4;--req:#c08828;--reqbg:#161000;--reqbd:#3d2a00;
+--grn:#3fd05f;--red:#e06060;--gld:#d0a030;--blu:#7fb0ff;--pur:#c09fff;
+--claim:#7fb0ff;--evid:#7fd090;--proof:#c09fff;--proc:#e0a860;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px}
+
+/* HEADER */
+header{background:var(--surf);border-bottom:1px solid var(--bd);padding:10px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200}
+header h1{font-size:15px;font-weight:700;color:#fff}
+header .sub{font-size:11px;color:var(--mu)}
+.hsp{flex:1}
+.hbtn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
+.hbtn:hover{opacity:.82}
+.hbtn-b{background:var(--acc);color:#fff}
+.hbtn-g{background:transparent;border:1px solid var(--bd2);color:var(--mu2)}
+.hbtn-g:hover{color:var(--tx);border-color:var(--bd3)}
+
+/* LAYOUT */
+.app{display:flex;height:calc(100vh - 44px)}
+.col-form{flex:1;overflow-y:auto;padding:16px 20px 90px}
+.col-json{width:400px;background:#080808;border-left:1px solid var(--bd);display:none;flex-direction:column}
+.col-json.on{display:flex}
+.cj-head{padding:9px 14px;border-bottom:1px solid var(--bd);font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--mu);display:flex;align-items:center;gap:8px}
+.cj-body{flex:1;padding:12px;font-family:'Cascadia Code',Consolas,monospace;font-size:10.5px;color:#7fae86;white-space:pre;overflow:auto;line-height:1.5}
+
+/* PART BANNER */
+.part{margin:22px 0 10px;display:flex;align-items:center;gap:12px}
+.part-tag{font-size:9px;font-weight:800;letter-spacing:.14em;color:var(--mu);background:var(--surf2);border:1px solid var(--bd);padding:4px 10px;border-radius:3px}
+.part-name{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--mu2);text-transform:uppercase}
+.part-line{flex:1;height:1px;background:var(--bd)}
+
+/* STEP */
+.step{margin-bottom:8px;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--surf)}
+.step.locked{opacity:.4;pointer-events:none}
+.step-bar{display:flex;align-items:center;gap:11px;padding:11px 15px;cursor:pointer;user-select:none;transition:background .15s}
+.step-bar:hover{background:var(--surf2)}
+.snum{width:23px;height:23px;border-radius:50%;background:var(--bd2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--mu2);flex-shrink:0}
+.snum.done{background:#14351b;color:var(--grn);box-shadow:0 0 6px #3fd05f22}
+.snum.active{background:#152640;color:var(--blu)}
+.stitle{font-size:13px;font-weight:600;color:var(--mu3)}
+.ssub{font-size:11px;color:var(--mu);font-style:italic;margin-top:1px}
+.step-mid{flex:1;min-width:0}
+.sbadge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:var(--surf3);color:var(--mu);white-space:nowrap}
+.schev{font-size:10px;color:var(--mu);transition:transform .2s;flex-shrink:0}
+.step.open .schev{transform:rotate(180deg)}
+.step-body{display:none;border-top:1px solid var(--bd);background:#0e0e0e}
+.step.open .step-body{display:block}
+
+/* TEACH BLOCK */
+.teach{padding:15px 18px;background:#080808;border-bottom:1px solid var(--bd)}
+.teach p{font-size:13px;color:#b0b0b0;line-height:1.8;margin-bottom:9px}
+.teach p:last-child{margin-bottom:0}
+.teach strong{color:#e0e0e0}
+.teach em{color:#a8a8a8}
+.teach code{background:#1f1f1f;padding:1px 5px;border-radius:3px;color:#c0c0c0;font-size:11.5px;font-family:'Cascadia Code',Consolas,monospace}
+.teach ul{list-style:none;display:flex;flex-direction:column;gap:4px;margin:8px 0 10px}
+.teach ul li{font-size:12.5px;color:#989898;padding:4px 0 4px 13px;border-left:2px solid #2a2a2a;line-height:1.6}
+.pullquote{border-left:3px solid var(--acc);padding:8px 0 8px 14px;margin:10px 0;font-size:13px;color:#b8c8e0;line-height:1.7;font-style:italic}
+.maxim{border:1px solid #3a2c14;background:#141004;border-radius:5px;padding:11px 14px;margin:10px 0;font-size:12.5px;color:#cfa860;line-height:1.7}
+.codebox{font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px;color:#9a9a9a;background:#080808;border:1px solid var(--bd);border-radius:5px;padding:11px 14px;margin:9px 0;line-height:1.85;overflow-x:auto;white-space:pre}
+.codebox .hi{color:var(--blu)}
+.codebox .hi2{color:var(--grn)}
+.codebox .hi3{color:var(--gld)}
+
+/* FORM */
+.form{padding:14px 16px;display:flex;flex-direction:column;gap:11px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.req label::after{content:' ●';color:var(--req);font-size:8px;vertical-align:super}
+.field.req input,.field.req textarea{border-color:var(--reqbd);background:var(--reqbg)}
+.field.req input:focus,.field.req textarea:focus{border-color:var(--req)}
+label{font-size:10px;font-weight:800;color:var(--mu);letter-spacing:.07em;text-transform:uppercase}
+.hint{font-size:11.5px;color:#8a8a8a;font-style:italic;margin-top:-2px;line-height:1.55}
+input,textarea,select{background:var(--bg);border:1px solid var(--bd2);border-radius:5px;color:var(--tx);font-size:13px;padding:7px 9px;outline:none;font-family:inherit;width:100%;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--acc)}
+textarea{resize:vertical;min-height:56px;line-height:1.6}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.r4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+
+/* OBJECT TYPE CARDS */
+.otype-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.otype{border:1px solid var(--bd2);border-radius:7px;background:var(--surf2);padding:14px;cursor:pointer;transition:all .15s;user-select:none}
+.otype:hover{border-color:var(--bd3);background:var(--surf3)}
+.otype.sel{background:#0d1524}
+.ot-top{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.ot-icon{font-size:17px}
+.ot-name{font-size:13px;font-weight:800;letter-spacing:.06em}
+.otype[data-t="CLAIM"] .ot-name{color:var(--claim)}
+.otype[data-t="EVIDENCE"] .ot-name{color:var(--evid)}
+.otype[data-t="PROOF"] .ot-name{color:var(--proof)}
+.otype[data-t="PROCESS"] .ot-name{color:var(--proc)}
+.otype[data-t="CLAIM"].sel{border-color:var(--claim);box-shadow:0 0 10px #7fb0ff18}
+.otype[data-t="EVIDENCE"].sel{border-color:var(--evid);box-shadow:0 0 10px #7fd09018}
+.otype[data-t="PROOF"].sel{border-color:var(--proof);box-shadow:0 0 10px #c09fff18}
+.otype[data-t="PROCESS"].sel{border-color:var(--proc);box-shadow:0 0 10px #e0a86018}
+.ot-fn{font-size:11px;color:var(--mu2);line-height:1.55;margin-bottom:5px}
+.ot-q{font-size:11px;color:var(--mu);font-style:italic}
+
+/* REGISTER CARDS */
+.reg-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.reg{padding:12px 7px;border:1px solid var(--bd2);border-radius:6px;background:var(--surf2);cursor:pointer;text-align:center;transition:all .15s;user-select:none}
+.reg:hover{border-color:var(--bd3);background:var(--surf3)}
+.reg.sel{border-color:var(--acc);background:#0d1930}
+.reg-ic{font-size:19px;margin-bottom:5px}
+.reg-nm{font-size:11px;font-weight:700;color:var(--mu3)}
+.reg.sel .reg-nm{color:var(--blu)}
+.reg-ht{font-size:9.5px;color:var(--mu);margin-top:3px;line-height:1.4}
+
+/* CHAIN */
+.chain-hd{font-size:10px;font-weight:800;color:var(--mu);letter-spacing:.09em;margin:12px 0 4px}
+.chain-flow{font-family:'Cascadia Code',Consolas,monospace;font-size:10px;color:#4e4e4e;line-height:1.9;margin-bottom:10px;padding:9px 12px;background:#070707;border:1px solid var(--bd);border-radius:5px}
+.chain-flow .on{color:var(--blu);font-weight:700}
+.links{display:flex;flex-direction:column;gap:5px}
+.lnk{border:1px solid var(--bd);border-radius:6px;overflow:hidden;background:var(--surf)}
+.lnk.rq{border-color:var(--reqbd)}
+.lnk.filled{border-color:#1d3a24}
+.lnk-bar{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--surf2);user-select:none}
+.lnk-drag{color:var(--mu);font-size:13px;cursor:grab;flex-shrink:0}
+.lnk-drag:active{cursor:grabbing}
+.lnk-n{font-size:9.5px;font-weight:800;color:var(--mu);width:16px;text-align:center;flex-shrink:0}
+.lnk-nm{font-size:12px;font-weight:700;color:var(--mu3);flex:1;cursor:pointer}
+.lnk.rq .lnk-nm{color:var(--gld)}
+.lnk.filled .lnk-nm{color:var(--grn)}
+.lnk-dot{font-size:7px;color:var(--req)}
+.lnk-chev{font-size:9px;color:var(--mu);transition:transform .2s;cursor:pointer;padding:2px 4px}
+.lnk.open .lnk-chev{transform:rotate(180deg)}
+.lnk-body{display:none;padding:11px;border-top:1px solid var(--bd);background:#080808;flex-direction:column;gap:9px}
+.lnk.open .lnk-body{display:flex}
+.lnk-def{font-size:11px;color:#5e5e5e;line-height:1.65;padding-bottom:7px;border-bottom:1px solid var(--bd)}
+.lnk-q{font-size:11px;color:#4a5a70;font-style:italic;line-height:1.6;padding:5px 0 0}
+
+/* AXIS */
+.ax{display:flex;flex-direction:column;gap:5px}
+.ax-lb{font-size:10px;font-weight:800;color:var(--mu);letter-spacing:.07em;text-transform:uppercase}
+.ax-lb.rq{color:var(--req)}
+.ax-df{font-size:11px;color:#4e4e4e;font-style:italic;line-height:1.5}
+.ax-g{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.tg{padding:4px 9px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid transparent;background:#181818;color:#4e4e4e;transition:all .12s;white-space:nowrap}
+.tg:hover{color:#9a9a9a;border-color:var(--bd2)}
+/* status */
+.s-draft.on{background:#212121;color:#8a8a8a;border-color:#303030}
+.s-proposed.on{background:#1c2333;color:#6e8cbc}
+.s-active.on{background:#182b18;color:#6cae6c}
+.s-verified.on{background:#173717;color:var(--grn);box-shadow:0 0 5px #3fd05f2e}
+.s-kernel_verified.on{background:#1a1a2c;color:var(--pur);box-shadow:0 0 5px #c09fff2e}
+.s-weakened.on{background:#292818;color:var(--gld)}
+.s-falsified.on{background:#291818;color:var(--red)}
+.s-deprecated.on{background:#1c1c1c;color:#4e4e4e}
+.s-superseded.on{background:#1c1c1c;color:#424242;text-decoration:line-through}
+/* lifecycle */
+.lc-RAW.on{background:#242424;color:#767676}
+.lc-PRESERVED.on{background:#202020;color:#666}
+.lc-DECOMPOSED.on{background:#1c2020;color:#688c8c}
+.lc-OPENED.on{background:#1c2333;color:#6e8cbc}
+.lc-TESTED.on{background:#232030;color:#8a7cbc}
+.lc-CANDIDATE.on{background:#1d263e;color:var(--blu)}
+.lc-HUMAN_REVIEW.on{background:#2e2020;color:#bc7e6e}
+.lc-ADMITTED.on{background:#173717;color:var(--grn);box-shadow:0 0 5px #3fd05f2e}
+.lc-RETURNED.on{background:#282010;color:var(--gld)}
+.lc-WITHDRAWN.on{background:#242424;color:#666}
+.lc-FALSIFIED.on{background:#371717;color:var(--red)}
+.lc-SUPERSEDED.on{background:#1c1c1c;color:#424242}
+.lc-DEPRECATED.on{background:#1c1c1c;color:#3e3e3e}
+/* proof class */
+.pc-NOT_ATTEMPTED.on{background:#1c1c1c;color:#4e4e4e}
+.pc-SPECIFICATION_ONLY.on{background:#202020;color:#767676}
+.pc-INFORMAL_ARGUMENT.on{background:#20232e;color:#7c81ac}
+.pc-FORMALIZED_NOT_BUILT.on{background:#1e2333;color:var(--blu)}
+.pc-BUILT_WITH_ASSUMPTIONS.on{background:#28231e;color:#bc9c6c}
+.pc-BUILT_WITH_SORRY.on{background:#28261e;color:var(--gld)}
+.pc-BUILT_ZERO_SORRY.on{background:#173717;color:var(--grn);box-shadow:0 0 5px #3fd05f2e}
+.pc-COUNTERMODEL_FOUND.on{background:#371717;color:var(--red)}
+.pc-FALSIFIED.on{background:#3a0e0e;color:#ff4040}
+/* register */
+.rg-.on{background:#1d263e;color:var(--blu)}
+.tg[data-key="register"].on{background:#1d263e;color:var(--blu)}
+/* ic */
+.ic-IC_0.on{background:#202020;color:#666}
+.ic-IC_1.on{background:#201818;color:#865e5e}
+.ic-IC_2.on{background:#231e1e;color:#9e6e6e}
+.ic-IC_3.on{background:#261e1e;color:#be8e8e}
+.ic-IC_4.on{background:#1e2626;color:#7ecece}
+.ic-IC_5.on{background:#182838;color:#3fb6ff;box-shadow:0 0 6px #3fb6ff20}
+/* why */
+.why-WHY_OPEN.on{background:#181838;color:#7e8eff}
+.why-WHY_CLOSED.on{background:#173717;color:var(--grn)}
+.why-WHY_FAILED.on{background:#371717;color:var(--red)}
+/* claim class */
+.cc-floor_axiom.on{background:#1a1a2c;color:var(--pur)}
+.cc-definition.on{background:#1c2020;color:#78acac}
+.cc-theorem.on{background:#1e2333;color:var(--blu)}
+.cc-bridge.on{background:#28180e;color:#ce7e4e}
+.cc-empirical_anchor.on{background:#182818;color:var(--grn)}
+.cc-prediction.on{background:#281e0e;color:var(--gld)}
+.cc-boundary.on{background:#242424;color:#868686}
+/* edge */
+.ed-supports.on{background:#182818;color:var(--grn)}
+.ed-contradicts.on{background:#282018;color:var(--gld)}
+.ed-falsifies.on{background:#331616;color:var(--red)}
+.ed-tests.on{background:#1d263e;color:var(--blu)}
+/* terminus */
+.tm-PRIMITIVE.on{background:#1a1a2c;color:var(--pur)}
+.tm-INDEPENDENT_EMPIRICAL_INPUT.on{background:#182818;color:var(--grn)}
+.tm-OPEN.on{background:#181838;color:#7e8eff}
+.tm-NONE.on{background:#202020;color:#666}
+/* defect */
+.df-LOCAL_DEFINITE_FIX.on{background:#202020;color:#8a8a8a}
+.df-SUBSTANTIVE_CORRECTION.on{background:#282018;color:var(--gld)}
+.df-WITHDRAWAL.on{background:#331616;color:var(--red)}
+.df-RECLASSIFICATION.on{background:#1e2333;color:var(--blu)}
+
+/* ══ MATH PANEL ══ */
+.mathp{border:1px solid #24304a;border-radius:6px;overflow:hidden;background:#0a0e16}
+.mathp-h{background:#101828;padding:8px 13px;font-size:10px;font-weight:800;letter-spacing:.08em;color:#7fa8e0;display:flex;align-items:center;gap:7px}
+.mathp-b{padding:12px 13px;display:flex;flex-direction:column;gap:10px}
+.eqbox{background:#070b12;border:1px solid #1e2838;border-radius:5px;padding:12px 14px;font-family:'Cascadia Code',Consolas,monospace;font-size:14px;color:#a8c8f0;text-align:center;line-height:1.8}
+.termtbl{width:100%;border-collapse:collapse;font-size:12px}
+.termtbl th{text-align:left;font-size:9.5px;font-weight:800;letter-spacing:.07em;color:var(--mu);text-transform:uppercase;padding:5px 8px;border-bottom:1px solid var(--bd)}
+.termtbl td{padding:6px 8px;border-bottom:1px solid #161616;vertical-align:top;line-height:1.5}
+.termtbl td:nth-child(1){font-family:'Cascadia Code',Consolas,monospace;color:#8ab0e0;width:20%}
+.termtbl td:nth-child(2){color:#b8b8b8;width:40%}
+.termtbl td:nth-child(3){color:#c0a878;width:40%}
+.termtbl input{background:transparent;border:none;border-bottom:1px solid #1e1e1e;border-radius:0;padding:3px 2px;font-size:12px}
+.termtbl input:focus{border-bottom-color:var(--acc)}
+.term-add{background:transparent;border:1px dashed #24304a;border-radius:5px;padding:6px;width:100%;color:#4a6088;font-size:11.5px;cursor:pointer}
+.term-add:hover{background:#0d1420;color:#7fa8e0}
+.term-rm{background:none;border:none;color:#3a4a60;cursor:pointer;font-size:14px;padding:0 3px}
+.term-rm:hover{color:var(--red)}
+
+/* ══ STORY PANEL — NARRATIVE, NOT WARRANT ══ */
+.storyp{border:1px dashed #4a3c1c;border-radius:6px;overflow:hidden;background:#0e0b04}
+.storyp-h{background:#161004;padding:8px 13px;display:flex;align-items:center;justify-content:space-between}
+.storyp-h span{font-size:10px;font-weight:800;letter-spacing:.08em;color:#c9a850}
+.storyp-h span::before{content:'◈ '}
+.storyp-b{padding:12px 13px;display:flex;flex-direction:column;gap:10px}
+.story-warn{font-size:11.5px;color:#9a8450;font-style:italic;line-height:1.6;padding:8px 11px;background:#120d03;border-left:2px solid #4a3c1c;border-radius:0 4px 4px 0}
+.storyp-b label{color:#8a7440}
+.storyp-b input,.storyp-b textarea{background:#0a0702;border-color:#2e2410;color:#cbb478}
+.storyp-b input:focus,.storyp-b textarea:focus{border-color:#7a6430}
+.firewall{font-size:10.5px;color:#6a5a30;line-height:1.7;padding:8px 11px;background:#0a0702;border:1px solid #2a2210;border-radius:4px;font-family:'Cascadia Code',Consolas,monospace}
+.firewall .off{color:#5a3030;text-decoration:line-through}
+.firewall .ok{color:#8a9a50}
+
+/* ══ SAVE INDICATOR ══ */
+.saved{font-size:10px;color:var(--mu);font-style:italic;margin-left:8px}
+.saved.flash{color:var(--grn)}
+
+/* ══ AXIS PILL LABELS (colorblind fallback) ══ */
+.tg::after{font-size:8px;opacity:.55;margin-left:4px;font-weight:800}
+.tg.on::after{opacity:.9}
+
+/* GUARD BOX */
+.guard{border:1px solid #3a2800;border-radius:6px;overflow:hidden}
+.guard-h{background:#161000;padding:8px 13px;font-size:10px;font-weight:800;letter-spacing:.08em;color:#bc8c2c}
+.guard-b{padding:10px 13px}
+.guard-b textarea{background:#0f0c00;border-color:#2c1f00;color:#bc9c4c;font-size:12px}
+
+/* LEDGER */
+.ldg{border:1px solid #3a1010;border-radius:6px;overflow:hidden}
+.ldg-h{background:#170707;padding:8px 13px;display:flex;align-items:center;justify-content:space-between}
+.ldg-h span{font-size:10px;font-weight:800;letter-spacing:.08em;color:#bc5c5c}
+.ldg-add{font-size:11px;color:#bc5c5c;background:transparent;border:1px solid #3a1010;border-radius:4px;padding:2px 8px;cursor:pointer}
+.ldg-add:hover{background:#280e0e}
+.ldg-e{padding:9px;display:flex;flex-direction:column;gap:6px}
+.le{background:#110505;border:1px solid #2a0e0e;border-radius:5px;padding:7px 9px;display:flex;gap:7px;align-items:flex-start}
+.le-x{color:#bc5c5c;flex-shrink:0;font-size:11px;margin-top:3px}
+.le-i{background:#0b0202;border:1px solid #2a0e0e;border-radius:4px;color:#bc5c5c;font-size:12px;padding:5px 8px;outline:none;flex:1}
+.le-rm{color:#4e2c2c;background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:0 2px}
+.le-rm:hover{color:var(--red)}
+
+/* COMPLETION BAR */
+.compbar{position:sticky;bottom:0;background:linear-gradient(transparent,#0c0c0c 25%);padding:14px 0 0;margin-top:8px;z-index:50}
+.comp-in{background:var(--surf);border:1px solid var(--bd);border-radius:8px;padding:11px 15px;display:flex;align-items:center;gap:12px}
+.comp-lb{font-size:10px;font-weight:800;color:var(--mu);letter-spacing:.08em}
+.comp-track{flex:1;height:5px;background:#1c1c1c;border-radius:3px;overflow:hidden}
+.comp-fill{height:100%;background:linear-gradient(90deg,#2a5a3a,#3fd05f);width:0%;transition:width .3s;border-radius:3px}
+.comp-txt{font-size:11px;color:var(--mu2);font-family:'Cascadia Code',Consolas,monospace;white-space:nowrap}
+.comp-state{font-size:10px;font-weight:800;padding:3px 9px;border-radius:3px;letter-spacing:.06em;white-space:nowrap}
+.st-incomplete{background:#2a1a10;color:#c08850}
+.st-opened{background:#173717;color:var(--grn)}
+
+/* MODAL */
+#ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center}
+#ov.on{display:flex}
+#md{background:#141414;border:1px solid var(--bd2);border-radius:10px;padding:20px;width:92%;max-width:760px;max-height:84vh;display:flex;flex-direction:column;gap:11px}
+#md h2{font-size:13px;color:var(--mu2)}
+#mdb{flex:1;overflow:auto;background:var(--bg);border-radius:6px;padding:13px;font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px;color:#7fae86;white-space:pre}
+.mf{display:flex;gap:8px;justify-content:flex-end}
+.bp{background:var(--acc);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer}
+.bg{background:transparent;border:1px solid var(--bd2);border-radius:6px;color:var(--mu2);font-size:12px;padding:6px 14px;cursor:pointer}
+.bg:hover,.bp:hover{opacity:.85}
+
+/* EMPTY */
+#emp{text-align:center;padding:70px 20px;color:var(--mu)}
+#emp .bg-ico{font-size:40px;opacity:.18;margin-bottom:16px}
+#emp p{font-size:13px;line-height:1.9}
+.intro{max-width:620px;margin:0 auto 26px;text-align:left;background:var(--surf);border:1px solid var(--bd);border-radius:8px;padding:20px 24px}
+.intro h3{font-size:12px;font-weight:800;letter-spacing:.09em;color:var(--mu2);margin-bottom:11px}
+.intro p{font-size:12.5px;color:#7e7e7e;line-height:1.8;margin-bottom:9px}
+.intro strong{color:#a8a8a8}
+</style>
+</head>
+<body>
+
+<header>
+  <div><h1>Claim Atom Builder</h1><div class="sub">POF 2828 · Canon v1.1 · Four-Object Full Edition</div></div>
+  <div class="hsp"></div>
+  <span class="saved" id="savemark"></span>
+  <button class="hbtn hbtn-g" onclick="location.href='workbench.html'">Canon Workbench</button>
+  <button class="hbtn hbtn-g" onclick="document.getElementById('nerve-import').click()">Import JSON</button>
+  <button class="hbtn hbtn-g" onclick="exportNerveDraft()">Export Draft</button>
+  <input id="nerve-import" type="file" accept="application/json,.json" hidden onchange="importNerveFile(this.files[0]);this.value=''">
+  <button class="hbtn hbtn-g" id="jbtn" onclick="tJSON()">Show JSON</button>
+  <button class="hbtn hbtn-g" onclick="expAll()">Validate Candidate Packet</button>
+  <button class="hbtn hbtn-b" onclick="newAtom()">＋ New Atom</button>
+</header>
+
+<div class="app">
+  <div class="col-form" id="cf">
+    <div id="emp">
+      <div class="bg-ico">◈</div>
+      <div class="intro">
+        <h3>WHY THE ATOM EXISTS</h3>
+        <p>A corpus can contain ten thousand pages and still fail to tell us what has actually been established. A paragraph may contain a definition, an empirical statement, a theological confession, a mathematical consequence, and a bridge between them.</p>
+        <p>If the paragraph is graded as one object, <strong>the strongest sentence can hide the weakest</strong>, the weakest can unfairly discredit the strongest, and a formal proof of one component can be reported as proof of the whole bundle.</p>
+        <p>The claim atom prevents that collapse.</p>
+        <p style="color:#5e5e5e;font-style:italic;margin-top:14px;">The goal is not to make the corpus small. The goal is to make every load-bearing move visible.</p>
+      </div>
+      <p>Click <strong style="color:#8a8a8a">＋ New Atom</strong> to begin.</p>
+    </div>
+    <div id="ac"></div>
+  </div>
+  <div class="col-json" id="cj">
+    <div class="cj-head"><span>LIVE RECORD</span><span style="flex:1"></span>
+      <button class="bg" style="padding:3px 8px;font-size:10px" onclick="cpLive()">Copy</button></div>
+    <div class="cj-body" id="jl">// begin an atom to see the record build</div>
+  </div>
+</div>
+
+<div id="ov"><div id="md"><h2>Candidate Packet / Validation Report</h2><div id="mdb"></div>
+<div class="mf"><button class="bg" onclick="cpExp()">Copy</button><button class="bp" onclick="cM()">Close</button></div></div></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════
+//  CANON DATA — register anatomies + object anatomies, verbatim burdens
+// ══════════════════════════════════════════════════════════════════════════
+
+const REG={
+history:{ic:'📜',nm:'History',ht:'Transmission chain',
+ flow:'EVENT → POSSIBLE OBSERVERS → WITNESS → TESTIMONY → TRANSMISSION → DOCUMENT → PRESERVATION → CORROBORATION → INTERPRETATION → PRESENT CLAIM',
+ intro:'A historical claim is not one undifferentiated appeal to "the sources." It is a chain in which each link can preserve, lose, change, add, select, suppress, or independently confirm information. The chain is limited by its weakest load-bearing link — but not every weak link destroys every conclusion.',
+ chain:[
+  {id:'EVENT',nm:'Event',rq:1,df:'Record what is alleged to have happened, where, when, to whom, and at what resolution. Separate the event claim from later interpretations of its meaning.',q:'What event would make the statement true? Which parts are directly observable and which are inferred? What alternative events could generate the same later report?',f:[{k:'ev_what',l:'What is alleged to have happened',rq:1,p:'Event, place, time, persons, resolution'},{k:'ev_alt',l:'Alternative events producing the same report',p:'What else could have generated this record?'}]},
+  {id:'OBSERVERS',nm:'Possible Observers',rq:1,df:'Identify who or what could in principle have perceived the event. Distinguish physical presence, access, competence, attention, and opportunity.',q:'Who could have been there? Who had the capacity to understand what they saw?',f:[{k:'ob_who',l:'Who or what could have perceived it',rq:1,p:'Presence · access · competence · attention · opportunity'}]},
+  {id:'WITNESS',nm:'Witness',rq:0,df:'For each claimed witness record identity, proximity, capacity, incentives, dependence on other witnesses, and whether the witness is named, anonymous, collective, hostile, friendly, or reconstructed.',q:'Is this witness independent of the others, or downstream of them?',f:[{k:'wt_id',l:'Witness identity & type',p:'Named / anonymous / collective / hostile / friendly / reconstructed'},{k:'wt_cap',l:'Proximity, capacity, incentives',p:'How close? How competent? What did they gain or lose?'},{k:'wt_dep',l:'Dependence on other witnesses',p:'Independent channel, or repeating another?'}]},
+  {id:'TESTIMONY',nm:'Testimony',rq:1,df:'Record what the witness is actually reported to have said, in what form, at what time, and with what claimed certainty. Do not replace testimony with the present author\'s summary.',q:'What did they actually say — not what it is later taken to mean?',f:[{k:'ts_said',l:'Actual reported wording',rq:1,p:'Earliest recoverable wording — verbatim where possible'},{k:'ts_form',l:'Form, timing, claimed certainty',p:'Oral / written / creed / letter · how long after · how certain'}]},
+  {id:'TRANSMISSION',nm:'Transmission',rq:1,df:'Map oral, scribal, institutional, liturgical, archival, or digital transmission. Record the number and type of intermediaries, opportunities for contamination, and independent channels.',q:'How many hands did this pass through, and were any of those hands shared?',f:[{k:'tr_path',l:'Transmission path',rq:1,p:'Oral / scribal / institutional / liturgical / archival'},{k:'tr_int',l:'Intermediaries & contamination opportunities',p:'How many? Where could it change?'},{k:'tr_ind',l:'Independent channels',p:'Genuinely separate lines, or one source repeated?'}]},
+  {id:'DOCUMENT',nm:'Document',rq:0,df:'Record provenance, dating range, authorship status, genre, intended audience, material witnesses, and textual variants. A document\'s existence supports a claim about what was recorded; it does not automatically prove the recorded event.',q:'What does the existence of this document actually establish?',f:[{k:'dc_ref',l:'Provenance & dating range',p:'Title · date range · authorship status'},{k:'dc_genre',l:'Genre & intended audience',p:'What kind of writing is this, written for whom?'},{k:'dc_var',l:'Material witnesses & textual variants',p:'Manuscripts, variants, reconstruction issues'}]},
+  {id:'PRESERVATION',nm:'Preservation',rq:0,df:'Track custody, copying, loss, redaction, translation, canonization, discovery, and restoration. Name gaps.',q:'Where are the gaps, and what could have been lost in them?',f:[{k:'pv_chain',l:'Custody & copying history',p:'Who held it, who copied it, when'},{k:'pv_gaps',l:'Named gaps, loss, redaction, translation',p:'State the gaps rather than smoothing over them'}]},
+  {id:'CORROBORATION',nm:'Corroboration',rq:0,df:'Separate independent corroboration from repetition of a common source. Record hostile attestation, archaeological fit, documentary convergence, silence, and contradiction without pooling them blindly.',q:'Is this genuine convergence, or five copies of one report?',f:[{k:'cb_ind',l:'Independent corroboration',p:'Hostile attestation · archaeological fit · documentary convergence'},{k:'cb_sil',l:'Silence & contradiction',p:'What sources should mention this and do not?'}]},
+  {id:'INTERPRETATION',nm:'Interpretation',rq:1,df:'State the inference from preserved record to event claim. Type it as deductive, inductive, abductive, statistical, analogical, or underdetermined.',q:'By what inference license do we move from record to event?',f:[{k:'in_inf',l:'Inference from record to event',rq:1,p:'The reasoning step, stated plainly'},{k:'in_type',l:'Inference type',rq:1,p:'Deductive / inductive / abductive / statistical / analogical / underdetermined'}]},
+  {id:'PRESENT_CLAIM',nm:'Present Claim',rq:1,df:'The final child states exactly what the current evidence warrants, at the narrowest defensible scope.',q:'What is the narrowest thing the chain actually supports?',f:[{k:'pc_claim',l:'The historical claim at narrowest defensible scope',rq:1,p:'Not the maximal reading — the warranted one'},{k:'pc_survive',l:'What survives if the weakest link is removed?',p:'Which conclusions hold, which fail'}]}
+ ]},
+
+physics:{ic:'⚛',nm:'Physics',ht:'Measurement anatomy',
+ flow:'QUANTITY → UNITS → DYNAMICS → PROTOCOL → INSTRUMENT → DATA → CONTROLS → ANALYSIS/FIT → CLAIM',
+ intro:'A physics claim missing operational quantity, units where applicable, protocol, instrument/data provenance, uncertainty, and controls returns DISCOVERY_INCOMPLETE. Good fit is not automatically identification of the true mechanism.',
+ chain:[
+  {id:'QUANTITY',nm:'Quantity',rq:1,df:'Define the observable or inferred quantity operationally. If the quantity is latent, state how it connects to observations.',q:'What exactly is being measured, and how would you know you had measured it?',f:[{k:'qt_nm',l:'The quantity',rq:1,p:'e.g. gravitational field strength, coherence χ'},{k:'qt_op',l:'Operational definition',rq:1,p:'How is this measured or inferred from observation?'},{k:'qt_lat',l:'If latent — connection to observables',p:'How does the unobservable connect to what is seen?'}]},
+  {id:'UNITS',nm:'Units & Scale',rq:1,df:'Record dimensions, units, scale, normalization, resolution, error model, and dimensional checks. A physical claim that should have units but cannot name them is incomplete.',q:'What are the units? Does the equation balance dimensionally?',f:[{k:'un_u',l:'Units & dimensions',rq:1,p:'e.g. m/s² · dimensionless 0–1 · bits'},{k:'un_err',l:'Error model & resolution',p:'±value · 95% CI · noise floor'},{k:'un_dim',l:'Dimensional check performed?',p:'Does it balance?'}]},
+  {id:'DYNAMICS',nm:'Dynamics',rq:0,df:'State the model, governing equation, parameters, initial conditions, boundary conditions, regime of validity, and approximations. Separate a fitted equation from a derived law.',q:'Is this equation derived, or fitted to the data after the fact?',f:[{k:'dy_eq',l:'Governing equation',p:'e.g. Φ_g(r) = −μ_g/r'},{k:'dy_reg',l:'Regime of validity & approximations',p:'Where does this model hold? What was idealized away?'},{k:'dy_src',l:'Derived or fitted?',p:'State which — they carry different warrant'}]},
+  {id:'PROTOCOL',nm:'Protocol',rq:1,df:'Describe sampling, intervention, randomization, calibration, exclusion criteria, preregistration, and stopping rules. Retrospective choices are marked.',q:'Were the analysis choices made before or after looking at the data?',f:[{k:'pr_desc',l:'Protocol',rq:1,p:'Sampling · intervention · randomization · calibration'},{k:'pr_prereg',l:'Preregistered?',rq:1,p:'yes / no / partial — and where is the receipt?'},{k:'pr_excl',l:'Exclusion criteria & stopping rules',p:'Set in advance, or chosen after?'}]},
+  {id:'INSTRUMENT',nm:'Instrument',rq:0,df:'Record device, calibration state, sensitivity, specificity, noise floor, drift, saturation, preprocessing, and observer/software involvement.',q:'Could the instrument itself produce this signal without the claimed cause?',f:[{k:'is_dev',l:'Device & calibration state',p:'e.g. PEAR REG, GCP network node'},{k:'is_char',l:'Sensitivity · noise floor · drift',p:'What are the instrument limits?'},{k:'is_pre',l:'Preprocessing & software involvement',p:'What did code do before you saw the number?'}]},
+  {id:'DATA',nm:'Data',rq:1,df:'Preserve raw data or a hash-addressed location, transformations, missingness, exclusions, and data lineage. A chart is a projection, not the raw evidence.',q:'Where are the raw bytes, and what happened to them on the way to the chart?',f:[{k:'dt_loc',l:'Raw data location / hash',rq:1,p:'URI or sha256:… — not a screenshot'},{k:'dt_trans',l:'Transformations applied',p:'Cleaning · normalization · aggregation'},{k:'dt_miss',l:'Missingness & exclusions',p:'What was dropped, and why?'}]},
+  {id:'CONTROLS',nm:'Controls',rq:1,df:'Include negative controls, positive controls, sham conditions, baselines, rival models, leakage checks, and confound tests appropriate to the domain.',q:'What does the system report when the effect should be absent?',f:[{k:'ct_neg',l:'Negative controls',rq:1,p:'What was run where the effect should be absent?'},{k:'ct_pos',l:'Positive controls / baselines',p:'Known-signal condition'},{k:'ct_leak',l:'Leakage & confound checks',p:'Could information have leaked into the analysis?'}]},
+  {id:'FIT',nm:'Analysis & Fit',rq:0,df:'Record estimator, uncertainty, model comparison, sensitivity analyses, multiple-testing treatment, assumptions, and out-of-sample behavior.',q:'How many models were tried before this one fit?',f:[{k:'ft_meth',l:'Estimator & method',p:'e.g. Stouffer Z · Bayesian BF · MLE'},{k:'ft_res',l:'Result with uncertainty',p:'e.g. 6.35σ · p=2×10⁻¹⁰ · BF=340'},{k:'ft_mult',l:'Multiple-testing treatment',p:'How many comparisons? Corrected how?'},{k:'ft_oos',l:'Out-of-sample / holdout behavior',p:'Does it hold on data it never saw?'}]},
+  {id:'CLAIM',nm:'Physical Claim',rq:1,df:'State the narrow empirical consequence supported by the measurement chain. Metaphysical or theological interpretation, if present, opens separately as a bridge or theological atom.',q:'What is the narrowest empirical statement this chain supports?',f:[{k:'pcl_claim',l:'The physical claim',rq:1,p:'Empirical consequence only — no interpretation here'},{k:'pcl_bridge',l:'Interpretation deferred to which bridge atom?',p:'If a metaphysical reading is intended, name the bridge'}]}
+ ]},
+
+math:{ic:'∑',nm:'Math',ht:'Formal anatomy',
+ flow:'DEFINITION → AXIOM USE → INFERENCE RULE → LEMMA → DERIVATION → THEOREM STATEMENT → BUILD RECEIPT → INTERPRETATION BOUNDARY',
+ intro:'A passing Bool model establishes a property of that model — not automatically of Hilbert space, the world, or God. The specification and the proof are different sub-atoms.',
+ chain:[
+  {id:'DEFINITION',nm:'Definition',rq:1,df:'Every defined term is inspected for hidden conclusions. A definition may stipulate a model object; it cannot establish that the object exists in physical reality or corresponds to God.',q:'Does any definition quietly contain the conclusion?',f:[{k:'df_terms',l:'Defined terms',rq:1,p:'All terms this result depends on'},{k:'df_hidden',l:'Hidden-conclusion check',p:'Does any definition assume what is to be shown?'}]},
+  {id:'AXIOM_USE',nm:'Axiom Use',rq:1,df:'List explicit axioms, imported library assumptions, typeclass assumptions, classical principles, nonemptiness assumptions, and domain-specific postulates. Distinguish root assumptions from derived propositions.',q:'What is assumed rather than derived?',f:[{k:'ax_list',l:'Axioms & imported assumptions',rq:1,p:'Explicit axioms · library assumptions · typeclass assumptions'},{k:'ax_class',l:'Classical vs constructive choices',p:'LEM? Choice? Nonemptiness?'},{k:'ax_sep',l:'Assumptions separated from derived propositions?',p:'Mark which is which'}]},
+  {id:'INFERENCE',nm:'Inference Rule',rq:1,df:'Name the licensed step. Dependency is not inference: "B depends on A" does not itself show that A entails B.',q:'What licenses each arrow?',f:[{k:'if_rules',l:'Inference rules invoked',rq:1,p:'modus ponens · induction · theorem invocation · statistical rule'},{k:'if_mix',l:'Deductive / inductive / abductive steps labeled?',p:'Do not mix without labels'}]},
+  {id:'LEMMA',nm:'Lemma',rq:0,df:'Each lemma states a reusable intermediate proposition and its dependencies. Lemmas that merely unpack definitions are labeled accordingly.',q:'Is this a real intermediate result or a definitional unpacking?',f:[{k:'lm_list',l:'Lemmas & dependencies',p:'Intermediate propositions and what each rests on'},{k:'lm_unpack',l:'Which are definitional unpacking?',p:'Label them'}]},
+  {id:'DERIVATION',nm:'Derivation',rq:1,df:'Preserve the sequence of licensed steps. For computational proofs, preserve source, toolchain versions, commands, and outputs. "Therefore" is not a receipt.',q:'Can someone else reconstruct every step?',f:[{k:'dv_steps',l:'Derivation sequence',rq:1,p:'Ordered, inspectable steps'},{k:'dv_tool',l:'Toolchain & commands (computational proofs)',p:'Versions · exact command · outputs'}]},
+  {id:'THEOREM',nm:'Theorem Statement',rq:1,df:'The theorem atom stores the exact formal proposition. The plain-language rendering must be tested for equivalence and must not add intended interpretation.',q:'Does the plain version say more than the formal version?',f:[{k:'th_formal',l:'Exact formal statement',rq:1,p:'Quantifiers · types · scopes · model restrictions preserved'},{k:'th_plain',l:'Plain rendering (must be equivalent)',rq:1,p:'No added "real", "physical", "God", "therefore Christianity"'}]},
+  {id:'RECEIPT',nm:'Build Receipt',rq:1,df:'A gold receipt records source file, theorem name, repository revision, toolchain and dependency versions, build command, exit code, zero-sorry status, and content hash.',q:'Does the receipt match the source it claims to check?',f:[{k:'rc_file',l:'Source file & theorem name',rq:1,p:'e.g. Grace.lean :: grace_prior'},{k:'rc_rev',l:'Repo revision & toolchain versions',p:'commit hash · Lean version · mathlib rev'},{k:'rc_cmd',l:'Build command & exit code',p:'exact command · exit 0 · warnings'},{k:'rc_sorry',l:'sorry / admission count',rq:1,p:'0 = zero-sorry. Any other number must be stated.'},{k:'rc_checked',l:'what_checked',rq:1,p:'What the build actually verified'}]},
+  {id:'BOUNDARY',nm:'Interpretation Boundary',rq:1,df:'Every proof prints what it does not establish. This field is mandatory and travels with every projection of the proof.',q:'What would a reader wrongly conclude from this if you said nothing?',f:[{k:'bd_not',l:'what_not_proved',rq:1,p:'A Lean theorem over Boolean predicates does not establish the property in Hilbert space…'},{k:'bd_bridge',l:'If crossing registers — required bridge atom',p:'Name the bridge that would carry the interpretation'}]}
+ ]},
+
+theology:{ic:'✝',nm:'Theology',ht:'Proclamation anatomy',
+ flow:'SOURCE → TEXTUAL WITNESS → WITNESS TRADITION → PROCLAMATION → THEOLOGICAL REGISTER → CONFESSION CLASS → SCOPE → RELATION TO OTHER CLAIMS',
+ intro:'Theological claims are not treated as embarrassing scientific claims. They are opened faithfully in their native register and judged by appropriate theological, historical, exegetical, philosophical, and confessional burdens. Expansion clarifies what the claim is; it never upgrades what the claim proves.',
+ chain:[
+  {id:'SOURCE',nm:'Source',rq:1,df:'Name Scripture, creed, council, theological tradition, testimony, revelation claim, or constructive theological argument. Preserve exact citations and textual variants where relevant.',q:'What is the actual authority being appealed to?',f:[{k:'so_ref',l:'Source reference',rq:1,p:'e.g. John 1:1–14 · Nicene Creed 325 · Augustine, Conf. XI'},{k:'so_type',l:'Source type',rq:1,p:'Scripture / Creed / Council / Tradition / Testimony / Constructive argument'}]},
+  {id:'TEXTUAL_WITNESS',nm:'Textual Witness',rq:1,df:'Record the actual passage or bounded excerpt, language and translation issues, literary context, and genre. A keyword match does not establish doctrine.',q:'Does the passage in context actually say this?',f:[{k:'tw_pass',l:'Actual passage / bounded excerpt',rq:1,p:'The text itself, in context'},{k:'tw_lang',l:'Language & translation issues',p:'Greek/Hebrew terms · translation choices that matter'},{k:'tw_genre',l:'Literary context & genre',p:'Poetry? Narrative? Epistle? Apocalyptic?'}]},
+  {id:'WITNESS_TRADITION',nm:'Witness Tradition',rq:0,df:'Record how communities and interpreters received the source, including major agreements, disagreements, and historical development.',q:'Has the Church always read it this way, or is this new?',f:[{k:'wr_recv',l:'Reception history',p:'How the tradition received and developed this'},{k:'wr_disp',l:'Major disagreements',p:'Where interpreters diverge, and why'}]},
+  {id:'PROCLAMATION',nm:'Proclamation',rq:1,df:'State what is being confessed or taught. Do not disguise proclamation as a neutral measurement claim.',q:'Said plainly, without hedging — what is being confessed?',f:[{k:'pl_conf',l:'What is proclaimed',rq:1,p:'The confession stated plainly and unhedged'}]},
+  {id:'THEO_REGISTER',nm:'Theological Register',rq:1,df:'Identify whether the claim is scriptural attestation, doctrinal synthesis, metaphysical theology, Christological identification, moral teaching, eschatological prediction, or another controlled subtype.',q:'What kind of theological move is this?',f:[{k:'tr_sub',l:'Register subtype',rq:1,p:'scriptural attestation / doctrinal synthesis / metaphysical theology / Christological identification / moral teaching / eschatological prediction'}]},
+  {id:'CONFESSION_CLASS',nm:'Confession Class',rq:1,df:'Use the project\'s proof-boundary classes, including S or C where applicable, without laundering them into formal theorem or empirical evidence classes.',q:'Is this being labeled honestly, or dressed up as something it is not?',f:[{k:'cc_cls',l:'Confession class',rq:1,p:'S (confessional) / C (creedal) / other — never T or E'}]},
+  {id:'SCOPE',nm:'Scope',rq:1,df:'State whether the claim is internal to a confessed root, argued as public metaphysics, historically attributed, proposed as interpretation, or asserted universally. Root-conditioned entailment does not prove the root.',q:'Does this hold only inside the confession, or is it argued publicly?',f:[{k:'sc_scope',l:'Scope of the claim',rq:1,p:'internal to confessed root / public metaphysics / historical attribution / proposed interpretation'},{k:'sc_root',l:'If root-conditioned — the declared root',p:'What must be granted for this to follow?'}]},
+  {id:'RELATION',nm:'Relation to Other Claims',rq:0,df:'Record whether scientific, mathematical, historical, or experiential atoms constrain, resonate with, challenge, or leave the theological claim underdetermined.',q:'What do the other registers actually do to this claim?',f:[{k:'rl_rel',l:'How other registers bear on this',p:'constrain / resonate / challenge / leave underdetermined'}]}
+ ]},
+
+bridge:{ic:'⬡',nm:'Bridge',ht:'Mapping anatomy',
+ flow:'SOURCE REG → TARGET REG → SOURCE OBJ → TARGET OBJ → MAPPING → PRESERVED → LOST → BOUNDARY → GRADE → REVERSE MAP → COMMUTATIVITY → COUNTERMODELS → WHY-GATE → NEXT TEST',
+ intro:'A bridge that cannot state its losses has not opened. The loss field is mandatory. Even a confirmed structural bridge propagates as a bridge — never as proof of every statement in the target register.',
+ chain:[
+  {id:'REGISTERS',nm:'Source & Target Registers',rq:1,df:'Name both sides. A bridge cannot hide cross-register movement inside one sentence.',q:'Which two registers is this moving between?',f:[{k:'br_src',l:'Source register',rq:1,p:'e.g. FORMAL / MATHEMATICAL'},{k:'br_tgt',l:'Target register',rq:1,p:'e.g. THEOLOGICAL / CONFESSIONAL'}]},
+  {id:'OBJECTS',nm:'Source & Target Objects',rq:1,df:'Identify the exact atoms or structures. "Physics and theology are similar" is not a bridge record.',q:'Which exact atoms are being connected?',f:[{k:'bo_src',l:'Source atom / structure',rq:1,p:'e.g. A042/L9/C1'},{k:'bo_tgt',l:'Target atom / structure',rq:1,p:'e.g. A007/L3/C2'}]},
+  {id:'MAPPING',nm:'Mapping',rq:1,df:'Provide explicit maps between identities, relations, operations, states, or dependency positions. Vocabulary resemblance is insufficient.',q:'What maps to what, term by term?',f:[{k:'bm_map',l:'Explicit mapping',rq:1,p:'identity₁↔identity₂ · relation₁↔relation₂ · operation₁↔operation₂'}]},
+  {id:'PRESERVED',nm:'Preserved Structure',rq:1,df:'Name what remains invariant under translation: relations, order, composition, capability, dependency, conservation, symmetry, or collapse behavior.',q:'What actually survives the crossing?',f:[{k:'bp_pres',l:'What is preserved',rq:1,p:'relations · order · composition · dependency · conservation · collapse behavior'}]},
+  {id:'LOST',nm:'Lost Structure',rq:1,df:'Name what does not transfer. THIS FIELD IS MANDATORY. A bridge that cannot state its losses has not opened.',q:'What does not carry across — and are you being honest about it?',f:[{k:'bl_lost',l:'What is NOT transferred',rq:1,p:'Mandatory. e.g. agency, intention, guilt, personhood, normativity'}]},
+  {id:'BOUNDARY',nm:'Boundary Conditions',rq:1,df:'State where the mapping is expected to hold and where it is not. Local structural correspondence must not be projected globally.',q:'Where does this stop working?',f:[{k:'bb_bound',l:'Where the mapping holds / does not hold',rq:1,p:'Do not project a local match globally'}]},
+  {id:'GRADE',nm:'Grade',rq:1,df:'Record both the bridge-grade vocabulary and, when evaluated, the IC grade. Do not infer one automatically from the other without an approved crosswalk.',q:'What grade does the demonstrated structure actually earn?',f:[{k:'bg_bridge',l:'Bridge grade',rq:1,p:'structural_identity / structural_isomorphism / structural_analogy / metaphorical / independent'}]},
+  {id:'REVERSE',nm:'Reverse Mapping',rq:1,df:'Test whether the proposed map is invertible, partially invertible, many-to-one, or one-way. If reflection fails, the record cannot be called an isomorphism in the strict sense.',q:'Does it run backwards? If not, it is not an isomorphism.',f:[{k:'brv_rev',l:'Reverse map — or explicit statement that none exists',rq:1,p:'invertible / partial / many-to-one / one-way'},{k:'brv_name',l:'Correct label given the demonstrated structure',p:'isomorphism / homomorphism / embedding / analogy / translation'}]},
+  {id:'COMMUTE',nm:'Commutativity Tests',rq:0,df:'Where operations are claimed to correspond, test whether mapping before or after the operation yields the same result. Record failures.',q:'Map-then-operate vs operate-then-map — same answer?',f:[{k:'bc_test',l:'Commutativity test results',p:'Including failures — especially failures'}]},
+  {id:'COUNTERMODELS',nm:'Countermodels',rq:1,df:'Construct rival mappings and cases that preserve superficial features while breaking the preferred structure. The rival is not weakened to make the preferred bridge look unique.',q:'What is the strongest rival that explains the same signature?',f:[{k:'bcm_rival',l:'Strongest rival mapping',rq:1,p:'Built at full strength, not as a strawman'},{k:'bcm_adv',l:'Measured advantage of preferred mapping',p:'By preregistered criteria — or state that none was demonstrated'}]},
+  {id:'WHY_GATE',nm:'WHY-Gate',rq:1,df:'The ladder: DESCRIPTIVE → MECHANISTIC → STRUCTURAL → BOUNDARY → HISTORICAL → GROUNDING → PURPOSIVE. The non-restatement test asks: does the explanation add information beyond saying that the structures match?',q:'Why does this correspondence exist rather than failing or taking another form?',f:[{k:'bw_expl',l:'The explanation offered',rq:1,p:'Why does the correspondence exist?'},{k:'bw_level',l:'Closure level reached',rq:1,p:'descriptive / mechanistic / structural / boundary / historical / grounding / purposive'},{k:'bw_nonrest',l:'Non-restatement test',rq:1,p:'Does it add information beyond "they match"? pass / fail'}]},
+  {id:'NEXT_TEST',nm:'Next Discriminating Test',rq:1,df:'Name the next observation or formal result that would discriminate the preferred mapping from its rivals.',q:'What would settle this?',f:[{k:'bn_test',l:'Next discriminating test',rq:1,p:'The observation or derivation that would decide between rivals'}]}
+ ]}
+};
+
+// ── NON-CLAIM OBJECT ANATOMIES ───────────────────────────────────────────
+const OBJ={
+EVIDENCE:{ic:'◉',nm:'EVIDENCE',fn:'Bears on one or more propositions',q:'What speaks for, against, or between alternatives?',
+ flow:'SOURCE → PROVENANCE/CUSTODY → PROTOCOL → CONDITIONS → RAW RECORD → DERIVED ARTIFACTS → CONTROLS → INDEPENDENCE MAP → DISCRIMINATION STATEMENT',
+ intro:'An evidence atom is not "a claim that supports." Its authority comes neither from being called evidence nor from having a hash. Its bearing is expressed only through typed evidence edges. An evidence atom is FULLY_OPENED only when all nine burdens are present or explicitly marked inapplicable with rationale.',
+ chain:[
+  {id:'SOURCE',nm:'Source',rq:1,df:'Identifies the originating object: instrument output, physical sample, manuscript, testimony, image, database export, experiment log, or observation. Preserves original bytes where possible. The source is not a summary.',q:'What is the actual originating object — not a description of it?',f:[{k:'es_obj',l:'Originating object',rq:1,p:'instrument output / manuscript / testimony / database export'},{k:'es_uri',l:'URI or physical location',rq:1,p:'Where the bytes actually live'},{k:'es_hash',l:'Cryptographic hash',p:'sha256:…'},{k:'es_surr',l:'If original bytes not retained — why, and what surrogate?',p:'State what may have been lost'}]},
+  {id:'CUSTODY',nm:'Provenance & Custody',rq:1,df:'Records who or what possessed the record, when, and what was done to it. Every transfer and transformation receives an event record linking prior and resulting hashes. A custody break does not automatically destroy evidential value — it limits what can be claimed from integrity.',q:'Who held this, and can you prove it was not altered?',f:[{k:'ec_chain',l:'Custody chain',rq:1,p:'custodian · time interval · transfer method'},{k:'ec_integ',l:'Integrity checks',p:'prior hash → resulting hash at each transfer'},{k:'ec_gap',l:'Known gaps or uncertainty',p:'State breaks rather than hiding them'}]},
+  {id:'PROTOCOL',nm:'Protocol',rq:1,df:'States how the observation or record was produced. A hash proves file identity after hashing. It does not prove that the file was generated by a reliable protocol.',q:'How was this produced — and is that recoverable?',f:[{k:'ep_proto',l:'Production protocol',rq:1,p:'sampling · apparatus · interview procedure · measurement schedule'},{k:'ep_prereg',l:'Preregistration & stopping conditions',p:'Set in advance?'},{k:'ep_none',l:'If no recoverable protocol — what is this actually?',p:'testimony / anecdote / uncontrolled observation — classify honestly'}]},
+  {id:'CONDITIONS',nm:'Conditions',rq:1,df:'Conditions bound the observation: time, environment, population, range, scale, context, instrument configuration, observer position, inclusion criteria, background state. The edge may not claim beyond those conditions.',q:'Under what conditions does this record hold?',f:[{k:'ecd_bounds',l:'Bounding conditions',rq:1,p:'time · environment · population · range · context'}]},
+  {id:'RAW',nm:'Raw Record',rq:1,df:'The least processed available observation. Preserved verbatim and immutable. Missing fields, illegible portions, sensor dropouts, uncertain translations, and corrupted segments remain visible.',q:'What is the least-processed form you actually have?',f:[{k:'er_raw',l:'Raw record',rq:1,p:'Verbatim. For testimony: earliest recoverable wording.'},{k:'er_defect',l:'Visible defects preserved',p:'dropouts · illegible portions · corrupted segments'}]},
+  {id:'DERIVED',nm:'Derived Artifacts',rq:0,df:'Cleaning, OCR, transcription, translation, normalization, aggregation, feature extraction, plotting, fitting, and summarization create derived artifacts. A chart is never allowed to masquerade as the raw record.',q:'What was made from the raw record, and what did that remove?',f:[{k:'ed_art',l:'Derived artifacts & parent objects',p:'What was produced from what'},{k:'ed_proc',l:'Transformation process, version, parameters',p:''},{k:'ed_lost',l:'Information removed, merged, inferred, or added',p:'Be specific'},{k:'ed_rev',l:'Reversibility & restoration path',p:'Can you get back to the raw record?'}]},
+  {id:'CONTROLS',nm:'Controls',rq:1,df:'Controls ask what the system reports when the proposed effect should be absent, present at a known level, or produced by a rival mechanism. An absent control is not always fatal — but the missing discrimination must be stated.',q:'What does this look like when the effect is absent?',f:[{k:'ect_ctrl',l:'Controls present',rq:1,p:'negative · positive · sham · blank · permutation · holdout · hostile-witness'},{k:'ect_miss',l:'If controls impossible — the missing discrimination',p:'For unique historical events, state what cannot be controlled'}]},
+  {id:'INDEPENDENCE',nm:'Independence Map',rq:1,df:'Prevents correlated records from being counted as independent convergence. Five reports copied from one report are one originating channel with five transmissions.',q:'How many genuinely independent channels are there — really?',f:[{k:'ei_shared',l:'Shared elements across records',rq:1,p:'source · witness · instrument · dataset · analysis code · assumption · funding'},{k:'ei_clust',l:'Independence clusters & common causes',rq:1,p:'Group the correlated ones'},{k:'ei_eff',l:'Effective independent structure',p:'Not raw record count'}]},
+  {id:'DISCRIMINATION',nm:'Discrimination Statement',rq:1,df:'THE CENTRAL BURDEN. Every evidence-to-claim edge must answer: what would this record look like if the target claim were false, and how does the observed record differ from that expectation? If the record is equally expected under every live hypothesis, its discrimination weight is zero.',q:'What would this look like if the claim were FALSE?',f:[{k:'ex_target',l:'Target claim & its relevant rival',rq:1,p:'What claim, against what alternative?'},{k:'ex_iffalse',l:'Expected record if the claim were FALSE',rq:1,p:'Describe it concretely'},{k:'ex_observed',l:'Observed record — and how it differs',rq:1,p:'The actual difference that carries the weight'},{k:'ex_resid',l:'Residual ambiguity',p:'What remains undecided'}]}
+ ]},
+
+PROOF:{ic:'◆',nm:'PROOF',fn:'Establishes an exact conclusion under premises',q:'What is derived, by which rules, from what?',
+ flow:'PREMISES → INFERENCE RULES → DERIVATION STEPS → CONCLUSION → ASSUMPTION REGISTER → RECEIPT → INTERPRETATION BOUNDARY',
+ intro:'A proof atom is not a confident claim and not a screenshot of successful output. The governing diagnostic is not only "what is the weakest premise?" but "which premise is unacknowledged?" A weak acknowledged premise makes the conclusion conditional. A hidden premise makes the reported proof scope false.',
+ chain:[
+  {id:'PREMISES',nm:'Premises',rq:1,df:'Every premise is named, versioned, and linked to a claim atom. Classified as definitions, axioms, boundary conditions, imported theorems, empirical inputs, root-conditioned assumptions, or temporary hypotheses.',q:'Which premise is unacknowledged?',f:[{k:'pp_list',l:'Named premises (atom IDs)',rq:1,p:'A001/L1 · A007/L3/C1 — each linked to a claim atom'},{k:'pp_class',l:'Premise classification',rq:1,p:'definitions / axioms / boundary conditions / imported theorems / empirical inputs / root-conditioned'},{k:'pp_hidden',l:'Unacknowledged premise check',p:'What did you assume without listing?'}]},
+  {id:'RULES',nm:'Inference Rules',rq:1,df:'Every transition names its license. No arrow appears merely because the next sentence sounds plausible. Deductive, inductive, abductive, statistical, and analogical steps must not be mixed without labels.',q:'What licenses each step?',f:[{k:'pr_rules',l:'Inference rules used',rq:1,p:'logical rule · algebraic transformation · induction · theorem invocation'},{k:'pr_type',l:'Step types labeled?',p:'deductive / inductive / abductive / statistical / analogical'}]},
+  {id:'STEPS',nm:'Derivation Steps',rq:1,df:'Steps are ordered, inspectable, and individually addressable when they can fail independently. Compression is permitted only when omitted steps are mechanically reconstructible. "Therefore" is not a receipt.',q:'Can each step be checked on its own?',f:[{k:'ps_steps',l:'Ordered derivation steps',rq:1,p:'inputs · rule · output · dependencies · verification state'}]},
+  {id:'CONCLUSION',nm:'Conclusion',rq:1,df:'The conclusion is a SEPARATE claim atom containing the exact statement established under the premises. The plain rendering may not add words such as "real," "physical," "God," or "therefore Christianity" unless those appear in the formal statement.',q:'Does the conclusion say exactly what was proved — no more?',f:[{k:'pcn_exact',l:'Exact conclusion',rq:1,p:'Quantifiers · types · scopes · model restrictions preserved'},{k:'pcn_atom',l:'Conclusion claim atom ID',p:'The separate atom this proves'},{k:'pcn_plain',l:'Plain rendering (no added words)',p:'Test for equivalence'}]},
+  {id:'ASSUMPTIONS',nm:'Assumption Register',rq:1,df:'All explicit and imported axioms, definitions that constrain the result, nonemptiness and existence assumptions, classical or constructive logic choices, boundary and initial conditions, idealizations, model-to-world assumptions, root-conditioned theological premises — plus sensitivity: what changes when each is removed.',q:'What changes if each assumption is weakened?',f:[{k:'pa_reg',l:'Full assumption register',rq:1,p:'Every assumption, explicit and imported'},{k:'pa_sens',l:'Sensitivity — what changes if each is removed',p:'Which assumptions are load-bearing?'},{k:'pa_split',l:'Formulation vs derivation assumptions',p:'Distinguish them'}]},
+  {id:'RECEIPT',nm:'Receipt',rq:1,df:'Records theorem and file names, repository revision, source hash, toolchain and dependency versions, exact command, exit code, warnings, sorry/admission count, runtime environment, date, and operator. A successful build without boundaries is operational evidence of compilation, not a complete proof receipt.',q:'Does the receipt actually match the source it claims?',f:[{k:'prc_class',l:'Receipt class',rq:1,p:'NOT_ATTEMPTED / SPECIFICATION_ONLY / ENCODED_NOT_BUILT / BUILT_WITH_GAPS / BUILT_ZERO_SORRY / COUNTERMODEL_FOUND / FORMALLY_REFUTED_AS_STATED'},{k:'prc_file',l:'Theorem & file names, repo revision',rq:1,p:''},{k:'prc_env',l:'Toolchain, command, exit code, sorry count',rq:1,p:''},{k:'prc_checked',l:'what_checked',rq:1,p:'What the build verified'},{k:'prc_notproved',l:'what_not_proved',rq:1,p:'What it did not'}]},
+  {id:'BOUNDARY',nm:'Interpretation Boundary',rq:1,df:'MANDATORY, and travels with every projection. A Lean theorem over Boolean predicates does not establish the property in Hilbert space. Consistency of a theological model does not establish the truth or uniqueness of the theology. A derived prediction is not empirical confirmation until evidence bears on it.',q:'What would a reader wrongly conclude if you said nothing here?',f:[{k:'pb_not',l:'What this proof does NOT establish',rq:1,p:'Mandatory — travels with every projection'},{k:'pb_bridge',l:'If crossing registers — required bridge atom',p:'Name it'}]}
+ ]},
+
+PROCESS:{ic:'◇',nm:'PROCESS',fn:'Performs a versioned operation',q:'What procedure generates, transforms, audits, or tests?',
+ flow:'PURPOSE → INPUTS → PRECONDITIONS → STEPS → DECISION POINTS → OUTPUTS → DISCRIMINATING POWER → FAILURE MODES → VERSION → RUN RECEIPT',
+ intro:'A description of a procedure is not evidence that it was run. Each execution requires its own receipt. A process can be canonically admitted as the approved method while no particular run has yet been executed.',
+ chain:[
+  {id:'PURPOSE',nm:'Purpose',rq:1,df:'State the single operational capability added by the process. A purpose is bounded: "validate schema conformance" is valid; "determine truth" is not a valid purpose for a format validator.',q:'What single bounded capability does this add?',f:[{k:'qp_purp',l:'Bounded purpose',rq:1,p:'One operational capability — bounded, not grandiose'}]},
+  {id:'INPUTS',nm:'Inputs',rq:1,df:'Name accepted object types, schemas, versions, required fields, and immutable source references. Inputs are hash-pinned when a run must be reproducible.',q:'What does this accept, and is it pinned?',f:[{k:'qi_types',l:'Accepted object types & schemas',rq:1,p:''},{k:'qi_pin',l:'Hash-pinned for reproducibility?',p:''}]},
+  {id:'PRECONDITIONS',nm:'Preconditions',rq:0,df:'State what must already hold: dependency availability, toolchain, permissions, calibration, blinded keys, preregistration, human selection, or candidate-graph isolation.',q:'What must be true before this can run?',f:[{k:'qpc_pre',l:'Preconditions',p:'dependencies · toolchain · permissions · blinding · isolation'}]},
+  {id:'STEPS',nm:'Steps',rq:1,df:'List ordered operations at a resolution sufficient for independent reproduction or audit. Each consequential transformation states what it reads, writes, and preserves.',q:'Could someone else reproduce this from the write-up alone?',f:[{k:'qs_steps',l:'Ordered steps',rq:1,p:'Each stating what it reads, writes, and preserves'}]},
+  {id:'DECISIONS',nm:'Decision Points',rq:1,df:'Human rulings, thresholds, branching logic, exception handling, and stopping conditions are explicit. A process cannot conceal a subjective selection inside an apparently deterministic step.',q:'Where does a human choose, and is that visible?',f:[{k:'qd_dec',l:'Decision points & thresholds',rq:1,p:'Where judgment enters — make it visible'},{k:'qd_human',l:'Human rulings required',p:'Which steps cannot be automated'}]},
+  {id:'OUTPUTS',nm:'Outputs',rq:1,df:'Specify output object types, schemas, storage destinations, status meanings, hashes, and whether outputs are proposals, evidence, receipts, projections, or canonical mutations. An output\'s type is determined by its function, not by the prestige of the process that created it.',q:'Are these proposals or canonical mutations?',f:[{k:'qo_types',l:'Output object types & destinations',rq:1,p:''},{k:'qo_kind',l:'Proposals / evidence / receipts / projections / canonical mutations',rq:1,p:'AI extraction produces claim candidates — not admitted claims'}]},
+  {id:'POWER',nm:'Discriminating Power',rq:1,df:'State what the process can distinguish and what it cannot. A schema validator distinguishes conforming from nonconforming records — not true from false claims. A proof build distinguishes kernel acceptance from rejection — not physical applicability.',q:'What can this NOT distinguish?',f:[{k:'qw_can',l:'What it can distinguish',rq:1,p:''},{k:'qw_cannot',l:'What it CANNOT distinguish',rq:1,p:'The more important field'}]},
+  {id:'FAILURES',nm:'Failure Modes',rq:1,df:'Part of the process definition. Include invalid input, unresolved references, stale schema, data leakage, post hoc criteria, non-independent controls, tool failure, partial write, nondeterminism, reviewer override, and false-success states.',q:'How does this fail, and how would you know?',f:[{k:'qf_modes',l:'Failure modes',rq:1,p:'invalid input · leakage · post hoc criteria · partial write · false-success'},{k:'qf_detect',l:'Detection, safe halt, artifacts preserved, recovery path',rq:1,p:'For each mode'}]},
+  {id:'VERSION',nm:'Version',rq:1,df:'Processes are immutable by version. Material changes to input contract, step order, thresholds, output semantics, or authority create a new version. Old versions remain resolvable so past results can be interpreted.',q:'Has anything material changed since the last version?',f:[{k:'qv_ver',l:'Version',rq:1,p:'e.g. v1.1'},{k:'qv_delta',l:'What changed from prior version',p:'Material changes require a new version'}]},
+  {id:'RUN_RECEIPT',nm:'Run Receipt',rq:0,df:'A process SPECIFICATION is distinct from a process EXECUTION. Every execution records process ID and version, input IDs and hashes, configuration, timing, operator, step outcomes, warnings, output IDs and hashes, exit state — plus what the run establishes and does not establish.',q:'Has this actually been run, or only specified?',f:[{k:'qrr_run',l:'Execution record',p:'Leave empty if specification only — that is a valid state'},{k:'qrr_est',l:'What the run establishes',p:''},{k:'qrr_not',l:'What the run does NOT establish',p:''}]}
+ ]}
+};
+
+// ── AXES ─────────────────────────────────────────────────────────────────
+const AX={
+lifecycle:{l:'Lifecycle State',d:'Candidate-builder lifecycle only. ADMITTED is created exclusively by a separate signed human admission event.',o:['RAW','PRESERVED','DECOMPOSED','OPENED','TESTED','CANDIDATE','HUMAN_REVIEW','RETURNED','WITHDRAWN','FALSIFIED','SUPERSEDED','DEPRECATED'],p:'lc',rq:1},
+proofClass:{l:'Proof Class',d:'Proof-specific warrant. It is required only for PROOF objects and is not a universal completion axis.',o:['NOT_ATTEMPTED','SPECIFICATION_ONLY','INFORMAL_ARGUMENT','FORMALIZED_NOT_BUILT','BUILT_WITH_ASSUMPTIONS','BUILT_WITH_SORRY','BUILT_ZERO_SORRY','COUNTERMODEL_FOUND','FALSIFIED'],p:'pc',rq:0},
+register:{l:'Register',d:'What kind of assertion is being made. Registers can interact without becoming identical. None inherits the warrant native to another.',o:['FORMAL / MATHEMATICAL','EMPIRICAL / PHYSICAL','HISTORICAL','INFORMATIONAL','CONSCIOUSNESS / FIRST-PERSON','MORAL / NORMATIVE','THEOLOGICAL / CONFESSIONAL','BRIDGE / CROSS-REGISTER','INTERPRETIVE','PREDICTIVE','PROTOCOL'],p:'rg',rq:1},
+icGrade:{l:'IC Grade',d:'How much structure a correspondence preserves. IC-4 and IC-5 support a serious structural-convergence claim. Neither, by itself, proves ontological identity or that a theological identification is true.',o:['IC-0','IC-1','IC-2','IC-3','IC-4','IC-5'],p:'ic',rq:0,
+ help:{'IC-0':'vocabulary proximity only; no demonstrated structural mapping','IC-1':'one or more local feature correspondences; relations largely unspecified','IC-2':'multiple explicit relations map, but dependencies or operations incomplete','IC-3':'substantial relational and operational correspondence with stated boundaries; rivals or collapse behavior insufficiently discriminated','IC-4':'shared dependency graph and capability classes demonstrated under explicit mapping; preserved and lost structure named; serious candidate','IC-5':'IC-4 plus matched collapse and translation behavior, surviving label removal, permutation, rivals, and controls'}},
+why:{l:'WHY-Closure Outcome',d:'WHY_OPEN is not a polite synonym for success or failure. It is a positive record of unresolved explanatory structure.',o:['WHY_OPEN','WHY_CLOSED','WHY_FAILED'],p:'why',rq:0,
+ help:{'WHY_CLOSED':'an explanation passes the applicable why-ladder levels and the non-restatement test; closure level and explanation type are named','WHY_FAILED':'the offered explanation collapses, restates the correspondence, conflicts with evidence, or loses to a stronger rival','WHY_OPEN':'the correspondence may be real, but its reason is underdetermined; rivals and the next discriminating test are retained'}}
+};
+
+const STATUS=['draft','proposed','weakened','falsified','deprecated','superseded'];
+const CCLASS=['floor-axiom','definition','theorem','bridge','empirical-anchor','prediction','boundary'];
+const TERMINI=['NONE','PRIMITIVE','INDEPENDENT_EMPIRICAL_INPUT','OPEN'];
+const DEFECT=['LOCAL_DEFINITE_FIX','SUBSTANTIVE_CORRECTION','WITHDRAWAL','RECLASSIFICATION'];
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════
+//  ENGINE
+// ══════════════════════════════════════════════════════════════════════════
+const MEM={
+ authors:JSON.parse(localStorage.getItem('pof_a')||'["david"]'),
+ sources:JSON.parse(localStorage.getItem('pof_s')||'[]'),
+ fams:JSON.parse(localStorage.getItem('pof_f')||'[]'),
+ sv(){localStorage.setItem('pof_a',JSON.stringify(this.authors));localStorage.setItem('pof_s',JSON.stringify(this.sources));localStorage.setItem('pof_f',JSON.stringify(this.fams));},
+ add(k,v){v=(v||'').trim();if(v&&!this[k].includes(v)){this[k].unshift(v);this.sv();dl();}}
+};
+function dl(){
+ [['dla',MEM.authors],['dls',MEM.sources],['dlf',MEM.fams]].forEach(([id,it])=>{
+  let d=document.getElementById(id);
+  if(!d){d=document.createElement('datalist');d.id=id;document.body.appendChild(d);}
+  d.innerHTML=it.map(v=>`<option value="${v}">`).join('');
+ });
+}
+function uuid(){
+ if(crypto&&crypto.randomUUID)return crypto.randomUUID();
+ const b=crypto.getRandomValues(new Uint8Array(16));
+ b[6]=(b[6]&0x0f)|0x40;b[8]=(b[8]&0x3f)|0x80;
+ const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+ return`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+}
+// SHA-256 — the canon requires a cryptographic hash, not a checksum.
+const HC={};
+async function sha(s){
+ if(!s)return'';
+ if(HC[s])return HC[s];
+ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+ const h='sha256:'+[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+ HC[s]=h;return h;
+}
+function shaSync(s){return s?(HC[s]||'sha256:computing…'):'';}
+function hsh(s){return shaSync(s);}
+function sl(s){return String(s).replace(/[^a-zA-Z0-9]/g,'_');}
+
+let N=0,A={},jOn=false;
+
+function tags(key,opts,pfx,help){
+ return`<div class="ax-g">`+opts.map(o=>
+  `<div class="tg ${pfx}-${sl(o)}" data-key="${key}" data-val="${o}"${help&&help[o]?` title="${help[o]}"`:''} onclick="pick(this)">${o}</div>`
+ ).join('')+`</div>`;
+}
+function pick(e){
+ e.closest('.ax-g').querySelectorAll('.tg').forEach(t=>t.classList.remove('on'));
+ e.classList.add('on');
+ const a=e.closest('[data-aid]');if(a)refresh(a.dataset.aid);
+}
+function g(el,k){return el.querySelector(`[data-f="${k}"]`)?.value?.trim()||'';}
+function gs(el,k){return el.querySelector(`.tg.on[data-key="${k}"]`)?.dataset.val||'';}
+
+// ══ NEW ATOM ═════════════════════════════════════════════════════════════
+function newAtom(){
+ document.getElementById('emp').style.display='none';
+ N++;const aid='A'+String(N).padStart(3,'0');const uid=uuid();
+ A[aid]={uuid:uid,otype:null,reg:null,exported:false,uuid_history:[],type_drafts:{},register_drafts:{}};dl();
+
+ document.getElementById('ac').insertAdjacentHTML('beforeend',`
+<div data-aid="${aid}" id="at-${aid}" style="margin-bottom:16px">
+
+<div class="part"><span class="part-tag">PART I</span><span class="part-name">Why the Atom Exists</span><span class="part-line"></span></div>
+
+<!-- 1 · DEFINED -->
+<div class="step open" id="p-${aid}-1">
+ <div class="step-bar" onclick="tS('${aid}',1)">
+  <div class="snum done">1</div>
+  <div class="step-mid"><div class="stitle">The Atom Defined</div><div class="ssub">Read once — then collapse and build</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body"><div class="teach">
+  <div class="pullquote">One atom = one assertion, one immutable identity, one versioned state, one independently assignable grade.</div>
+  <p>An atom is the smallest corpus object that can receive one epistemic ruling <em>without forcing that ruling onto a different assertion</em>. It is not necessarily the shortest grammatical sentence. It is the smallest assertion whose truth conditions, dependencies, evidence, failure conditions, and status can be tracked as one unit.</p>
+  <p>The atom does four things at once:</p>
+  <ul><li>It preserves exactly what was claimed.</li><li>It exposes what the claim depends on.</li><li>It separates what supports the claim from what merely resembles it.</li><li>It allows failure to propagate only where the dependency graph licenses propagation.</li></ul>
+  <p><strong>An atom is not:</strong></p>
+  <ul>
+   <li>a whole paper merely renamed as a claim</li>
+   <li>a paragraph whose conjuncts can fail independently</li>
+   <li>an equation without a statement of what the equation is claimed to mean</li>
+   <li>a quotation treated as though quotation proves the quoted content</li>
+   <li>a label such as <code>theorem</code>, <code>physics</code>, or <code>Christian</code> used in place of a truth condition</li>
+   <li>an HTML page treated as a second source of truth</li>
+   <li>an automated score treated as a human admission ruling</li>
+  </ul>
+ </div></div></div>
+
+<!-- 2 · ADDRESS -->
+<div class="step" id="p-${aid}-2">
+ <div class="step-bar" onclick="tS('${aid}',2)">
+  <div class="snum" id="n-${aid}-2">2</div>
+  <div class="step-mid"><div class="stitle">The Address</div><div class="ssub">Immutable identity · never reused, never deleted</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach">
+   <div class="codebox">claims / <span class="hi">A042</span> / <span class="hi2">L9</span> / <span class="hi3">C1</span>
+         atom   layer  component</div>
+   <p><strong>Atom (A###)</strong> — the enduring claim family. Immutable, never reused, never silently deleted. The identifier does not certify truth. <code>A042</code> means "this tracked claim family," not "claim 42 has been admitted."</p>
+   <p><strong>Layer (L#)</strong> — where the claim operates in the dependency stack: what must already be available for the claim to be meaningful, and what new capability it adds if granted. A layer assignment is not a truth grade. It answers <em>where does this operate</em>, not <em>how well is it supported</em>.</p>
+   <p><strong>Component (C#)</strong> — one independently gradable assertion extracted from a bundle. If a sentence contains three claims that can fail separately, it opens as C1, C2, C3. A proof of C1 does not prove C2. Support for C2 does not establish C3.</p>
+  </div>
+  <div class="form">
+   <div class="r2">
+    <div class="field"><label>UUID</label>
+     <div style="display:flex;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--bd2);border-radius:5px;padding:6px 9px">
+      <span id="u-${aid}" style="font-family:'Cascadia Code',Consolas,monospace;font-size:11px;color:var(--blu);flex:1">${uid}</span>
+      <button class="bg" style="padding:2px 7px;font-size:10px" onclick="rgn('${aid}')">↻</button></div></div>
+    <div class="field"><label>Statement SHA-256 (preview only)</label>
+     <div style="background:var(--bg);border:1px solid var(--bd2);border-radius:5px;padding:7px 9px;font-family:'Cascadia Code',Consolas,monospace;font-size:11px;color:var(--mu)" id="h-${aid}">— awaiting statement —</div></div>
+   </div>
+   <div class="r4">
+    <div class="field req"><label>Atom Family</label><input data-f="fam" list="dlf" placeholder="A042 (required; never defaults to the session number)" oninput="refresh('${aid}')" onblur="MEM.add('fams',this.value)"></div>
+    <div class="field"><label>Layer</label><input data-f="layer" placeholder="L9" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>Component</label><input data-f="comp" placeholder="C1" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>Author / Witness</label><input data-f="author" list="dla" value="${MEM.authors[0]||''}" oninput="refresh('${aid}')" onblur="MEM.add('authors',this.value)"></div>
+   </div>
+   <div class="r4">
+    <div class="field req"><label>Record Version</label><input data-f="record_ver" value="0.1.0" placeholder="0.1.0" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>Version Operation</label><select data-f="version_op" onchange="refresh('${aid}')"><option value="new">new</option><option value="amend">amend</option><option value="new_version">new version</option><option value="supersede">supersede</option></select></div>
+    <div class="field"><label>Prior Atom@Version</label><input data-f="prior_ver" placeholder="A041@1.2.0" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>Change Rationale</label><input data-f="version_why" placeholder="Why this version exists" oninput="refresh('${aid}')"></div>
+   </div>
+   <div class="r2">
+    <div class="field"><label>Source URI</label><input data-f="src_uri" list="dls" placeholder="https://… or file path" oninput="refresh('${aid}')" onblur="MEM.add('sources',this.value)"></div>
+    <div class="field"><label>Source Span</label><input data-f="src_span" placeholder="§4.2 ¶3 · lines 88–94 · chars 1200–1450" oninput="refresh('${aid}')"></div>
+   </div>
+   <div class="field"><label>Raw Statement — preserved exactly as found</label>
+    <div class="hint">Preserve before decomposition. No later clarification may erase what the source actually said.</div>
+    <textarea data-f="raw" rows="2" placeholder="The original wording, verbatim…" oninput="refresh('${aid}')"></textarea></div>
+   <div class="ax"><div class="ax-lb">AI contribution</div><div class="ax-df">Declare whether AI contributed. If yes, identify provider, model, role, and run receipt.</div>${tags('ai_contrib',['no','yes'],'ai')}</div>
+   <div class="r4">
+    <div class="field"><label>AI provider</label><input data-f="ai_provider" placeholder="DeepSeek / OpenAI / other" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>AI model</label><input data-f="ai_model" placeholder="Exact model/version" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>AI role</label><input data-f="ai_role" placeholder="drafting / critique / extraction" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>AI run receipt</label><input data-f="ai_receipt" placeholder="Run or prompt receipt ID" oninput="refresh('${aid}')"></div>
+   </div>
+   <div class="field"><label>AI contribution detail</label><input data-f="ai_detail" placeholder="What the model did and what the human adjudicated" oninput="refresh('${aid}')"></div>
+  </div>
+ </div></div>
+
+<div class="part"><span class="part-tag">PART II</span><span class="part-name">The Four Object Layers</span><span class="part-line"></span></div>
+
+<!-- 3 · OBJECT TYPE -->
+<div class="step" id="p-${aid}-3">
+ <div class="step-bar" onclick="tS('${aid}',3)">
+  <div class="snum" id="n-${aid}-3">3</div>
+  <div class="step-mid"><div class="stitle">The Object-Type Law</div><div class="ssub">Every atom has exactly one primary type</div></div>
+  <div class="sbadge" id="ot-${aid}">not chosen</div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach">
+   <p>This is an <strong>exclusive primary-type rule</strong>, not a denial that records contain sentences. An evidence atom may include a discrimination statement; that does not turn it into a claim object. A proof atom has a conclusion; that does not make the proof and the conclusion the same object.</p>
+   <p>When content performs more than one primary function, it <strong>must be decomposed</strong>. A paragraph that reports data, draws an inference, and proposes an interpretation becomes at least one evidence atom, one claim atom, and — if a derivation is asserted — one proof atom, connected by typed edges.</p>
+  </div>
+  <div class="form"><div class="otype-grid">
+   <div class="otype" data-t="CLAIM" onclick="pickT('${aid}','CLAIM')">
+    <div class="ot-top"><span class="ot-icon">◈</span><span class="ot-name">CLAIM</span></div>
+    <div class="ot-fn">Asserts a proposition. Stores one independently gradable claim with raw statement, normalized forms, exact negations, scope, quantifiers, and boundaries.</div>
+    <div class="ot-q">What is being said?</div></div>
+   <div class="otype" data-t="EVIDENCE" onclick="pickT('${aid}','EVIDENCE')">
+    <div class="ot-top"><span class="ot-icon">◉</span><span class="ot-name">EVIDENCE</span></div>
+    <div class="ot-fn">Bears on propositions. A preserved record whose function is discrimination — not "a claim that supports." Its bearing lives in typed edges, not in the object.</div>
+    <div class="ot-q">What speaks for, against, or between alternatives?</div></div>
+   <div class="otype" data-t="PROOF" onclick="pickT('${aid}','PROOF')">
+    <div class="ot-top"><span class="ot-icon">◆</span><span class="ot-name">PROOF</span></div>
+    <div class="ot-fn">Establishes an exact conclusion under premises. An inspectable derivation object — premises, licensed steps, conclusion, assumptions, receipt, boundary.</div>
+    <div class="ot-q">What is derived, by which rules, from what?</div></div>
+   <div class="otype" data-t="PROCESS" onclick="pickT('${aid}','PROCESS')">
+    <div class="ot-top"><span class="ot-icon">◇</span><span class="ot-name">PROCESS</span></div>
+    <div class="ot-fn">Performs a versioned operation. A protocol, gate, grammar, transformation, audit, or pipeline. A description of a procedure is not evidence that it was run.</div>
+    <div class="ot-q">What procedure generates, transforms, audits, or tests?</div></div>
+  </div></div>
+ </div></div>
+
+<!-- 4 · TYPE BODY (injected) -->
+<div id="tb-${aid}"></div>
+
+<!-- 5 · AXES -->
+<div class="step" id="p-${aid}-5">
+ <div class="step-bar" onclick="tS('${aid}',5)">
+  <div class="snum" id="n-${aid}-5">5</div>
+  <div class="step-mid"><div class="stitle">The Five Independent Axes</div><div class="ssub">No single status field carries all meanings</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach">
+   <p>Axes remain <strong>independent</strong>. An admitted evidence atom can still have low discriminating power. A <code>BUILT_ZERO_SORRY</code> proof can prove a narrow model theorem while its physical interpretation remains open. A process can be admitted as the approved method while no particular run has yet been executed.</p>
+  </div>
+  <div class="form">
+   <div class="ax"><div class="ax-lb">Status</div><div class="ax-df">Where this atom stands in the canon right now.</div>${tags('status',STATUS,'s')}</div>
+   <div class="ax"><div class="ax-lb">Claim Class</div><div class="ax-df">What kind of claim this is in the framework.</div>${tags('cclass',CCLASS,'cc')}</div>
+   ${Object.entries(AX).map(([k,a])=>
+    `<div class="ax"><div class="ax-lb${a.rq?' rq':''}">${a.l}${a.rq?' ●':''}</div><div class="ax-df">${a.d}</div>${tags(k,a.o,a.p,a.help)}</div>`).join('')}
+  </div>
+ </div></div>
+
+<div class="part"><span class="part-tag">PART VII</span><span class="part-name">Recursion, Termini & the Floor</span><span class="part-line"></span></div>
+
+<!-- 6 · TERMINUS -->
+<div class="step" id="p-${aid}-6">
+ <div class="step-bar" onclick="tS('${aid}',6)">
+  <div class="snum" id="n-${aid}-6">6</div>
+  <div class="step-mid"><div class="stitle">Terminus</div><div class="ssub">Where expansion stops — and why</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach">
+   <p>Recursion stops only when further decomposition would no longer expose an independently meaningful burden, or when a valid terminus is reached.</p>
+   <p><strong>PRIMITIVE</strong> — a declared floor beyond which the present grammar cannot open without presupposing what it is trying to explain. The Mark — distinction itself — is the limiting example. <em>Calling something primitive does not make it self-evidently true.</em></p>
+   <p><strong>INDEPENDENT_EMPIRICAL_INPUT</strong> — a measured or observed input the framework uses but does not derive. It must not be relabeled as a theoretical consequence simply because the model requires it.</p>
+   <p><strong>OPEN</strong> — an unresolved dependency, missing mechanism, undecided rival, or unperformed test. <strong>OPEN is first-class corpus knowledge.</strong></p>
+   <div class="maxim">THE NO-BORROWED-ANSWER RULE — No expansion may terminate in a label borrowed from the desired conclusion.<br><br>Invalid: <em>Why is reality intelligible? → Logos, because Logos means intelligibility.</em><br>Invalid: <em>Why is relation fundamental? → Trinity, because Trinity is relational.</em><br>Invalid: <em>Why does the model restore? → Grace, because grace restores.</em><br><br>These may be theological identifications or proposed explanations — but they are not closures until the independent burden, rivals, mapping, and why-gate are satisfied.</div>
+  </div>
+  <div class="form">
+   <div class="ax"><div class="ax-lb">Terminus reached</div><div class="ax-df">Leave NONE if this atom still opens further.</div>${tags('terminus',TERMINI,'tm')}</div>
+   <div class="field"><label>Terminus justification</label>
+    <div class="hint">If PRIMITIVE: why treated as primitive, what depends on it, what alternatives were considered, whether its primitiveness is logical / methodological / model-relative / theological.</div>
+    <textarea data-f="term_just" rows="2" placeholder="Why does expansion stop here?" oninput="refresh('${aid}')"></textarea></div>
+   <div class="field"><label>If OPEN — the exact open question</label>
+    <textarea data-f="open_q" rows="2" placeholder="The precise unresolved question, current candidates, what has already failed…" oninput="refresh('${aid}')"></textarea></div>
+   <div class="field"><label>Next discriminating test</label>
+    <div class="hint">Required wherever closure is absent.</div>
+    <input data-f="next_test" placeholder="What observation or formal result would settle this?" oninput="refresh('${aid}')"></div>
+  </div>
+ </div></div>
+
+<div class="part"><span class="part-tag">PART VIII</span><span class="part-name">Dependency, Failure & Correction</span><span class="part-line"></span></div>
+
+<!-- 7 · EDGES -->
+<div class="step" id="p-${aid}-7">
+ <div class="step-bar" onclick="tS('${aid}',7)">
+  <div class="snum" id="n-${aid}-7">7</div>
+  <div class="step-mid"><div class="stitle">Typed Edges &amp; Blast Radius</div><div class="ssub">Edges do not inherit the authority of either endpoint</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach">
+   <div class="codebox">CLAIM    ← supports / contradicts / falsifies / tests — EVIDENCE
+CLAIM    ← proves —                                      PROOF
+PROOF    — derivedFrom →                                 CLAIM
+EVIDENCE — generatedBy →                                 PROCESS
+PROOF    — auditedBy →                                   PROCESS
+ANY      — dependsOn / defines / interprets / bridgesTo
+           / expands / forksFrom / instantiates
+           / supersedes / corrects →                     ANY</div>
+   <p>An edge states a relationship, <strong>not an inference</strong> unless its predicate, payload, and warrant explicitly license that inference. Edge weights never become "percent true."</p>
+   <p><strong>Failure propagates only along load-bearing dependencies.</strong> If B deductively depends on A and A is falsified, B becomes upstream-falsified unless an independent derivation is recorded. If B is merely <em>motivated</em> by A, falsifying A removes that motivation but may not falsify B. If two claims are joined by analogy, falsification does not automatically cross the bridge.</p>
+  </div>
+  <div class="form">
+   <div class="field"><label>dependsOn — load-bearing prerequisites (ATOM@VERSION)</label>
+    <div class="hint">Only real load-bearing structure. Motivation is not dependency.</div>
+    <input data-f="e_dep" placeholder="A001@1.0.0, A007@2.1.0" oninput="refresh('${aid}')"></div>
+   <div class="r2">
+    <div class="field"><label>bridgesTo</label><input data-f="e_bridge" placeholder="A042@1.0.0" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>challenges</label><input data-f="e_chal" placeholder="A043@1.0.0" oninput="refresh('${aid}')"></div>
+   </div>
+   <div class="field"><label>forksFrom</label><input data-f="e_fork" placeholder="A044@1.0.0" oninput="refresh('${aid}')"></div>
+   <div class="r2">
+    <div class="field"><label>supersedes</label><input data-f="e_sup" placeholder="Prior atom this replaces in current selection" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>expands (parent atom)</label><input data-f="e_exp" placeholder="Parent atom if this is a child" oninput="refresh('${aid}')"></div>
+   </div>
+   <div class="ax"><div class="ax-lb">Evidence edge state — if this bears on another claim</div>
+    <div class="ax-df">supports: more expected under the claim than the named rival. contradicts: less expected but not refuting. falsifies: meets a preregistered kill condition. tests: produced to discriminate; result may be null or pending.</div>
+    ${tags('edge',['supports','contradicts','falsifies','tests'],'ed')}</div>
+   <div class="field"><label>Blast radius if this atom fails</label>
+    <div class="hint">The graph must make the blast radius inspectable before a ruling is applied.</div>
+    <textarea data-f="blast" rows="2" placeholder="What downstream is UNAFFECTED / REVIEW_REQUIRED / WEAKENED / UPSTREAM_FALSIFIED / RERUN_OWED…" oninput="refresh('${aid}')"></textarea></div>
+  </div>
+ </div></div>
+
+<!-- 8 · TRUTH SPACE + GUARD + CORRECTION -->
+<div class="step" id="p-${aid}-8">
+ <div class="step-bar" onclick="tS('${aid}',8)">
+  <div class="snum" id="n-${aid}-8">8</div>
+  <div class="step-mid"><div class="stitle">Truth Space, Guards &amp; the Correction Ledger</div><div class="ssub">The corpus immune system</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach">
+   <p>State what the world or model looks like if the claim is true, what its exact negations are, and what observations or constructions discriminate among them.</p>
+   <p>A correction is a <strong>first-class governance record</strong>, not an in-place edit. Corrections print wherever the corrected claim printed. Nothing is silently edited or deleted. Falsified and withdrawn atoms remain visible with their lessons.</p>
+   <div class="maxim">The correction ledger is the corpus's memory of its mistakes — and therefore part of its credibility.</div>
+  </div>
+  <div class="form">
+   <div class="r2">
+    <div class="field req"><label>Exact Negation</label><div class="hint">What the world looks like if this is false.</div>
+     <textarea data-f="negation" rows="2" placeholder="This claim is false exactly when…" oninput="refresh('${aid}')"></textarea></div>
+    <div class="field req"><label>Kill Condition</label><div class="hint">Concrete, preregistered where possible.</div>
+     <textarea data-f="kill" rows="2" placeholder="This claim is falsified if…" oninput="refresh('${aid}')"></textarea></div>
+   </div>
+   <div class="field"><label>Countermodels — the strongest rival</label>
+    <div class="hint">Build the strongest rival, not the easiest rival.</div>
+    <textarea data-f="counter" rows="2" placeholder="The account that explains the same signature with equal care…" oninput="refresh('${aid}')"></textarea></div>
+   <div class="guard"><div class="guard-h">⚠ INTERPRETATION BOUNDARY — what this does NOT establish</div>
+    <div class="guard-b"><textarea rows="3" data-f="guard" placeholder="Analogy is never promoted to identity. A bridge never propagates as proof. A specification is never reported as a theorem. State plainly what this atom does not establish…" oninput="refresh('${aid}')"></textarea></div></div>
+   <div class="ldg">
+    <div class="ldg-h"><span>✕ CORRECTION LEDGER — what we got wrong and fixed</span>
+     <button class="ldg-add" onclick="addLe(this)">+ Entry</button></div>
+    <div class="ldg-e"></div></div>
+   <div class="ax"><div class="ax-lb">Defect class — if this atom is under correction</div>
+    <div class="ax-df">A substantive change may never be disguised as a local fix.</div>
+    ${tags('defect',DEFECT,'df')}</div>
+  </div>
+ </div></div>
+
+<div class="part"><span class="part-tag">PART X</span><span class="part-name">The Human Admission Gate</span><span class="part-line"></span></div>
+
+<!-- 9 · ADMISSION -->
+<div class="step" id="p-${aid}-9">
+ <div class="step-bar" onclick="tS('${aid}',9)">
+  <div class="snum" id="n-${aid}-9">9</div>
+  <div class="step-mid"><div class="stitle">Admission Ruling</div><div class="ssub">No automated run canonizes</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach">
+   <p>The <strong>candidate graph</strong> contains extracted claims, proposed expansions, unruled migrations, candidate bridges, model outputs, and AI-generated sidecars. The <strong>admitted graph</strong> contains only objects that have received an explicit human ruling.</p>
+   <p><strong>Automation may</strong> preserve and hash sources, propose segmentation, instantiate templates, detect missing fields, validate schema, resolve identifiers, generate projections, run deterministic tests, and display blast radius.</p>
+   <p><strong>Automation may not</strong> declare a claim true, convert analogy into identity, decide theological orthodoxy, upgrade proof class from prose resemblance, invent missing evidence, resolve an OPEN field by preference, or move a candidate into canon without a human ruling.</p>
+  </div>
+  <div class="form">
+   <div class="ax"><div class="ax-lb">Graph</div><div class="ax-df">Fixed by this tool. Admission requires a separate signed human admission event.</div>${tags('graph',['candidate'],'gr')}</div>
+   <div class="r2">
+    <div class="field"><label>Proposed reviewer</label><input data-f="rule_who" list="dla" placeholder="Who should review?" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>Requested review date</label><input data-f="rule_when" placeholder="YYYY-MM-DD" oninput="refresh('${aid}')"></div>
+   </div>
+   <div class="field"><label>Candidate handoff note</label>
+    <textarea data-f="rule_why" rows="2" placeholder="What the independent human ruler should consider…" oninput="refresh('${aid}')"></textarea></div>
+   <div class="field"><label>Unresolved fields at handoff</label>
+    <div class="hint">The ruling packet must never hide unresolved fields behind a green summary.</div>
+    <textarea data-f="rule_open" rows="2" placeholder="What remained OPEN when this was ruled…" oninput="refresh('${aid}')"></textarea></div>
+  </div>
+ </div></div>
+
+<div class="compbar"><div class="comp-in">
+ <span class="comp-lb">${aid}</span>
+ <div class="comp-track"><div class="comp-fill" id="cf-${aid}"></div></div>
+ <span class="comp-txt" id="ct-${aid}">0 / 0 required</span>
+ <span class="comp-state st-incomplete" id="cs-${aid}">DISCOVERY_INCOMPLETE</span>
+ <button class="bg" onclick="expOne('${aid}')">Validate Candidate</button>
+ <button class="bg" style="color:#a05050;border-color:#3a1a1a" onclick="rmA('${aid}')">Discard Unsaved Draft</button>
+</div></div>
+</div>`);
+ setTimeout(()=>refresh(aid),40);
+}
+
+// ══ OBJECT TYPE PICK ═════════════════════════════════════════════════════
+function captureDraft(root){
+ if(!root)return null;const vals={},tags={},terms=[];
+ root.querySelectorAll('[data-f]').forEach(f=>{vals[f.dataset.f]=f.value;});
+ root.querySelectorAll('.tg.on').forEach(t=>{tags[t.dataset.key]=t.dataset.val;});
+ root.querySelectorAll('.term-row').forEach(r=>terms.push({m:r.querySelector('.t-m').value,p:r.querySelector('.t-p').value,t:r.querySelector('.t-t').value}));
+ return{vals,tags,terms,link_order:[...root.querySelectorAll('.lnk')].map(l=>l.dataset.lnk)};
+}
+function restoreDraft(root,d){
+ if(!root||!d)return;
+ const aid=root.closest('[data-aid]')?.dataset.aid;
+ (d.terms||[]).forEach(()=>{if(aid)addTerm(aid);});
+ root.querySelectorAll('.term-row').forEach((r,i)=>{const x=d.terms[i];if(x){r.querySelector('.t-m').value=x.m;r.querySelector('.t-p').value=x.p;r.querySelector('.t-t').value=x.t;}});
+ Object.entries(d.vals||{}).forEach(([k,v])=>{const f=root.querySelector(`[data-f="${k}"]`);if(f)f.value=v;});
+ Object.entries(d.tags||{}).forEach(([k,v])=>{const t=root.querySelector(`.tg[data-key="${k}"][data-val="${v}"]`);if(t)t.classList.add('on');});
+ const links=root.querySelector('.links');if(links)(d.link_order||[]).forEach(id=>{const n=links.querySelector(`[data-lnk="${id}"]`);if(n)links.appendChild(n);});
+}
+function pickT(aid,t){
+ const at=document.getElementById('at-'+aid);
+ const prior=A[aid].otype;if(prior===t)return;
+ if(prior)A[aid].type_drafts[prior]={body:captureDraft(document.getElementById('tb-'+aid)),reg:A[aid].reg};
+ at.querySelectorAll('.otype').forEach(c=>c.classList.remove('sel'));
+ at.querySelector(`.otype[data-t="${t}"]`).classList.add('sel');
+ A[aid].otype=t;A[aid].reg=A[aid].type_drafts[t]?.reg||null;
+ document.getElementById('ot-'+aid).textContent=t;
+ document.getElementById('n-'+aid+'-3').classList.add('done');
+ buildType(aid,t);
+ const saved=A[aid].type_drafts[t];
+ if(t==='CLAIM'&&saved?.reg)pickR(aid,saved.reg);
+ restoreDraft(document.getElementById('tb-'+aid),saved?.body);
+ refresh(aid);
+}
+
+function buildType(aid,t){
+ const box=document.getElementById('tb-'+aid);
+ if(t==='CLAIM'){
+  box.innerHTML=`
+<div class="part"><span class="part-tag">PART III–IV</span><span class="part-name">Expansion — Register-Native Anatomy</span><span class="part-line"></span></div>
+<div class="step open" id="p-${aid}-4">
+ <div class="step-bar" onclick="tS('${aid}',4)">
+  <div class="snum active" id="n-${aid}-4">4</div>
+  <div class="step-mid"><div class="stitle">The Claim &amp; Its Opening</div><div class="ssub">Opening is not paraphrase — it is dependency exposure</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach">
+   <p>A claim opens when its compressed assertion is decomposed into the conditions that must hold for that kind of claim to be warranted. <strong>The register determines the native anatomy.</strong></p>
+   <div class="codebox">PRESERVE → SEGMENT → TYPE → EXPOSE DEPENDENCIES → GENERATE NATIVE CHILDREN
+→ DEFINE TRUTH SPACE → ATTACH EVIDENCE → BUILD RIVALS → TEST → RECORD TERMINI</div>
+   <p>Assign a register only after reading the claim's <em>actual burden</em>. Questions belong to burdens, not disciplines — a claim found in a physics paper may be historical, mathematical, metaphysical, or theological.</p>
+  </div>
+  <div class="form">
+   <div class="field req"><label>Statement — Technical</label>
+    <div class="hint">The exact formal claim. One proposition. Quantifiers and scope preserved.</div>
+    <textarea data-f="st_tech" placeholder="The exact formal statement…" oninput="onStmt('${aid}')"></textarea></div>
+   <div class="field req"><label>Statement — Plain</label>
+    <div class="hint">One sentence a non-specialist gets. Must be equivalent — no added interpretation.</div>
+    <textarea data-f="st_plain" rows="2" placeholder="One sentence…" oninput="refresh('${aid}')"></textarea></div>
+   <div class="r2">
+    <div class="field"><label>Scope</label><input data-f="scope" placeholder="Where does this hold?" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>Quantifiers &amp; boundary conditions</label><input data-f="quant" placeholder="all / some / under conditions X" oninput="refresh('${aid}')"></div>
+   </div>
+   <div class="chain-hd">SELECT REGISTER BY BURDEN — not by where you found it</div>
+   <div class="reg-grid">${Object.entries(REG).map(([k,r])=>
+    `<div class="reg" data-r="${k}" onclick="pickR('${aid}','${k}')">
+      <div class="reg-ic">${r.ic}</div><div class="reg-nm">${r.nm}</div><div class="reg-ht">${r.ht}</div></div>`).join('')}</div>
+   <div id="ch-${aid}"></div>
+
+   <!-- ══ MATH PANEL ══ -->
+   <div class="mathp" style="margin-top:14px">
+    <div class="mathp-h">∑ MATH — the equation, term by term</div>
+    <div class="mathp-b">
+     <div class="field"><label>Equation</label>
+      <input data-f="eq" placeholder="Φ_g(r) = −μ_g/r" oninput="syncEq('${aid}');refresh('${aid}')"></div>
+     <div class="eqbox" id="eq-${aid}">—</div>
+     <div class="field"><label>Term-by-term</label>
+      <div class="hint">Math · Plain English · Theology. Each term gets its own row.</div>
+      <table class="termtbl" id="tt-${aid}">
+       <thead><tr><th>Math</th><th>Plain English</th><th>Theology</th><th></th></tr></thead>
+       <tbody></tbody></table>
+      <button class="term-add" onclick="addTerm('${aid}')">+ Add term</button></div>
+     <div class="field"><label>Master Equation socket</label>
+      <div class="hint">How this enters χ. Multiplicative? Additive? Under the coherence operator?</div>
+      <input data-f="me_socket" placeholder="χ = C_W[ X_G · … ] — multiplicative; zero collapses the product" oninput="refresh('${aid}')"></div>
+     <div class="field"><label>Behavior at limits</label>
+      <div class="hint">What happens at 0, at 1, at the boundary — the thing that makes the term mean something.</div>
+      <input data-f="me_limits" placeholder="X_G = 1 → line wide open. X_G = 0 → dead air, product collapses." oninput="refresh('${aid}')"></div>
+    </div>
+   </div>
+
+   <!-- ══ STORY PANEL ══ -->
+   <div class="storyp" style="margin-top:12px">
+    <div class="storyp-h"><span>NARRATIVE — not warrant</span></div>
+    <div class="storyp-b">
+     <div class="story-warn">A story makes a claim intelligible, never truer. This layer is structurally non-canonizable — the warrant-bearing predicates are disabled at the schema level, so nothing here can leak upward into the atom's grade.</div>
+     <div class="field"><label>Hook — one line</label>
+      <input data-f="nar_hook" placeholder="You didn't build the field. You're already standing in it." oninput="refresh('${aid}')"></div>
+     <div class="field"><label>Excerpt — verbatim, span-addressed</label>
+      <textarea data-f="nar_text" rows="3" placeholder="The story as written. Preservation law applies — verbatim, never silently edited." oninput="refresh('${aid}')"></textarea></div>
+     <div class="r2">
+      <div class="field"><label>Source document</label><input data-f="nar_doc" placeholder="01_PART_ZERO_THE_GROUND_v2" oninput="refresh('${aid}')"></div>
+      <div class="field"><label>Span</label><input data-f="nar_span" placeholder="SPAN-014 · lines 88–94" oninput="refresh('${aid}')"></div>
+     </div>
+     <div class="field"><label>Predicate</label>
+      <div class="firewall">ALLOWED &nbsp; <span class="ok">illustrates</span> · <span class="ok">motivates</span> · <span class="ok">entranceFor</span><br>DISABLED &nbsp; <span class="off">supports</span> · <span class="off">contradicts</span> · <span class="off">falsifies</span> · <span class="off">tests</span> · <span class="off">proves</span> · <span class="off">derivedFrom</span></div>
+      ${tags('nar_pred',['illustrates','motivates','entranceFor'],'np')}</div>
+     <div class="field req"><label>Boundary — what this story does NOT establish</label>
+      <div class="hint">Required whenever a narrative is attached. Same spirit as the proof interpretation boundary.</div>
+      <textarea data-f="nar_bound" rows="2" placeholder="This story makes X vivid. It is not evidence that Y." oninput="refresh('${aid}')"></textarea></div>
+    </div>
+   </div>
+  </div>
+ </div></div>`;
+ } else {
+  const o=OBJ[t];
+  box.innerHTML=`
+<div class="part"><span class="part-tag">PART IV-A</span><span class="part-name">${o.nm} — Native Anatomy</span><span class="part-line"></span></div>
+<div class="step open" id="p-${aid}-4">
+ <div class="step-bar" onclick="tS('${aid}',4)">
+  <div class="snum active" id="n-${aid}-4">4</div>
+  <div class="step-mid"><div class="stitle">${o.nm} Anatomy</div><div class="ssub">${o.q}</div></div>
+  <div class="schev">▼</div></div>
+ <div class="step-body">
+  <div class="teach"><p>${o.intro}</p>
+   <div class="chain-flow">${o.flow}</div></div>
+  <div class="form">
+   <div class="field req"><label>Statement — what this ${o.nm.toLowerCase()} object is</label>
+    <textarea data-f="st_tech" placeholder="Name the object precisely…" oninput="onStmt('${aid}')"></textarea></div>
+   <div class="field req"><label>Plain description</label>
+    <textarea data-f="st_plain" rows="2" placeholder="One sentence…" oninput="refresh('${aid}')"></textarea></div>
+   <div class="chain-hd">${o.nm} ANATOMY — drag ⠿ to reorder · ● = required burden</div>
+   <div class="links" id="lk-${aid}">${o.chain.map((l,i)=>lnkHTML(aid,l,i)).join('')}</div>
+  </div>
+ </div></div>`;
+  drag(aid);
+ }
+}
+
+// ══ REGISTER PICK ════════════════════════════════════════════════════════
+function pickR(aid,k){
+ const at=document.getElementById('at-'+aid);
+ const old=A[aid].reg;
+ if(old&&old!==k)A[aid].register_drafts[old]=captureDraft(document.getElementById('ch-'+aid));
+ at.querySelectorAll('.reg').forEach(c=>c.classList.remove('sel'));
+ at.querySelector(`.reg[data-r="${k}"]`).classList.add('sel');
+ A[aid].reg=k;
+ const r=REG[k];
+ document.getElementById('ch-'+aid).innerHTML=`
+  <div class="teach" style="border:1px solid var(--bd);border-radius:6px;margin-top:12px;padding:13px 15px;background:#080808">
+   <p style="margin-bottom:7px">${r.intro}</p>
+   <div class="chain-flow" style="margin-bottom:0">${r.flow}</div></div>
+  <div class="chain-hd">${r.nm.toUpperCase()} ANATOMY — drag ⠿ to reorder · ● = required burden</div>
+  <div class="links" id="lk-${aid}">${r.chain.map((l,i)=>lnkHTML(aid,l,i)).join('')}</div>`;
+ restoreDraft(document.getElementById('ch-'+aid),A[aid].register_drafts[k]);
+ drag(aid);refresh(aid);
+}
+
+// ══ LINK HTML ════════════════════════════════════════════════════════════
+function lnkHTML(aid,l,i){
+ return`<div class="lnk ${l.rq?'rq':''}" data-lnk="${l.id}">
+  <div class="lnk-bar">
+   <span class="lnk-drag">⠿</span><span class="lnk-n">${i+1}</span>
+   <span class="lnk-nm" onclick="tL(this)">${l.nm}</span>
+   ${l.rq?'<span class="lnk-dot">●</span>':''}
+   <span class="lnk-chev" onclick="tL(this)">▼</span></div>
+  <div class="lnk-body">
+   <div class="lnk-def">${l.df}</div>
+   ${l.q?`<div class="lnk-q">↳ ${l.q}</div>`:''}
+   ${l.f.map(f=>`<div class="field${f.rq?' req':''}"><label>${f.l}</label>
+     ${(f.p&&f.p.length>44)?`<textarea data-f="${f.k}" rows="2" placeholder="${f.p}" oninput="refresh('${aid}')"></textarea>`
+      :`<input data-f="${f.k}" placeholder="${f.p||''}" oninput="refresh('${aid}')">`}</div>`).join('')}
+  </div></div>`;
+}
+function tL(e){e.closest('.lnk').classList.toggle('open');}
+
+// ══ DRAG ═════════════════════════════════════════════════════════════════
+function drag(aid){
+ const L=document.getElementById('lk-'+aid);if(!L)return;
+ L.querySelectorAll('.lnk-drag').forEach(h=>{
+  h.onmousedown=e=>{
+   e.preventDefault();
+   const d=h.closest('.lnk');d.style.opacity='.45';
+   const mv=ev=>{const t=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('.lnk');
+    if(t&&t!==d&&t.parentElement===L){const r=t.getBoundingClientRect();
+     L.insertBefore(d,ev.clientY<(r.top+r.bottom)/2?t:t.nextSibling);}};
+   const up=()=>{d.style.opacity='';document.removeEventListener('mousemove',mv);
+    document.removeEventListener('mouseup',up);
+    L.querySelectorAll('.lnk-n').forEach((n,i)=>n.textContent=i+1);};
+   document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+  };});
+}
+
+// ══ MATH PANEL ══════════════════════════════════════════════════════════
+function syncEq(aid){
+ const el=document.getElementById('at-'+aid);
+ const b=document.getElementById('eq-'+aid);
+ if(b)b.textContent=g(el,'eq')||'—';
+}
+function addTerm(aid){
+ const tb=document.querySelector(`#tt-${aid} tbody`);
+ const tr=document.createElement('tr');
+ tr.className='term-row';
+ tr.innerHTML=`
+  <td><input class="t-m" placeholder="μ_g" oninput="refresh('${aid}')"></td>
+  <td><input class="t-p" placeholder="how heavy the source is" oninput="refresh('${aid}')"></td>
+  <td><input class="t-t" placeholder="God's initiative — the draw originates from Him" oninput="refresh('${aid}')"></td>
+  <td><button class="term-rm" onclick="const a=this.closest('[data-aid]').dataset.aid;this.closest('tr').remove();refresh(a)">×</button></td>`;
+ tb.appendChild(tr);tr.querySelector('input').focus();
+}
+
+// ══ AUTOSAVE ════════════════════════════════════════════════════════════
+let saveT=null;
+function makeDraftSnapshot(){
+ const snap={n:N,atoms:{},html:{}};
+ Object.keys(A).forEach(aid=>{
+  snap.atoms[aid]=A[aid];
+  const el=document.getElementById('at-'+aid);if(!el)return;
+  const vals={},tg={},terms=[],ledger=[];
+  el.querySelectorAll('[data-f]').forEach(f=>{if(f.value.trim())vals[f.dataset.f]=f.value;});
+  el.querySelectorAll('.tg.on').forEach(t=>{tg[t.dataset.key]=t.dataset.val;});
+  el.querySelectorAll('.term-row').forEach(r=>terms.push({m:r.querySelector('.t-m').value,p:r.querySelector('.t-p').value,t:r.querySelector('.t-t').value}));
+  el.querySelectorAll('.le').forEach(row=>{const x={cid:row.dataset.cid};row.querySelectorAll('[data-cf]').forEach(f=>x[f.dataset.cf]=f.value);ledger.push(x);});
+  const lnks=[...el.querySelectorAll('.lnk')].map(l=>l.dataset.lnk);
+  snap.html[aid]={vals,tg,terms,ledger,lnks};
+ });
+ return snap;
+}
+function autosave(){
+ clearTimeout(saveT);
+ saveT=setTimeout(()=>{
+  try{
+    const snap=makeDraftSnapshot();
+   localStorage.setItem('pof_draft',JSON.stringify(snap));
+   const s=document.getElementById('savemark');
+   if(s){s.textContent='saved '+new Date().toLocaleTimeString();
+    s.classList.add('flash');setTimeout(()=>s.classList.remove('flash'),700);}
+  }catch(e){console.warn('autosave failed',e);}
+ },600);
+}
+
+function restore(){
+ let snap;
+ try{snap=JSON.parse(localStorage.getItem('pof_draft')||'null');}catch(e){return;}
+ if(!snap||!snap.atoms||!Object.keys(snap.atoms).length)return;
+ if(!confirm('Restore '+Object.keys(snap.atoms).length+' unsaved atom(s) from your last session?')){
+  localStorage.removeItem('pof_draft');return;}
+ Object.entries(snap.atoms).forEach(([aid,meta])=>{
+  newAtom();
+  const nid='A'+String(N).padStart(3,'0');
+  A[nid]=Object.assign(A[nid],meta,{type_drafts:meta.type_drafts||{},register_drafts:meta.register_drafts||{},uuid_history:meta.uuid_history||[]});
+  document.getElementById('u-'+nid).textContent=meta.uuid;
+  if(meta.otype)pickT(nid,meta.otype);
+  if(meta.reg)pickR(nid,meta.reg);
+  const d=snap.html[aid];if(!d)return;
+  const el=document.getElementById('at-'+nid);
+  // restore link order
+  if(d.lnks&&d.lnks.length){
+   const L=document.getElementById('lk-'+nid);
+   if(L)d.lnks.forEach(id=>{const n=L.querySelector(`[data-lnk="${id}"]`);if(n)L.appendChild(n);});
+   if(L)L.querySelectorAll('.lnk-n').forEach((n,i)=>n.textContent=i+1);
+  }
+  (d.ledger||[]).forEach(item=>{const b=el.querySelector('.ldg-add');if(!b)return;addLe(b);const row=el.querySelector('.le:last-child');if(item&&typeof item==='object'){row.dataset.cid=item.cid||row.dataset.cid;row.querySelectorAll('[data-cf]').forEach(f=>f.value=item[f.dataset.cf]||'');}else row.querySelector('.le-i').value=item||'';});
+  (d.terms||[]).forEach(()=>addTerm(nid));
+  el.querySelectorAll('.term-row').forEach((r,x)=>{const t=(d.terms||[])[x];if(!t)return;
+   r.querySelector('.t-m').value=t.m;r.querySelector('.t-p').value=t.p;r.querySelector('.t-t').value=t.t;});
+  Object.entries(d.vals||{}).forEach(([k,v])=>{
+   const f=el.querySelector(`[data-f="${k}"]`);if(f)f.value=v;});
+  Object.entries(d.tg||{}).forEach(([k,v])=>{
+   const t=el.querySelector(`.tg[data-key="${k}"][data-val="${v}"]`);if(t){
+    t.closest('.ax-g').querySelectorAll('.tg').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');}});
+  syncEq(nid);onStmt(nid);refresh(nid);
+ });
+}
+
+// ══ MISC UI ══════════════════════════════════════════════════════════════
+function tS(aid,n){document.getElementById(`p-${aid}-${n}`).classList.toggle('open');}
+function rgn(aid){
+ if(A[aid]?.exported){alert('Identity is locked because this draft has been exported or referenced. Create a new version instead.');return;}
+ const old=A[aid].uuid;if(!confirm('Regenerate this unsaved draft UUID? The prior draft UUID will be retained in local history.'))return;
+ const u=uuid();A[aid].uuid_history=A[aid].uuid_history||[];A[aid].uuid_history.push(old);A[aid].uuid=u;
+ document.getElementById('u-'+aid).textContent=u;refresh(aid);
+}
+function onStmt(aid){
+ const el=document.getElementById('at-'+aid);const t=g(el,'st_tech');
+ const h=document.getElementById('h-'+aid);
+ if(!t){h.textContent='— awaiting statement —';h.style.color='var(--mu)';refresh(aid);return;}
+ h.textContent='hashing…';h.style.color='var(--mu)';
+ sha(t).then(v=>{
+  if(g(el,'st_tech')!==t)return;
+  h.textContent=v;h.style.color='var(--grn)';refresh(aid);
+ });
+ refresh(aid);
+}
+function addLe(b){
+ const e=b.closest('.ldg').querySelector('.ldg-e');const d=document.createElement('div');
+ d.className='le';const aid=b.closest('[data-aid]').dataset.aid;
+ d.dataset.cid=uuid();
+ d.innerHTML=`<span class="le-x">✕</span><div style="flex:1"><input class="le-i" data-cf="defect_statement" placeholder="Defect statement" oninput="refresh('${aid}')"><div class="r4" style="margin-top:6px"><input data-cf="prior_version" placeholder="Prior version"><input data-cf="successor_version" placeholder="Proposed successor"><input data-cf="affected_projections" placeholder="Affected projections"><input data-cf="receipt" placeholder="Correction receipt"></div><input data-cf="restoration_path" placeholder="Restoration path" style="margin-top:6px"></div><button class="le-rm" onclick="const a=this.closest('[data-aid]').dataset.aid;this.closest('.le').remove();refresh(a)">×</button>`;
+ e.appendChild(d);d.querySelector('input').focus();
+}
+
+// ══ COMPLETION + LIVE ════════════════════════════════════════════════════
+function refresh(aid){
+ const el=document.getElementById('at-'+aid);if(!el)return;
+ // required-field tally
+ const rq=[...el.querySelectorAll('.field.req')];
+ let done=0;
+ rq.forEach(f=>{const i=f.querySelector('input,textarea');if(i&&i.value.trim())done++;});
+ // required axes
+ let axT=0,axD=0;
+ Object.entries(AX).forEach(([k,a])=>{
+  const required=a.rq||(k==='proofClass'&&A[aid]?.otype==='PROOF');
+  if(required){axT++;if(gs(el,k))axD++;}
+ });
+ const tot=rq.length+axT,dn=done+axD;
+ const pct=tot?Math.round(dn/tot*100):0;
+ const fill=document.getElementById('cf-'+aid);
+ if(fill){fill.style.width=pct+'%';
+  document.getElementById('ct-'+aid).textContent=`${dn} / ${tot} required`;
+  const st=document.getElementById('cs-'+aid);
+  const fieldsOk=tot>0&&dn===tot;
+  const vr=validate(prune(collect(aid))||{});
+  const ok=fieldsOk&&vr.block.length===0;
+  st.textContent=ok?'VALID CANDIDATE — NOT ADMITTED':(fieldsOk?'CANDIDATE_INVALID':'DISCOVERY_INCOMPLETE');
+  st.title=vr.block.map(x=>x.id+': '+x.msg).join('\n');
+  st.className='comp-state '+(ok?'st-opened':'st-incomplete');}
+ // link fill state
+ el.querySelectorAll('.lnk').forEach(l=>{
+  const ins=[...l.querySelectorAll('input,textarea')];
+  const any=ins.some(i=>i.value.trim());
+  const reqs=[...l.querySelectorAll('.field.req input,.field.req textarea')];
+  const allReq=reqs.length?reqs.every(i=>i.value.trim()):any;
+  l.classList.toggle('filled',allReq&&any);});
+ // step done markers
+ [2,4,5,6,7,8,9].forEach(n=>{
+  const nn=document.getElementById(`n-${aid}-${n}`);if(!nn)return;
+  const body=document.getElementById(`p-${aid}-${n}`);if(!body)return;
+  const ins=[...body.querySelectorAll('input,textarea')];
+  const tg=[...body.querySelectorAll('.tg.on')];
+  nn.classList.toggle('done',ins.some(i=>i.value.trim())||tg.length>0);});
+ live();
+ autosave();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  INVARIANT CHECKER
+//  The builder may produce only candidate packets. This is the separate
+//  validator. It checks schema and invariants — it does not rule admission.
+// ══════════════════════════════════════════════════════════════════════════
+const INV=[
+ // ── admission authority ──────────────────────────────────────────────
+ {id:'ADM-01',sev:'BLOCK',t:'Admission without ruling authority',
+  test:r=>r.admission?.graph==='admitted'&&!(r.admission?.ruling_actor&&r.admission?.ruling_date&&r.admission?.rationale),
+  msg:'graph=admitted requires ruling actor, ruling date, and rationale. No automated run canonizes.'},
+ {id:'ADM-02',sev:'BLOCK',t:'Lifecycle ADMITTED outside admitted graph',
+  test:r=>r.axes?.lifecycle_state==='ADMITTED'&&r.admission?.graph!=='admitted',
+  msg:'lifecycle ADMITTED contradicts candidate graph. One of the two is wrong.'},
+ {id:'ADM-03',sev:'BLOCK',t:'Falsified atom in admitted graph',
+  test:r=>(r.axes?.status==='falsified'||r.axes?.lifecycle_state==='FALSIFIED')&&r.admission?.graph==='admitted',
+  msg:'A falsified atom cannot sit in the admitted graph. It remains visible with its lesson — it is not admitted.'},
+ // ── proof-class invariants ───────────────────────────────────────────
+ {id:'PRF-01',sev:'BLOCK',t:'Zero-sorry claimed without receipt',
+  test:r=>r.axes?.proof_class==='BUILT_ZERO_SORRY'&&!(r.register_anatomy?.links?.RECEIPT?.rc_file||r.register_anatomy?.links?.RECEIPT?.prc_file),
+  msg:'BUILT_ZERO_SORRY requires a receipt naming source file, theorem, revision, command, and sorry count.'},
+ {id:'PRF-02',sev:'BLOCK',t:'Proof class contradicts receipt class',
+  test:r=>{const rc=r.register_anatomy?.links?.RECEIPT?.prc_class||r.register_anatomy?.links?.RECEIPT?.receipt_class;
+   if(!rc)return false;
+   const p=r.axes?.proof_class;
+   return (p==='BUILT_ZERO_SORRY'&&rc!=='BUILT_ZERO_SORRY')||(p&&p!=='NOT_ATTEMPTED'&&rc==='NOT_ATTEMPTED');},
+  msg:'Declared proof class does not match the receipt class recorded in the anatomy.'},
+ {id:'PRF-03',sev:'BLOCK',t:'kernel_verified without build evidence',
+  test:r=>r.axes?.status==='kernel_verified'&&!(r.register_anatomy?.links?.RECEIPT),
+  msg:'kernel_verified requires a build receipt: theorem, file, toolchain, command, exit code, sorry count.'},
+ {id:'PRF-04',sev:'WARN',t:'verified status without proof class or evidence',
+  test:r=>r.axes?.status==='verified'&&!r.axes?.proof_class&&!r.narrative,
+  msg:'status=verified with no proof class recorded. What warrants the verification?'},
+ // ── why / terminus ───────────────────────────────────────────────────
+ {id:'WHY-01',sev:'BLOCK',t:'WHY_CLOSED with OPEN terminus',
+  test:r=>r.axes?.why_outcome==='WHY_CLOSED'&&r.terminus?.kind==='OPEN',
+  msg:'WHY_CLOSED and terminus OPEN are contradictory. WHY_OPEN is not a failure state — use it.'},
+ {id:'WHY-02',sev:'BLOCK',t:'WHY_CLOSED without closure level',
+  test:r=>r.axes?.why_outcome==='WHY_CLOSED'&&!(r.register_anatomy?.links?.WHY_GATE?.bw_level),
+  msg:'Closure always reports its level. Structural closure is not grounding or purposive closure.'},
+ {id:'TRM-01',sev:'BLOCK',t:'OPEN terminus without next discriminating test',
+  test:r=>r.terminus?.kind==='OPEN'&&!r.terminus?.next_discriminating_test,
+  msg:'An OPEN terminus must name the next discriminating test. OPEN is first-class knowledge, not a shrug.'},
+ {id:'TRM-02',sev:'WARN',t:'PRIMITIVE without justification',
+  test:r=>r.terminus?.kind==='PRIMITIVE'&&!r.terminus?.justification,
+  msg:'Calling something primitive does not make it self-evidently true. State why, and what alternatives were considered.'},
+ // ── bridge / IC ──────────────────────────────────────────────────────
+ {id:'BRG-01',sev:'BLOCK',t:'Bridge without lost structure',
+  test:r=>r.register_anatomy?.register==='bridge'&&!r.register_anatomy?.links?.LOST?.bl_lost,
+  msg:'A bridge that cannot state its losses has not opened. The loss field is mandatory.'},
+ {id:'BRG-02',sev:'BLOCK',t:'IC-4/5 without countermodels',
+  test:r=>['IC-4','IC-5'].includes(r.axes?.ic_grade)&&!(r.register_anatomy?.links?.COUNTERMODELS?.bcm_rival),
+  msg:'IC-4 and IC-5 require a pressure test against the strongest rival mapping.'},
+ {id:'BRG-03',sev:'BLOCK',t:'IC-5 without reverse map',
+  test:r=>r.axes?.ic_grade==='IC-5'&&!(r.register_anatomy?.links?.REVERSE?.brv_rev),
+  msg:'IC-5 requires demonstrated reflection. Without a reverse map it is not an isomorphism in the strict sense.'},
+ {id:'BRG-04',sev:'WARN',t:'Bridge grade claims identity at low IC',
+  test:r=>{const b=r.register_anatomy?.links?.GRADE?.bg_bridge;const ic=r.axes?.ic_grade;
+   return b==='structural_identity'&&ic&&['IC-0','IC-1','IC-2','IC-3'].includes(ic);},
+  msg:'structural_identity asserted at IC-3 or below. Analogy is never promoted to identity.'},
+ // ── evidence ─────────────────────────────────────────────────────────
+ {id:'EVD-01',sev:'BLOCK',t:'Evidence edge without target claim',
+  test:r=>r.edge_state&&!(r.register_anatomy?.links?.DISCRIMINATION?.ex_target),
+  msg:'"This evidence supports" is meaningless without naming which claim version, against which rival.'},
+ {id:'EVD-02',sev:'BLOCK',t:'falsifies edge without kill condition',
+  test:r=>r.edge_state==='falsifies'&&!r.truth_space?.kill_condition,
+  msg:'A falsifies edge requires the kill condition and evidence it was preregistered.'},
+ {id:'EVD-03',sev:'BLOCK',t:'Evidence atom without discrimination statement',
+  test:r=>r.identity?.object_type==='EVIDENCE'&&!(r.register_anatomy?.links?.DISCRIMINATION?.ex_iffalse),
+  msg:'An evidence atom without a discrimination statement has no bearing. Its weight is zero.'},
+ // ── object-type / axis coherence ─────────────────────────────────────
+ {id:'TYP-01',sev:'BLOCK',t:'Claim class on a non-claim object',
+  test:r=>r.identity?.object_type&&r.identity.object_type!=='CLAIM'&&r.axes?.claim_class,
+  msg:'Claim class applies to CLAIM objects. Assigning it elsewhere collapses the four-object separation.'},
+ {id:'TYP-02',sev:'WARN',t:'Proof class on a non-proof object',
+  test:r=>['EVIDENCE','PROCESS'].includes(r.identity?.object_type)&&r.axes?.proof_class&&r.axes.proof_class!=='NOT_ATTEMPTED',
+  msg:'Proof class describes derivation warrant. Evidence needs custody/protocol grades; Process needs execution status.'},
+ {id:'TYP-03',sev:'BLOCK',t:'No object type selected',
+  test:r=>!r.identity?.object_type,
+  msg:'Every canonical atom has exactly one primary object type.'},
+ // ── identity ─────────────────────────────────────────────────────────
+ {id:'IDN-01',sev:'BLOCK',t:'No statement',
+  test:r=>!r.claim?.statement_technical,
+  msg:'An atom without a statement is not an atom.'},
+ {id:'IDN-02',sev:'WARN',t:'Atom family is a session-local UI number',
+  test:r=>r.identity?._family_from_ui===true,
+  msg:'Atom family was left blank and defaulted to a session counter. This ID collides across reloads — set a real family ID.'},
+ {id:'IDN-03',sev:'WARN',t:'No source provenance',
+  test:r=>!r.provenance?.source_uri&&!r.provenance?.raw_statement,
+  msg:'Preserve before decomposition. Neither source URI nor raw statement was recorded.'},
+ // ── narrative firewall ───────────────────────────────────────────────
+ {id:'NAR-01',sev:'BLOCK',t:'Narrative attached without boundary',
+  test:r=>r.narrative&&!r.narrative.boundary,
+  msg:'A narrative must state what it does not establish. A story makes a claim intelligible, never truer.'},
+ // ── corrections ──────────────────────────────────────────────────────
+ {id:'COR-01',sev:'WARN',t:'Defect class without ledger entry',
+  test:r=>r.corrections?.defect_class&&!(r.corrections?.ledger?.length),
+  msg:'A defect class was set but no correction entry records what was wrong and what was fixed.'}
+];
+
+function validate(rec){
+ const out={block:[],warn:[]};
+ INV.forEach(i=>{
+  let hit=false;
+  try{hit=i.test(rec);}catch(e){hit=false;}
+  if(hit)out[i.sev==='BLOCK'?'block':'warn'].push(i);
+ });
+ const add=(id,t,msg)=>out.block.push({id,sev:'BLOCK',t,msg});
+ const uuidRx=/^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+ if(!uuidRx.test(rec['@id']||''))add('SCH-UUID','Invalid UUID','A cryptographically generated UUID v4 is required.');
+ if(!/^A\d{3,}$/.test(rec.identity?.atom_family||''))add('SCH-FAMILY','Invalid atom family','Use a persistent family ID such as A042. Session-local IDs are forbidden.');
+ if(!/^L\d+$/.test(rec.identity?.layer||''))add('SCH-LAYER','Invalid layer','Layer must be a registry address such as L9.');
+ if(!/^C\d+$/.test(rec.identity?.component||''))add('SCH-COMP','Invalid component','Component must be an address such as C1.');
+ if(!/^\d+\.\d+\.\d+$/.test(rec.identity?.version||''))add('SCH-VERSION','Invalid record version','Use semantic version form such as 0.1.0.');
+ if(rec.admission?.graph!=='candidate'||rec.admission?.human_ruling!=='not_performed')add('ADM-00','Builder attempted admission','This builder may emit candidate packets only.');
+ if(rec.identity?.object_type==='PROOF'&&!rec.axes?.proof_class)add('PRF-00','Proof class missing','A PROOF object must declare its proof class.');
+ if(['EVIDENCE','PROCESS'].includes(rec.identity?.object_type)&&rec.axes?.proof_class)add('TYP-00','Proof class on wrong object','Evidence and Process objects do not carry proof class.');
+ if(rec.provenance?.ai_contribution_declared==='UNDECLARED')add('PROV-AI-00','AI contribution undeclared','Select yes or no; an absent value is not permission to guess.');
+ if(rec.provenance?.ai_contribution_declared===true&&!(rec.provenance?.ai_provider&&rec.provenance?.ai_model&&rec.provenance?.ai_role&&rec.provenance?.ai_run_receipt))add('PROV-AI-01','Incomplete AI receipt','AI-assisted candidates require provider, model, role, and run receipt.');
+ (rec.edge_proposals||[]).forEach((e,ix)=>{if(!e.target?.atom||e.target?.version==='UNPINNED')add('EDG-'+ix,'Unpinned edge target','Every edge target must identify an atom and version as ATOM@VERSION.');});
+ (rec.corrections||[]).forEach((c,ix)=>{if(!(c.correction_id&&c.target?.version_corrected&&c.proposed_successor_version&&c.affected_projections&&c.restoration_path&&c.receipt))add('COR-'+ix,'Incomplete correction record','A correction requires UUID, prior and successor versions, affected projections, restoration path, and receipt.');});
+ return out;
+}
+function collect(aid){
+ const el=document.getElementById('at-'+aid);if(!el)return null;
+ const G=k=>g(el,k),S=k=>gs(el,k);
+ const t=A[aid]?.otype,rk=A[aid]?.reg;
+ const chain={};
+ el.querySelectorAll('.lnk').forEach(l=>{
+  const o={};l.querySelectorAll('[data-f]').forEach(f=>{if(f.value.trim())o[f.dataset.f]=f.value.trim();});
+  if(Object.keys(o).length)chain[l.dataset.lnk]=o;});
+ const ledger=[...el.querySelectorAll('.le-i')].map(i=>i.value.trim()).filter(Boolean);
+ const arr=s=>G(s).split(',').map(x=>x.trim()).filter(Boolean);
+ return{
+  '@type':'tp:Atom','@id':'urn:uuid:'+(A[aid]?.uuid||''),
+  _packet:'CANDIDATE_DRAFT — NOT VALIDATED — NOT ADMITTED',
+  identity:{id:G('fam'),object_type:t,atom_family:G('fam'),draft_local_id:aid,
+   layer:G('layer'),component:G('comp'),version:G('record_ver'),version_operation:G('version_op')||'new',
+   prior_version:G('prior_ver'),change_rationale:G('version_why'),statement_hash:hsh(G('st_tech')),content_hash:'PENDING_FULL_RECORD_SHA256'},
+  provenance:{raw_statement:G('raw'),source_uri:G('src_uri'),source_span:G('src_span'),author_or_witness:G('author'),date_received:new Date().toISOString().slice(0,10),
+   ai_contribution_declared:S('ai_contrib')==='yes'?true:(S('ai_contrib')==='no'?false:'UNDECLARED'),
+   ai_contribution_detail:G('ai_detail'),ai_provider:G('ai_provider'),ai_model:G('ai_model'),ai_role:G('ai_role'),ai_run_receipt:G('ai_receipt')},
+  claim:{statement_technical:G('st_tech'),statement_plain:G('st_plain'),scope:G('scope'),quantifiers:G('quant')},
+  axes:{status:S('status'),claim_class:t==='CLAIM'?S('cclass'):'',lifecycle_state:S('lifecycle'),proof_class:t==='PROOF'?S('proofClass'):'',register:S('register')||rk,ic_grade:S('icGrade'),why_outcome:S('why')},
+  register_anatomy:{register:rk,links:chain},
+  truth_space:{exact_negation:G('negation'),kill_condition:G('kill'),countermodels:G('counter')},
+  terminus:{kind:S('terminus'),justification:G('term_just'),open_question:G('open_q'),next_discriminating_test:G('next_test')},
+  edge_proposals:(()=>{
+   const mk=(pred,ids)=>ids.map(tid=>({
+    '@type':'tp:EdgeProposal',
+    proposal_id:'draft-edge:'+pred+':'+(A[aid]?.uuid||'').slice(0,8)+':'+tid,
+    predicate:pred,
+    source:{atom:G('fam'),version:G('record_ver')},
+    target:{atom:tid.split('@')[0],version:tid.split('@')[1]||'UNPINNED'},
+    created_by:G('author')||'UNDECLARED',
+    lifecycle:'candidate',
+    warrant:'UNRULED'
+   }));
+   const e=[...mk('dependsOn',arr('e_dep')),...mk('bridgesTo',arr('e_bridge')),
+    ...mk('challenges',arr('e_chal')),...mk('forksFrom',arr('e_fork')),
+    ...mk('supersedes',arr('e_sup')),...mk('expands',arr('e_exp'))];
+   // evidence edge carries its own payload — bearing lives on the edge, not the atom
+   const es=S('edge');
+   if(es)e.push({
+    '@type':'tp:EvidenceEdgeProposal',
+    proposal_id:'draft-edge:'+es+':'+(A[aid]?.uuid||'').slice(0,8),
+    predicate:es,
+    source:{atom:G('fam'),version:G('record_ver')},
+    target:{atom:G('edge_target')||'UNNAMED',version:G('edge_target_ver')||'UNPINNED'},
+    discrimination_statement:chain.DISCRIMINATION?.ex_iffalse||G('edge_disc')||'',
+    compared_rival:chain.DISCRIMINATION?.ex_target||G('edge_rival')||'',
+    kill_condition:es==='falsifies'?G('kill'):undefined,
+    independence_cluster:chain.INDEPENDENCE?.ei_clust||'',
+    lifecycle:'candidate',warrant:'UNRULED'
+   });
+   return e.length?e:undefined;
+  })(),
+  blast_radius:G('blast'),
+  interpretation_boundary:G('guard'),
+  math:(()=>{
+   const terms=[...el.querySelectorAll('.term-row')].map(r=>({
+    term:r.querySelector('.t-m').value.trim(),
+    plain:r.querySelector('.t-p').value.trim(),
+    theological:r.querySelector('.t-t').value.trim()
+   })).filter(x=>x.term||x.plain||x.theological);
+   const m={equation:G('eq'),terms:terms.length?terms:undefined,
+    master_equation_socket:G('me_socket'),limit_behavior:G('me_limits')};
+   return (m.equation||m.terms||m.master_equation_socket||m.limit_behavior)?m:undefined;
+  })(),
+  narrative:(()=>{
+   const hook=G('nar_hook'),text=G('nar_text');
+   if(!hook&&!text)return undefined;
+   return{
+    '@type':'tp:Narrative',
+    nonCanonical:true,                    // permanent, immutable
+    hook,excerpt:text,
+    source:{document:G('nar_doc'),span:G('nar_span')},
+    predicate:S('nar_pred')||'illustrates',
+    boundary:G('nar_bound'),
+    // edge firewall — enforced at serialization, not by discipline
+    _firewall:{allowed:['illustrates','motivates','entranceFor'],
+     disabled:['supports','contradicts','falsifies','tests','proves','derivedFrom']}
+   };
+  })(),
+  corrections:(()=>{
+   const entries=[...el.querySelectorAll('.le')].map(row=>{const x={};row.querySelectorAll('[data-cf]').forEach(f=>x[f.dataset.cf]=f.value.trim());x.correction_id='urn:uuid:'+row.dataset.cid;return x;}).filter(x=>x.defect_statement);
+   if(!entries.length&&!S('defect'))return undefined;
+   return entries.map(x=>({
+    '@type':'tp:Correction',
+    correction_id:x.correction_id,
+    target:{atom:G('fam'),version_corrected:x.prior_version},proposed_successor_version:x.successor_version,
+    defect_class:S('defect')||'UNCLASSIFIED',
+    defect_statement:x.defect_statement,affected_projections:x.affected_projections,
+    downstream_map:G('blast')||'NOT_TRAVERSED',restoration_path:x.restoration_path,receipt:x.receipt,
+    lifecycle:'candidate',human_ruling:'not_performed',
+    _note:'A correction is a governance record, not an edit. This packet is unruled.'
+   }));
+  })(),
+  admission:(()=>{
+   const who=G('rule_who'),when=G('rule_when'),why=G('rule_why');
+   return{
+    graph:'candidate',human_ruling:'not_performed',admission_event_required:true,admission_event:null,
+    handoff:{proposed_reviewer:who||null,requested_review_date:when||null,note:why||null,
+     unresolved_fields:G('rule_open')||null},
+    _gate:'A separate signed human admission event is required. This tool cannot create one.'
+   };
+  })()
+ };
+}
+function prune(o){
+ if(Array.isArray(o)){const a=o.map(prune).filter(v=>v!==undefined&&v!=='');return a.length?a:undefined;}
+ if(o&&typeof o==='object'){const r={};Object.entries(o).forEach(([k,v])=>{const p=prune(v);if(p!==undefined&&p!=='')r[k]=p;});return Object.keys(r).length?r:undefined;}
+ return o===''||o===null?undefined:o;
+}
+function live(){
+ if(!jOn)return;
+ const all=[...document.querySelectorAll('[data-aid]')].map(e=>prune(collect(e.dataset.aid))).filter(Boolean);
+ document.getElementById('jl').textContent=JSON.stringify(all.length===1?all[0]:{'@context':'https://faiththruphysics.com/vocab/',atoms:all},null,2);
+}
+function tJSON(){jOn=!jOn;document.getElementById('cj').classList.toggle('on',jOn);
+ document.getElementById('jbtn').textContent=jOn?'Hide JSON':'Show JSON';live();}
+function cpLive(){navigator.clipboard.writeText(document.getElementById('jl').textContent);}
+function rmA(aid){if(!confirm('Discard the unsaved browser draft '+aid+'? This does not delete or alter any canonical record.'))return;
+ document.getElementById('at-'+aid).remove();delete A[aid];
+ if(!Object.keys(A).length)document.getElementById('emp').style.display='';live();}
+function stable(o){
+ if(Array.isArray(o))return'['+o.map(stable).join(',')+']';
+ if(o&&typeof o==='object')return'{'+Object.keys(o).sort().map(k=>JSON.stringify(k)+':'+stable(o[k])).join(',')+'}';
+ return JSON.stringify(o);
+}
+async function finalizeCandidate(rec){
+ const clean=prune(rec)||{};
+ clean._packet='CANDIDATE_DRAFT — VALIDATED — NOT ADMITTED';
+ if(clean.identity){delete clean.identity.content_hash;clean.identity.content_hash=await sha(stable(clean));}
+ return clean;
+}
+function validationReport(v,aid){return{
+ '@type':'tp:CandidateValidationReceipt',candidate:aid,valid:v.block.length===0,
+ blocks:v.block.map(x=>({id:x.id,title:x.t,message:x.msg})),warnings:v.warn.map(x=>({id:x.id,title:x.t,message:x.msg})),
+ authority_boundary:'Schema and invariant validation only. This receipt is not a truth grade or admission event.'};}
+async function prepareCandidate(aid){
+ const raw=prune(collect(aid))||{};const v=validate(raw);
+ if(v.block.length)return{ok:false,report:validationReport(v,raw.identity?.atom_family||aid)};
+ const atom=await finalizeCandidate(raw);return{ok:true,atom,report:validationReport(v,atom.identity?.atom_family||aid)};
+}
+async function expOne(aid){
+ const p=await prepareCandidate(aid);
+ if(!p.ok){sM(JSON.stringify(p.report,null,2));return;}
+ A[aid].exported=true;autosave();
+ sM(JSON.stringify({_packet:'CANDIDATE_DRAFT — VALIDATED — NOT ADMITTED',atom:p.atom,validation_receipt:p.report},null,2));
+}
+async function expAll(){
+ const ids=[...document.querySelectorAll('[data-aid]')].map(e=>e.dataset.aid),all=[],reports=[];
+ for(const aid of ids){const p=await prepareCandidate(aid);reports.push(p.report);if(p.ok)all.push(p.atom);}
+ if(reports.some(r=>!r.valid)){sM(JSON.stringify({_packet:'EXPORT_BLOCKED — INVALID CANDIDATES PRESENT',validation_receipts:reports},null,2));return;}
+ ids.forEach(aid=>A[aid].exported=true);autosave();
+ sM(JSON.stringify({'@context':'https://faiththruphysics.com/vocab/',standard:'claim-atom/1.1',
+  _packet:'CANDIDATE_DRAFT — VALIDATED — NOT ADMITTED',
+  generator:{tool:'Claim Atom Builder',canon:'v1.1 — Four-Object Full Edition',hash_algorithm:'SHA-256',uuid_source:'crypto.randomUUID',generated:new Date().toISOString(),
+   what_this_establishes:'The candidate records passed this tool\'s schema and invariant checks.',
+   what_this_does_not_establish:'Truth, proof applicability, human ruling, canonical promotion, or admission.'},
+  atoms:all,validation_receipts:reports},null,2));}
+function notifyHost(type,payload){
+ try{if(window.parent&&window.parent!==window)window.parent.postMessage({source:'nerve-atom-builder',type,payload},'*');}catch(e){console.warn('Obsidian bridge unavailable',e);}
+}
+function sM(t){document.getElementById('mdb').textContent=t;document.getElementById('ov').classList.add('on');
+ try{notifyHost('candidate-packet',JSON.parse(t));}catch(e){notifyHost('validation-text',t);}}
+function validDraftSnapshot(x){return x&&typeof x==='object'&&x.atoms&&typeof x.atoms==='object'&&x.html&&typeof x.html==='object';}
+function importNerveObject(data){
+ const snap=data?.nerve_draft||data?.draft_snapshot||data;
+ if(validDraftSnapshot(snap)){
+  localStorage.setItem('pof_draft',JSON.stringify(snap));
+  notifyHost('draft-imported',{atom_count:Object.keys(snap.atoms).length});
+  location.reload();return;
+ }
+ alert('This JSON is not a Nerve editable-draft snapshot. Validated candidate packets can be preserved by Obsidian, but reverse hydration requires the draft snapshot so field ownership is not guessed.');
+}
+function importNerveFile(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{importNerveObject(JSON.parse(r.result));}catch(e){alert('Invalid JSON: '+e.message);}};r.readAsText(file);}
+function exportNerveDraft(){
+ const packet={format:'nerve-editable-draft/1.0.0',exported_at:new Date().toISOString(),nerve_draft:makeDraftSnapshot(),authority:'EDITABLE DRAFT — NOT VALIDATED — NOT ADMITTED'};
+ notifyHost('editable-draft',packet);
+ const blob=new Blob([JSON.stringify(packet,null,2)],{type:'application/json'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);a.download='nerve-editable-draft-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function cM(){document.getElementById('ov').classList.remove('on');}
+function cpExp(){navigator.clipboard.writeText(document.getElementById('mdb').textContent)
+ .then(()=>{const b=document.querySelector('.mf .bg');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1400);});}
+document.getElementById('ov').onclick=e=>{if(e.target.id==='ov')cM();};
+document.onkeydown=e=>{if(e.key==='Escape')cM();};
+dl();
+// open JSON by default on wide screens — the live record is the point
+if(window.innerWidth>=1400){jOn=true;document.getElementById('cj').classList.add('on');
+ document.getElementById('jbtn').textContent='Hide JSON';}
+window.addEventListener('load',()=>setTimeout(restore,300));
+window.addEventListener('load',()=>notifyHost('ready',{canon:'claim-atom/1.1',interface:'atom-builder'}));
+window.addEventListener('message',e=>{if(e.data?.type==='nerve-import-draft')importNerveObject(e.data.payload);});
+window.addEventListener('beforeunload',e=>{
+ if(Object.keys(A).length){e.preventDefault();e.returnValue='';}
+});
+</script>
+</body></html>

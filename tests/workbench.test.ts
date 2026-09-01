@@ -1,0 +1,4 @@
+import test from "node:test"; import assert from "node:assert/strict"; import * as fs from "node:fs";
+test("workbench exposes explicit governed actions and no admission action",()=>{const html=fs.readFileSync("web/workbench.html","utf8"); for(const text of ["Save local draft","Export reviewed JSON","Import governed JSON","Reset draft"]) assert.match(html,new RegExp(text)); assert.doesNotMatch(html,/>Admit</);});
+test("Nerve 7Q placeholder is preserved as unresolved evidence",()=>{const original=fs.readFileSync("web/nerve-source/7q-engine.html"); const page=fs.readFileSync("web/7q-engine.html","utf8"); assert.equal(original.byteLength,44); assert.match(page,/contract pending/);});
+test("migration is transactional and keeps admission separate",()=>{const sql=fs.readFileSync("migrations/001_unified_canonization.up.sql","utf8"); assert.match(sql,/BEGIN;/); assert.match(sql,/CREATE TABLE admission_events/); assert.match(sql,/CREATE VIEW ai_candidate_records/);});

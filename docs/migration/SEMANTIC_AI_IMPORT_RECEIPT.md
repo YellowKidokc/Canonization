@@ -1,0 +1,3 @@
+# Semantic AI import receipt
+
+Source commit: `58f614e5bd966c427317119082217e540e42d8f4`; target already contained that complete history plus commit `827f1c9`. Existing code was retained in place to avoid a risky mechanical relocation. Provider/model settings, prompt profiles, selection and right-click flows, progress/results, classification, graph registry/export, Markdown export, UUIDs, indexing, concept tracking, and error handling remain. A governed client and eight user commands were added. The source checkout's six `.fisnote` files, ignored dependencies, build output, and any local settings/secrets were not copied.

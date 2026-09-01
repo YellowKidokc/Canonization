@@ -4,6 +4,11 @@
 
 # npm
 node_modules
+dist/
+coverage/
+.env
+*.fisnote
+receipts/*.tmp
 
 # IDE
 .idea/

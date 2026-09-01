@@ -1,0 +1,4 @@
+BEGIN;
+DROP VIEW IF EXISTS ai_candidate_records;
+DROP TABLE IF EXISTS synchronization_receipts,cached_drafts,projection_state,admission_events,votes,reviews,lean_receipts,countermodels,bridges,proofs,evidence,claims,classifications,dependency_edges,recovered_objects,source_artifacts,record_versions,canonization_records;
+COMMIT;
