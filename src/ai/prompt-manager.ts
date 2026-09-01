@@ -18,7 +18,9 @@ import {
   getPreset,
   topicsActive
 } from '../types';
-import { BRIDGE_QUESTIONS } from '../epistemic/prompts';
+import { GOVERNED_REVIEW_REGISTRY } from '../governance/review-registry';
+
+const BRIDGE_QUESTIONS = GOVERNED_REVIEW_REGISTRY.bridgeQuestions;
 
 export class PromptManager {
   private settings: SemanticAISettings;

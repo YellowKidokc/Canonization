@@ -8048,7 +8048,7 @@ __export(main_exports, {
   default: () => SemanticAIPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian13 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 
 // src/types.ts
 var PROVIDER_IDS = ["openai", "deepseek", "anthropic", "ollama", "custom"];
@@ -9058,7 +9058,24 @@ ${BRIDGE_QUESTIONS.map((question) => `- ${question}`).join("\n")}
 `;
 }
 
+// src/governance/review-registry.ts
+var REVIEW_REGISTRY_VERSION = "1.0.0";
+var GOVERNED_REVIEW_REGISTRY = {
+  registryVersion: REVIEW_REGISTRY_VERSION,
+  authority: "REVIEW_QUESTIONS_NOT_ADMISSION",
+  objectTypePrompts: EPISTEMIC_TYPE_PROMPTS,
+  classificationAxes: EPISTEMIC_AXES,
+  bridgeQuestions: BRIDGE_QUESTIONS,
+  propagationDispositions: [
+    "DO_NOT_PROPAGATE",
+    "LOCAL_ONLY",
+    "CANDIDATE_REUSABLE",
+    "PROPOSE_GOVERNED_PROPAGATION"
+  ]
+};
+
 // src/ai/prompt-manager.ts
+var BRIDGE_QUESTIONS2 = GOVERNED_REVIEW_REGISTRY.bridgeQuestions;
 var PromptManager = class {
   constructor(settings) {
     this.settings = settings;
@@ -9269,7 +9286,7 @@ JSON Response:`;
 For each question below, return an object with: question_id, response, source_spans_or_quotes, assumptions, uncertainty, rival_interpretations, defeat_conditions, and status. Use status CANDIDATE when the source does not establish the answer. Do not invent measurements, proofs, or citations. Return ONLY valid JSON with a top-level "bridge_questions" array.
 
 Neutral bridge questions:
-${BRIDGE_QUESTIONS.join("\n")}
+${BRIDGE_QUESTIONS2.join("\n")}
 
 SOURCE TEXT:
 ---
@@ -13653,9 +13670,38 @@ Warnings:
   }
 };
 
-// src/ui/index-modal.ts
+// src/ui/governed-review-registry-modal.ts
 var import_obsidian12 = require("obsidian");
-var IndexConfirmationModal = class extends import_obsidian12.Modal {
+var GovernedReviewRegistryModal = class extends import_obsidian12.Modal {
+  constructor(app) {
+    super(app);
+  }
+  onOpen() {
+    this.titleEl.setText(`Governed review registry v${GOVERNED_REVIEW_REGISTRY.registryVersion}`);
+    this.contentEl.createEl("p", { text: "Review questions only. This registry cannot grant admission or canonical propagation." });
+    this.contentEl.createEl("h3", { text: "Object classifications and prompts" });
+    for (const [type, prompt] of Object.entries(GOVERNED_REVIEW_REGISTRY.objectTypePrompts)) {
+      const section = this.contentEl.createEl("details");
+      section.createEl("summary", { text: type });
+      section.createEl("p", { text: prompt });
+    }
+    this.contentEl.createEl("h3", { text: "Independent classification axes" });
+    const axes = this.contentEl.createEl("ul");
+    for (const axis of GOVERNED_REVIEW_REGISTRY.classificationAxes)
+      axes.createEl("li", { text: axis });
+    this.contentEl.createEl("h3", { text: "Bridge questions" });
+    const questions = this.contentEl.createEl("ol");
+    for (const question of GOVERNED_REVIEW_REGISTRY.bridgeQuestions)
+      questions.createEl("li", { text: question });
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
+// src/ui/index-modal.ts
+var import_obsidian13 = require("obsidian");
+var IndexConfirmationModal = class extends import_obsidian13.Modal {
   constructor(app, scope, scopePath, estimate, onConfirm) {
     super(app);
     this.indexScope = scope;
@@ -13697,7 +13743,7 @@ var IndexConfirmationModal = class extends import_obsidian12.Modal {
     infoList.createEl("li", { text: "A cross-reference of every tagged concept" });
     infoList.createEl("li", { text: "Where each concept appears" });
     infoList.createEl("li", { text: "Which notes share concepts, and how strongly" });
-    new import_obsidian12.Setting(contentEl).addButton((button) => {
+    new import_obsidian13.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => this.close());
     }).addButton((button) => {
       button.setButtonText(this.indexScope === "vault" ? "Index vault" : "Index folder").setCta().onClick(() => {
@@ -13716,7 +13762,7 @@ var IndexConfirmationModal = class extends import_obsidian12.Modal {
     this.contentEl.empty();
   }
 };
-var IndexProgressModal = class extends import_obsidian12.Modal {
+var IndexProgressModal = class extends import_obsidian13.Modal {
   constructor() {
     super(...arguments);
     this.statusEl = null;
@@ -13766,7 +13812,7 @@ var IndexProgressModal = class extends import_obsidian12.Modal {
     list.createEl("li", { text: `Concepts found: ${stats.concepts}` });
     list.createEl("li", { text: `Relationships: ${stats.relations}` });
     list.createEl("li", { text: `Time taken: ${(stats.timeMs / 1e3).toFixed(2)}s` });
-    new import_obsidian12.Setting(this.contentEl).addButton((button) => {
+    new import_obsidian13.Setting(this.contentEl).addButton((button) => {
       button.setButtonText("Close").setCta().onClick(() => this.close());
       window.setTimeout(() => button.buttonEl.focus(), 0);
     });
@@ -13775,7 +13821,7 @@ var IndexProgressModal = class extends import_obsidian12.Modal {
     this.contentEl.empty();
   }
 };
-var FolderSelectionModal = class extends import_obsidian12.Modal {
+var FolderSelectionModal = class extends import_obsidian13.Modal {
   constructor(app, folders, onSelect) {
     super(app);
     this.folders = folders;
@@ -13801,7 +13847,7 @@ var FolderSelectionModal = class extends import_obsidian12.Modal {
         window.setTimeout(() => item.focus(), 0);
       }
     });
-    new import_obsidian12.Setting(contentEl).addButton((button) => {
+    new import_obsidian13.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => this.close());
     });
   }
@@ -13812,7 +13858,7 @@ var FolderSelectionModal = class extends import_obsidian12.Modal {
 
 // src/main.ts
 var TAG_BLOCK_END2 = "%%--- END SEMANTIC TAGS ---%%";
-var SemanticAIPlugin = class extends import_obsidian13.Plugin {
+var SemanticAIPlugin = class extends import_obsidian14.Plugin {
   async onload() {
     await this.loadSettings();
     this.promptManager = new PromptManager(this.settings);
@@ -13878,21 +13924,21 @@ var SemanticAIPlugin = class extends import_obsidian13.Plugin {
     this.addCommand({ id: "canonize-paper", name: "Canonize this paper", editorCallback: async (_editor, view) => {
       if (view.file) {
         const record = await this.canonizationClient.canonizeFile(view.file);
-        new import_obsidian13.Notice(`Created candidate ${record.recordId}; not admitted.`);
+        new import_obsidian14.Notice(`Created candidate ${record.recordId}; not admitted.`);
       }
     } });
     this.addCommand({ id: "canonize-folder", name: "Canonize this folder", callback: async () => {
       var _a;
       const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
       if (!folder)
-        return new import_obsidian13.Notice("Open a note in the folder first.");
+        return new import_obsidian14.Notice("Open a note in the folder first.");
       const records = await this.canonizationClient.canonizeFolder(folder);
-      new import_obsidian13.Notice(`Created ${records.length} candidate records; zero admissions.`);
+      new import_obsidian14.Notice(`Created ${records.length} candidate records; zero admissions.`);
     } });
     this.addCommand({ id: "canonize-complete", name: "Run complete canonization", editorCallback: async (_editor, view) => {
       if (view.file)
         await this.canonizationClient.canonizeFile(view.file, [...COMPLETE_STAGE_RUN]);
-      new import_obsidian13.Notice("Complete candidate-stage packet created; not admitted.");
+      new import_obsidian14.Notice("Complete candidate-stage packet created; not admitted.");
     } });
     this.addCommand({ id: "canonize-selected-stages", name: "Run selected canonization stages", editorCallback: async (_editor, view) => {
       if (!view.file)
@@ -13900,27 +13946,29 @@ var SemanticAIPlugin = class extends import_obsidian13.Plugin {
       const file = view.file;
       new StageSelectionModal(this.app, async (stages) => {
         const record = await this.canonizationClient.canonizeFile(file, stages);
-        new import_obsidian13.Notice(`Executed ${stages.join(", ")} for candidate ${record.recordId}; not admitted.`);
+        new import_obsidian14.Notice(`Executed ${stages.join(", ")} for candidate ${record.recordId}; not admitted.`);
       }).open();
     } });
+    this.addCommand({ id: "open-governed-review-registry", name: "Open governed review registry", callback: () => new GovernedReviewRegistryModal(this.app).open() });
     this.addCommand({ id: "open-candidate-workbench", name: "Open candidate in workbench", callback: () => {
-      window.open("web/workbench.html", "_blank", "noopener");
+      const workbenchPath = (0, import_obsidian14.normalizePath)(`${this.manifest.dir}/web/workbench.html`);
+      window.open(this.app.vault.adapter.getResourcePath(workbenchPath), "_blank", "noopener");
     } });
     this.addCommand({ id: "export-candidate-json", name: "Export candidate JSON", editorCallback: async (_editor, view) => {
       if (view.file)
         await this.canonizationClient.importReviewed(view.file);
-      new import_obsidian13.Notice("Candidate JSON validated and exported to Canonization/records.");
+      new import_obsidian14.Notice("Candidate JSON validated and exported to Canonization/records.");
     } });
     this.addCommand({ id: "import-reviewed-json", name: "Import reviewed JSON", editorCallback: async (_editor, view) => {
       if (view.file) {
         const record = await this.canonizationClient.importReviewed(view.file);
-        new import_obsidian13.Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`);
+        new import_obsidian14.Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`);
       }
     } });
     this.addCommand({ id: "refresh-candidate-markdown", name: "Refresh candidate Markdown from JSON", editorCallback: async (_editor, view) => {
       if (view.file)
         await this.canonizationClient.refreshFromJson(view.file);
-      new import_obsidian13.Notice("Candidate Markdown projection refreshed from governed JSON.");
+      new import_obsidian14.Notice("Candidate Markdown projection refreshed from governed JSON.");
     } });
     this.addCommand({
       id: "classify-note",
@@ -13960,7 +14008,7 @@ var SemanticAIPlugin = class extends import_obsidian13.Plugin {
       callback: async () => {
         this.settings.showHiddenTags = !this.settings.showHiddenTags;
         await this.saveSettings();
-        new import_obsidian13.Notice(this.settings.showHiddenTags ? "Tag blocks shown" : "Tag blocks hidden");
+        new import_obsidian14.Notice(this.settings.showHiddenTags ? "Tag blocks shown" : "Tag blocks hidden");
       }
     });
     this.addCommand({
@@ -13986,7 +14034,7 @@ var SemanticAIPlugin = class extends import_obsidian13.Plugin {
         if (folder) {
           await this.batchClassifyFolder(folder);
         } else {
-          new import_obsidian13.Notice("Open a note first, so there is a folder to work on.");
+          new import_obsidian14.Notice("Open a note first, so there is a folder to work on.");
         }
       }
     });
@@ -13999,7 +14047,7 @@ var SemanticAIPlugin = class extends import_obsidian13.Plugin {
         if (folder) {
           await this.indexFolder(folder);
         } else {
-          new import_obsidian13.Notice("Open a note first, so there is a folder to index.");
+          new import_obsidian14.Notice("Open a note first, so there is a folder to index.");
         }
       }
     });
@@ -14010,7 +14058,7 @@ var SemanticAIPlugin = class extends import_obsidian13.Plugin {
         var _a;
         const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
         if (!folder) {
-          new import_obsidian13.Notice("Open a note first, so there is a folder to index.");
+          new import_obsidian14.Notice("Open a note first, so there is a folder to index.");
           return;
         }
         try {
@@ -14020,10 +14068,10 @@ var SemanticAIPlugin = class extends import_obsidian13.Plugin {
           const jsonPath = await writeIndexJSON(this.app.vault, index, folder.path);
           const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
           const reportPath = await writeIndexReport(this.app.vault, index, folder.path, this.indexReportContext(this.supraInfraqueGraph.exportFolder(folder.path)));
-          new import_obsidian13.Notice(`Saved ${markdownPath}, ${jsonPath}, ${reportPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
+          new import_obsidian14.Notice(`Saved ${markdownPath}, ${jsonPath}, ${reportPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
           await this.openConceptTracker();
         } catch (error) {
-          new import_obsidian13.Notice(`Index export failed: ${this.errorMessage(error)}`);
+          new import_obsidian14.Notice(`Index export failed: ${this.errorMessage(error)}`);
         }
       }
     });
@@ -14061,7 +14109,7 @@ var SemanticAIPlugin = class extends import_obsidian13.Plugin {
       callback: () => {
         const stats = this.conceptRegistry.getStats();
         const typeBreakdown = Object.entries(stats.byType).map(([type, count]) => `  ${type}: ${count}`).join("\n");
-        new import_obsidian13.Notice(
+        new import_obsidian14.Notice(
           `Concepts: ${stats.totalConcepts}
 With aliases: ${stats.withAliases}
 Updated: ${new Date(stats.lastUpdated).toLocaleString()}
@@ -14077,11 +14125,11 @@ ${typeBreakdown}`,
       callback: async () => {
         const filename = `concept-registry-${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.json`;
         if (this.app.vault.getAbstractFileByPath(filename)) {
-          new import_obsidian13.Notice(`${filename} already exists. Delete or rename it first.`);
+          new import_obsidian14.Notice(`${filename} already exists. Delete or rename it first.`);
           return;
         }
         await this.app.vault.create(filename, this.conceptRegistry.exportJSON());
-        new import_obsidian13.Notice(`Exported to ${filename}`);
+        new import_obsidian14.Notice(`Exported to ${filename}`);
       }
     });
     this.addCommand({
@@ -14089,7 +14137,7 @@ ${typeBreakdown}`,
       name: "Save concept registry",
       callback: async () => {
         await this.conceptRegistry.save();
-        new import_obsidian13.Notice("Concept registry saved");
+        new import_obsidian14.Notice("Concept registry saved");
       }
     });
     this.addCommand({
@@ -14097,11 +14145,11 @@ ${typeBreakdown}`,
       name: "Supra Infraque: register current note as candidate object",
       editorCallback: async (_editor, view) => {
         if (!view.file) {
-          new import_obsidian13.Notice("No note is open.");
+          new import_obsidian14.Notice("No note is open.");
           return;
         }
         const object = await this.supraInfraqueGraph.registerNote(view.file);
-        new import_obsidian13.Notice(`Registered ${object.humanCode} as a proposed candidate; source note unchanged.`);
+        new import_obsidian14.Notice(`Registered ${object.humanCode} as a proposed candidate; source note unchanged.`);
       }
     });
     this.addCommand({
@@ -14111,11 +14159,11 @@ ${typeBreakdown}`,
         var _a;
         const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
         if (!folder) {
-          new import_obsidian13.Notice("Open a note first, so there is a folder to export.");
+          new import_obsidian14.Notice("Open a note first, so there is a folder to export.");
           return;
         }
         const paths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
-        new import_obsidian13.Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
+        new import_obsidian14.Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
       }
     });
     this.addCommand({
@@ -14139,12 +14187,12 @@ ${typeBreakdown}`,
   registerContextMenu() {
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file) => {
-        if (file instanceof import_obsidian13.TFile && file.extension === "md") {
+        if (file instanceof import_obsidian14.TFile && file.extension === "md") {
           menu.addSeparator();
           menu.addItem((item) => {
             item.setTitle("Canonize note as candidate").setIcon("shield-check").onClick(async () => {
               const record = await this.canonizationClient.canonizeFile(file);
-              new import_obsidian13.Notice(`Created candidate ${record.recordId}; not admitted.`);
+              new import_obsidian14.Notice(`Created candidate ${record.recordId}; not admitted.`);
             });
           });
           menu.addItem((item) => {
@@ -14163,12 +14211,12 @@ ${typeBreakdown}`,
             });
           });
         }
-        if (file instanceof import_obsidian13.TFolder) {
+        if (file instanceof import_obsidian14.TFolder) {
           menu.addSeparator();
           menu.addItem((item) => {
             item.setTitle("Canonize folder as candidates").setIcon("shield-check").onClick(async () => {
               const records = await this.canonizationClient.canonizeFolder(file);
-              new import_obsidian13.Notice(`Created ${records.length} candidates; zero admissions.`);
+              new import_obsidian14.Notice(`Created ${records.length} candidates; zero admissions.`);
             });
           });
           menu.addItem((item) => {
@@ -14201,7 +14249,7 @@ ${typeBreakdown}`,
     );
   }
   showSemanticMenu(evt) {
-    const menu = new import_obsidian13.Menu();
+    const menu = new import_obsidian14.Menu();
     menu.addItem((item) => {
       item.setTitle("Classify current note").setIcon("brain").onClick(async () => {
         await this.runClassifier(this.app.workspace.getActiveFile());
@@ -14243,7 +14291,7 @@ ${typeBreakdown}`,
   }
   async runClassifierWithSelection(file) {
     if (!file) {
-      new import_obsidian13.Notice("No note is open.");
+      new import_obsidian14.Notice("No note is open.");
       return;
     }
     new TagSelectionModal(
@@ -14257,72 +14305,72 @@ ${typeBreakdown}`,
   }
   async runClassifierWithTypes(file, types) {
     if (!file) {
-      new import_obsidian13.Notice("No note is open.");
+      new import_obsidian14.Notice("No note is open.");
       return;
     }
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian13.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian14.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
-    const notice = new import_obsidian13.Notice("Classifying\u2026", 0);
+    const notice = new import_obsidian14.Notice("Classifying\u2026", 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classify(content, types, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian13.Notice("Nothing matched the selected categories.");
+        new import_obsidian14.Notice("Nothing matched the selected categories.");
         return;
       }
       this.showResult(file, result.tags, () => this.settings.autoGenerateMermaid);
     } catch (error) {
       notice.hide();
-      new import_obsidian13.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian14.Notice(this.errorMessage(error), 1e4);
     }
   }
   async classifyAs(file, type) {
     if (!file) {
-      new import_obsidian13.Notice("No note is open.");
+      new import_obsidian14.Notice("No note is open.");
       return;
     }
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian13.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian14.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
-    const notice = new import_obsidian13.Notice("Classifying\u2026", 0);
+    const notice = new import_obsidian14.Notice("Classifying\u2026", 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classifySingleType(content, type, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian13.Notice(`No ${this.promptManager.getTagTypeName(type).toLowerCase()} found.`);
+        new import_obsidian14.Notice(`No ${this.promptManager.getTagTypeName(type).toLowerCase()} found.`);
         return;
       }
       this.showResult(file, result.tags, () => false);
     } catch (error) {
       notice.hide();
-      new import_obsidian13.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian14.Notice(this.errorMessage(error), 1e4);
     }
   }
   async runCustomClassifier(file, keyword) {
     if (!file) {
-      new import_obsidian13.Notice("No note is open.");
+      new import_obsidian14.Notice("No note is open.");
       return;
     }
-    const notice = new import_obsidian13.Notice(`Running "${keyword}"\u2026`, 0);
+    const notice = new import_obsidian14.Notice(`Running "${keyword}"\u2026`, 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classifyCustom(content, keyword, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian13.Notice(`"${keyword}" found nothing.`);
+        new import_obsidian14.Notice(`"${keyword}" found nothing.`);
         return;
       }
       this.showResult(file, result.tags, () => false);
     } catch (error) {
       notice.hide();
-      new import_obsidian13.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian14.Notice(this.errorMessage(error), 1e4);
     }
   }
   /** Preview the tags, then write them if the user confirms. */
@@ -14334,7 +14382,7 @@ ${typeBreakdown}`,
       file.path,
       async () => {
         await writeTags(this.app.vault, file, tags);
-        new import_obsidian13.Notice(`Applied ${tags.length} tag${tags.length === 1 ? "" : "s"}`);
+        new import_obsidian14.Notice(`Applied ${tags.length} tag${tags.length === 1 ? "" : "s"}`);
         if (this.conceptRegistry.isDirty()) {
           await this.conceptRegistry.save();
         }
@@ -14356,7 +14404,7 @@ ${typeBreakdown}`,
   /* ---------------------------------------------------------------------- */
   async openSemanticMap(file) {
     if (!file) {
-      new import_obsidian13.Notice("No note is open.");
+      new import_obsidian14.Notice("No note is open.");
       return;
     }
     const leaf = await this.revealLeaf(MERMAID_VIEW_TYPE);
@@ -14371,12 +14419,12 @@ ${typeBreakdown}`,
   }
   async regenerateGraph(file) {
     if (!file) {
-      new import_obsidian13.Notice("No note is open.");
+      new import_obsidian14.Notice("No note is open.");
       return;
     }
     const tags = await readTags(this.app.vault, file);
     if (tags.length === 0) {
-      new import_obsidian13.Notice("This note has no tags yet.");
+      new import_obsidian14.Notice("This note has no tags yet.");
       return;
     }
     if (this.settings.mermaidPosition === "panel") {
@@ -14411,13 +14459,13 @@ ${typeBreakdown}`,
   async batchClassifyFolder(folder) {
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian13.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian14.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
     const prefix = folder.isRoot() ? "" : `${folder.path}/`;
     const files = this.app.vault.getMarkdownFiles().filter((f) => f.path.startsWith(prefix));
     if (files.length === 0) {
-      new import_obsidian13.Notice("No markdown notes in that folder.");
+      new import_obsidian14.Notice("No markdown notes in that folder.");
       return;
     }
     const types = enabledCategoryIds(this.settings);
@@ -14456,7 +14504,7 @@ ${typeBreakdown}`,
             continue;
           }
           const file = this.app.vault.getAbstractFileByPath(path);
-          if (file instanceof import_obsidian13.TFile) {
+          if (file instanceof import_obsidian14.TFile) {
             await writeTags(this.app.vault, file, result.tags);
           }
         }
@@ -14516,13 +14564,13 @@ ${typeBreakdown}`,
         relations: index.relations.length,
         timeMs: index.metadata.processingTimeMs || 0
       });
-      new import_obsidian13.Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? "" : "s"} to ${graphPaths.markdownPath}; report: ${reportPath}`);
+      new import_obsidian14.Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? "" : "s"} to ${graphPaths.markdownPath}; report: ${reportPath}`);
       if (this.settings.enablePostgresSync)
         await this.syncSupraInfraqueGraph();
       await this.openConceptTracker();
     } catch (error) {
       progressModal.close();
-      new import_obsidian13.Notice(`Indexing failed: ${this.errorMessage(error)}`);
+      new import_obsidian14.Notice(`Indexing failed: ${this.errorMessage(error)}`);
     }
   }
   async registerGraphForScope(folderPath) {
@@ -14545,11 +14593,11 @@ ${typeBreakdown}`,
     const serviceUrl = (this.settings.pythonServiceUrl || "").replace(/\/$/, "");
     const connection = this.settings.postgresConnections.find((item) => item.id === this.settings.activeConnectionId);
     if (!serviceUrl || !(connection == null ? void 0 : connection.connectionString)) {
-      new import_obsidian13.Notice("Set the PostgreSQL helper URL and an active connection first.");
+      new import_obsidian14.Notice("Set the PostgreSQL helper URL and an active connection first.");
       return;
     }
     try {
-      const response = await (0, import_obsidian13.requestUrl)({
+      const response = await (0, import_obsidian14.requestUrl)({
         url: `${serviceUrl}/sync/graph`,
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -14562,23 +14610,23 @@ ${typeBreakdown}`,
       });
       const result = response.json;
       if (response.status !== 200 || !(result == null ? void 0 : result.success)) {
-        new import_obsidian13.Notice(`Graph sync failed: ${(result == null ? void 0 : result.detail) || (result == null ? void 0 : result.error) || `HTTP ${response.status}`}`);
+        new import_obsidian14.Notice(`Graph sync failed: ${(result == null ? void 0 : result.detail) || (result == null ? void 0 : result.error) || `HTTP ${response.status}`}`);
         return;
       }
-      new import_obsidian13.Notice(`Graph sync complete: ${result.recordsUpserted || 0} records.`);
+      new import_obsidian14.Notice(`Graph sync complete: ${result.recordsUpserted || 0} records.`);
     } catch (error) {
-      new import_obsidian13.Notice(`Could not reach PostgreSQL helper: ${this.errorMessage(error)}`);
+      new import_obsidian14.Notice(`Could not reach PostgreSQL helper: ${this.errorMessage(error)}`);
     }
   }
   async buildBridgeDossierProposal(file) {
     var _a;
     if (!file) {
-      new import_obsidian13.Notice("No note is open.");
+      new import_obsidian14.Notice("No note is open.");
       return;
     }
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian13.Notice(`Cannot build bridge dossier: ${validation.error}.`);
+      new import_obsidian14.Notice(`Cannot build bridge dossier: ${validation.error}.`);
       return;
     }
     try {
@@ -14607,13 +14655,13 @@ ${typeBreakdown}`,
         ""
       ].join("\n");
       await this.app.vault.create(outputPath, proposal);
-      new import_obsidian13.Notice(`Saved neutral bridge dossier proposal: ${outputPath}`);
+      new import_obsidian14.Notice(`Saved neutral bridge dossier proposal: ${outputPath}`);
     } catch (error) {
-      new import_obsidian13.Notice(`Bridge dossier failed: ${this.errorMessage(error)}`);
+      new import_obsidian14.Notice(`Bridge dossier failed: ${this.errorMessage(error)}`);
     }
   }
   async showFolderSelectionForIndex() {
-    const folders = this.app.vault.getAllLoadedFiles().filter((f) => f instanceof import_obsidian13.TFolder);
+    const folders = this.app.vault.getAllLoadedFiles().filter((f) => f instanceof import_obsidian14.TFolder);
     new FolderSelectionModal(
       this.app,
       folders,
@@ -14634,7 +14682,7 @@ ${typeBreakdown}`,
     }
     const leaf = this.app.workspace.getRightLeaf(false);
     if (!leaf) {
-      new import_obsidian13.Notice("Could not open the side panel.");
+      new import_obsidian14.Notice("Could not open the side panel.");
       return null;
     }
     await leaf.setViewState({ type: viewType, active: true });
@@ -14643,7 +14691,7 @@ ${typeBreakdown}`,
   }
   openFileByPath(filePath) {
     const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (file instanceof import_obsidian13.TFile) {
+    if (file instanceof import_obsidian14.TFile) {
       this.app.workspace.getLeaf().openFile(file);
     }
   }
@@ -14713,7 +14761,7 @@ ${typeBreakdown}`,
    */
   async generateConceptForwardLinks(journey) {
     if (journey.occurrences.length < 2) {
-      new import_obsidian13.Notice("A concept needs at least two occurrences to link them up.");
+      new import_obsidian14.Notice("A concept needs at least two occurrences to link them up.");
       return;
     }
     let linksAdded = 0;
@@ -14721,7 +14769,7 @@ ${typeBreakdown}`,
       const current = journey.occurrences[i];
       const next = journey.occurrences[i + 1];
       const file = this.app.vault.getAbstractFileByPath(current.file);
-      if (!(file instanceof import_obsidian13.TFile)) {
+      if (!(file instanceof import_obsidian14.TFile)) {
         continue;
       }
       const forwardLink = `
@@ -14743,6 +14791,6 @@ ${typeBreakdown}`,
         linksAdded++;
       }
     }
-    new import_obsidian13.Notice(`Added ${linksAdded} forward link${linksAdded === 1 ? "" : "s"} for "${journey.concept}"`);
+    new import_obsidian14.Notice(`Added ${linksAdded} forward link${linksAdded === 1 ? "" : "s"} for "${journey.concept}"`);
   }
 };

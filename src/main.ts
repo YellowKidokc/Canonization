@@ -13,7 +13,8 @@ import {
   Menu,
   Editor,
   WorkspaceLeaf
-  , requestUrl
+  , requestUrl,
+  normalizePath
 } from 'obsidian';
 
 import {
@@ -54,6 +55,7 @@ import { writeGraphExports } from './epistemic/graph-exporter';
 import { CanonizationClient } from './obsidian/canonization-client';
 import { COMPLETE_STAGE_RUN } from './engine/stages';
 import { StageSelectionModal } from './ui/stage-selection-modal';
+import { GovernedReviewRegistryModal } from './ui/governed-review-registry-modal';
 import {
   IndexConfirmationModal,
   IndexProgressModal,
@@ -150,7 +152,11 @@ export default class SemanticAIPlugin extends Plugin {
     this.addCommand({ id: 'canonize-folder', name: 'Canonize this folder', callback: async () => { const folder=this.app.workspace.getActiveFile()?.parent; if(!folder)return new Notice('Open a note in the folder first.'); const records=await this.canonizationClient.canonizeFolder(folder); new Notice(`Created ${records.length} candidate records; zero admissions.`); } });
     this.addCommand({ id: 'canonize-complete', name: 'Run complete canonization', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,[...COMPLETE_STAGE_RUN]); new Notice('Complete candidate-stage packet created; not admitted.'); } });
     this.addCommand({ id: 'canonize-selected-stages', name: 'Run selected canonization stages', editorCallback: async (_editor, view) => { if(!view.file)return; const file=view.file; new StageSelectionModal(this.app,async(stages)=>{const record=await this.canonizationClient.canonizeFile(file,stages);new Notice(`Executed ${stages.join(', ')} for candidate ${record.recordId}; not admitted.`);}).open(); } });
-    this.addCommand({ id: 'open-candidate-workbench', name: 'Open candidate in workbench', callback: () => { window.open('web/workbench.html','_blank','noopener'); } });
+    this.addCommand({ id: 'open-governed-review-registry', name: 'Open governed review registry', callback: () => new GovernedReviewRegistryModal(this.app).open() });
+    this.addCommand({ id: 'open-candidate-workbench', name: 'Open candidate in workbench', callback: () => {
+      const workbenchPath = normalizePath(`${this.manifest.dir}/web/workbench.html`);
+      window.open(this.app.vault.adapter.getResourcePath(workbenchPath), '_blank', 'noopener');
+    } });
     this.addCommand({ id: 'export-candidate-json', name: 'Export candidate JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.importReviewed(view.file); new Notice('Candidate JSON validated and exported to Canonization/records.'); } });
     this.addCommand({ id: 'import-reviewed-json', name: 'Import reviewed JSON', editorCallback: async (_editor, view) => { if(view.file) { const record=await this.canonizationClient.importReviewed(view.file); new Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`); } } });
     this.addCommand({ id: 'refresh-candidate-markdown', name: 'Refresh candidate Markdown from JSON', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.refreshFromJson(view.file); new Notice('Candidate Markdown projection refreshed from governed JSON.'); } });

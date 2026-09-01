@@ -5,11 +5,12 @@
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "build:registry": "tsx tools/build-web-registry.ts",
+    "build": "npm run build:registry && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "lint": "eslint src tests --ext .ts",
     "typecheck": "tsc -noEmit -skipLibCheck",
     "test": "tsx --test tests/**/*.test.ts",
-    "verify": "npm run typecheck && npm run lint && npm test && npm run build",
+    "verify": "npm run build:registry && npm run typecheck && npm run lint && npm test && npm run build",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [
