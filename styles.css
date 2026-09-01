@@ -1509,3 +1509,47 @@
 .canonization-copy-btn:active {
   transform: translateY(0);
 }
+
+.canonization-assembly-modal {
+  max-width: var(--modal-max-width);
+}
+
+.canonization-assembly-heading {
+  margin-top: var(--size-4-4);
+}
+
+.canonization-assembly-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-3);
+}
+
+.canonization-assembly-summary span {
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-1) var(--size-4-2);
+}
+
+.canonization-assembly-field {
+  border-bottom: var(--border-width) solid var(--background-modifier-border);
+  padding: var(--size-4-2) 0;
+}
+
+.canonization-assembly-field summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: var(--size-4-2);
+}
+
+.canonization-assembly-field summary:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.canonization-assembly-field pre {
+  overflow: auto;
+  white-space: pre-wrap;
+  background: var(--background-secondary);
+  padding: var(--size-4-2);
+}

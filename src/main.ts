@@ -53,6 +53,8 @@ import {
 import { SupraInfraqueGraphRegistry } from './epistemic/graph-registry';
 import { writeGraphExports } from './epistemic/graph-exporter';
 import { CanonizationClient } from './obsidian/canonization-client';
+import { AssemblyClient } from './obsidian/assembly-client';
+import { AssemblyReviewModal, AssemblyScopeModal } from './ui/assembly-modal';
 import { COMPLETE_STAGE_RUN } from './engine/stages';
 import { StageSelectionModal } from './ui/stage-selection-modal';
 import { GovernedReviewRegistryModal } from './ui/governed-review-registry-modal';
@@ -72,6 +74,7 @@ export default class SemanticAIPlugin extends Plugin {
   conceptRegistry: ConceptRegistry;
   supraInfraqueGraph: SupraInfraqueGraphRegistry;
   canonizationClient: CanonizationClient;
+  assemblyClient: AssemblyClient;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -80,6 +83,7 @@ export default class SemanticAIPlugin extends Plugin {
     this.classifier = new AIClassifier(this.settings, this.promptManager);
     this.vaultIndexer = new VaultIndexer(this.app.vault);
     this.canonizationClient = new CanonizationClient(this.app);
+    this.assemblyClient = new AssemblyClient(this.app, this.classifier);
 
     // Shared registry so the same concept keeps the same UUID across notes.
     this.conceptRegistry = new ConceptRegistry(this.app.vault, this.manifest.dir);
@@ -143,11 +147,28 @@ export default class SemanticAIPlugin extends Plugin {
     }
   }
 
+  private openAssemblyReview(ledgers: ReturnType<AssemblyClient['getLastLedgers']>): void {
+    new AssemblyReviewModal(
+      this.app,
+      ledgers,
+      async () => { const paths = await this.assemblyClient.export(); new Notice(`Exported ${paths.length} candidate assembly ledger${paths.length === 1 ? '' : 's'}; zero admissions.`); },
+      async () => this.assemblyClient.verify()
+    ).open();
+  }
+
   /* ---------------------------------------------------------------------- */
   /* Commands                                                               */
   /* ---------------------------------------------------------------------- */
 
   private registerCommands(): void {
+    this.addCommand({ id: 'canonization-analyze-candidate-coverage', name: 'Analyze candidate coverage', callback: () => {
+      const current = this.app.workspace.getActiveFile(); if (!current) return new Notice('Open a Markdown note first.');
+      new AssemblyScopeModal(this.app, current, async (files) => { const ledgers = await this.assemblyClient.analyze(files); this.openAssemblyReview(ledgers); }).open();
+    } });
+    this.addCommand({ id: 'canonization-find-recoverable-fields', name: 'Find recoverable fields', editorCallback: async (_editor, view) => { if (!view.file) return; const ledgers = await this.assemblyClient.analyze([view.file]); this.openAssemblyReview(ledgers); } });
+    this.addCommand({ id: 'canonization-assemble-proposed-candidate', name: 'Assemble proposed candidate', editorCallback: async (_editor, view) => { if (!view.file) return; try { const ledgers = await this.assemblyClient.analyze([view.file], true); this.openAssemblyReview(ledgers); } catch (error) { new Notice(error instanceof Error ? error.message : 'Candidate assembly failed.'); } } });
+    this.addCommand({ id: 'canonization-review-assembly-sources', name: 'Review assembly sources', callback: () => { const ledgers = this.assemblyClient.getLastLedgers(); if (!ledgers.length) return new Notice('Analyze candidate coverage first.'); this.openAssemblyReview(ledgers); } });
+    this.addCommand({ id: 'canonization-export-assembly-json', name: 'Export assembly JSON', callback: async () => { const ledgers = this.assemblyClient.getLastLedgers(); if (!ledgers.length) return new Notice('Analyze candidate coverage first.'); const paths = await this.assemblyClient.export(ledgers); new Notice(`Exported ${paths.length} candidate assembly ledger${paths.length === 1 ? '' : 's'}; zero admissions.`); } });
     this.addCommand({ id: 'canonization-canonize-paper', name: 'Canonize this paper', editorCallback: async (_editor, view) => { if (view.file) { const record=await this.canonizationClient.canonizeFile(view.file); new Notice(`Created candidate ${record.recordId}; not admitted.`); } } });
     this.addCommand({ id: 'canonization-canonize-folder', name: 'Canonize this folder', callback: async () => { const folder=this.app.workspace.getActiveFile()?.parent; if(!folder)return new Notice('Open a note in the folder first.'); const records=await this.canonizationClient.canonizeFolder(folder); new Notice(`Created ${records.length} candidate records; zero admissions.`); } });
     this.addCommand({ id: 'canonization-canonize-complete', name: 'Run complete canonization', editorCallback: async (_editor, view) => { if(view.file) await this.canonizationClient.canonizeFile(view.file,[...COMPLETE_STAGE_RUN]); new Notice('Complete candidate-stage packet created; not admitted.'); } });

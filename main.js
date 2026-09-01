@@ -2805,11 +2805,11 @@ var require_validate = __commonJS({
         jsonPointer = $data;
         data = names_1.default.rootData;
       } else {
-        const matches = RELATIVE_JSON_POINTER.exec($data);
-        if (!matches)
+        const matches2 = RELATIVE_JSON_POINTER.exec($data);
+        if (!matches2)
           throw new Error(`Invalid JSON-pointer: ${$data}`);
-        const up = +matches[1];
-        jsonPointer = matches[2];
+        const up = +matches2[1];
+        jsonPointer = matches2[2];
         if (jsonPointer === "#") {
           if (up >= dataLevel)
             throw new Error(errorMsg("property/index", up));
@@ -3709,11 +3709,11 @@ var require_schemes = __commonJS({
         urnComponent.error = "URN can not be parsed";
         return urnComponent;
       }
-      const matches = urnComponent.path.match(URN_REG);
-      if (matches && matches[0] === urnComponent.path) {
+      const matches2 = urnComponent.path.match(URN_REG);
+      if (matches2 && matches2[0] === urnComponent.path) {
         const scheme = options.scheme || urnComponent.scheme || "urn";
-        urnComponent.nid = matches[1].toLowerCase();
-        urnComponent.nss = matches[2];
+        urnComponent.nid = matches2[1].toLowerCase();
+        urnComponent.nss = matches2[2];
         const urnScheme = `${scheme}:${options.nid || urnComponent.nid}`;
         const schemeHandler = getSchemeHandler(urnScheme);
         urnComponent.path = void 0;
@@ -4028,8 +4028,8 @@ var require_fast_uri = __commonJS({
     var URI_PARSE = /^(?:([^#/:?]+):)?(?:\/\/((?:([^#/?@]*)@)?(\[[^#/?\]]+\]|[^#/:?]*)(?::(\d*))?))?([^#?]*)(?:\?([^#]*))?(?:#((?:.|[\n\r])*))?/u;
     var AUTHORITY_PREFIX = /^(?:[^#/:?]+:)?\/\/([^/?#]*)/;
     var AUTHORITY_INTRODUCER_REGION = /^(?:[^#/:?]+:)?([/\\\t\n\r]*)/;
-    function getParseError(parsed, matches) {
-      if (matches[2] !== void 0 && parsed.path && parsed.path[0] !== "/") {
+    function getParseError(parsed, matches2) {
+      if (matches2[2] !== void 0 && parsed.path && parsed.path[0] !== "/") {
         return 'URI path must start with "/" when authority is present.';
       }
       if (typeof parsed.port === "number" && (parsed.port < 0 || parsed.port > 65535)) {
@@ -4049,9 +4049,9 @@ var require_fast_uri = __commonJS({
       }
       return false;
     }
-    function hasMalformedComponentPercentEncoding(matches) {
-      const host = matches[4];
-      return hasMalformedPercentEncoding(matches[3]) || host !== void 0 && !(host[0] === "[" && host[host.length - 1] === "]") && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches[6]) || hasMalformedPercentEncoding(matches[7]) || hasMalformedPercentEncoding(matches[8]);
+    function hasMalformedComponentPercentEncoding(matches2) {
+      const host = matches2[4];
+      return hasMalformedPercentEncoding(matches2[3]) || host !== void 0 && !(host[0] === "[" && host[host.length - 1] === "]") && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches2[6]) || hasMalformedPercentEncoding(matches2[7]) || hasMalformedPercentEncoding(matches2[8]);
     }
     function canonicalizeHost(parsed, options, schemeHandler, isIP) {
       if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && parsed.host[0] !== "[" && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
@@ -4108,15 +4108,15 @@ var require_fast_uri = __commonJS({
           }
         }
       }
-      const matches = uri.match(URI_PARSE);
-      if (matches) {
-        parsed.scheme = matches[1];
-        parsed.userinfo = matches[3];
-        parsed.host = matches[4];
-        parsed.port = parseInt(matches[5], 10);
-        parsed.path = matches[6] || "";
-        parsed.query = matches[7];
-        parsed.fragment = matches[8];
+      const matches2 = uri.match(URI_PARSE);
+      if (matches2) {
+        parsed.scheme = matches2[1];
+        parsed.userinfo = matches2[3];
+        parsed.host = matches2[4];
+        parsed.port = parseInt(matches2[5], 10);
+        parsed.path = matches2[6] || "";
+        parsed.query = matches2[7];
+        parsed.fragment = matches2[8];
         if (parsed.scheme !== void 0) {
           const decodedScheme = unescape(parsed.scheme);
           if (VALID_SCHEME.test(decodedScheme)) {
@@ -4126,14 +4126,14 @@ var require_fast_uri = __commonJS({
             malformedScheme = true;
           }
         }
-        malformedPercentEncoding = hasMalformedComponentPercentEncoding(matches);
+        malformedPercentEncoding = hasMalformedComponentPercentEncoding(matches2);
         if (malformedPercentEncoding) {
           parsed.error = parsed.error || "URI contains malformed percent-encoding.";
         }
         if (isNaN(parsed.port)) {
-          parsed.port = matches[5];
+          parsed.port = matches2[5];
         }
-        const parseError = getParseError(parsed, matches);
+        const parseError = getParseError(parsed, matches2);
         if (parseError !== void 0) {
           parsed.error = parsed.error || parseError;
           malformedAuthorityOrPort = true;
@@ -7554,12 +7554,12 @@ var require_formats = __commonJS({
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     function date(str) {
-      const matches = DATE.exec(str);
-      if (!matches)
+      const matches2 = DATE.exec(str);
+      if (!matches2)
         return false;
-      const year = +matches[1];
-      const month = +matches[2];
-      const day = +matches[3];
+      const year = +matches2[1];
+      const month = +matches2[2];
+      const day = +matches2[3];
       return month >= 1 && month <= 12 && day >= 1 && day <= (month === 2 && isLeapYear(year) ? 29 : DAYS[month]);
     }
     function compareDate(d1, d2) {
@@ -7574,16 +7574,16 @@ var require_formats = __commonJS({
     var TIME = /^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(z|([+-])(\d\d)(?::?(\d\d))?)?$/i;
     function getTime(strictTimeZone) {
       return function time(str) {
-        const matches = TIME.exec(str);
-        if (!matches)
+        const matches2 = TIME.exec(str);
+        if (!matches2)
           return false;
-        const hr = +matches[1];
-        const min = +matches[2];
-        const sec = +matches[3];
-        const tz = matches[4];
-        const tzSign = matches[5] === "-" ? -1 : 1;
-        const tzH = +(matches[6] || 0);
-        const tzM = +(matches[7] || 0);
+        const hr = +matches2[1];
+        const min = +matches2[2];
+        const sec = +matches2[3];
+        const tz = matches2[4];
+        const tzSign = matches2[5] === "-" ? -1 : 1;
+        const tzH = +(matches2[6] || 0);
+        const tzM = +(matches2[7] || 0);
         if (tzH > 23 || tzM > 59 || strictTimeZone && !tz)
           return false;
         if (hr <= 23 && min <= 59 && sec < 60)
@@ -8048,7 +8048,7 @@ __export(main_exports, {
   default: () => SemanticAIPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian14 = require("obsidian");
+var import_obsidian16 = require("obsidian");
 
 // src/types.ts
 var PROVIDER_IDS = ["openai", "deepseek", "anthropic", "ollama", "custom"];
@@ -12589,13 +12589,13 @@ var ConceptJourneyView = class extends import_obsidian8.ItemView {
     if (!this.index) {
       return { concept, aliases: this.aliases, occurrences: [], typeProgression: [], relatedConcepts: [] };
     }
-    let order = 0;
+    let order2 = 0;
     for (const [conceptKey, conceptData] of this.index.concepts.entries()) {
       const normalizedKey = conceptKey.toLowerCase();
-      const matches = searchTerms.some(
+      const matches2 = searchTerms.some(
         (term) => normalizedKey.includes(term) || term.includes(normalizedKey)
       );
-      if (matches) {
+      if (matches2) {
         for (const occurrence of conceptData.occurrences) {
           occurrences.push({
             file: occurrence.filePath,
@@ -12606,7 +12606,7 @@ var ConceptJourneyView = class extends import_obsidian8.ItemView {
               label: occurrence.label,
               parentUuid: null
             },
-            order: order++
+            order: order2++
           });
           const typeKey = `${occurrence.tagType}-${occurrence.filePath}`;
           if (!typeCount.has(typeKey)) {
@@ -13626,9 +13626,423 @@ var CanonizationClient = class {
   }
 };
 
-// src/ui/stage-selection-modal.ts
+// src/obsidian/assembly-client.ts
 var import_obsidian11 = require("obsidian");
-var StageSelectionModal = class extends import_obsidian11.Modal {
+
+// src/assembly/coverage-resolver.ts
+var ASSEMBLY_STATUS = "CANDIDATE_DRAFT  NOT ADMITTED";
+var CANDIDATE_FIELDS = [
+  ["canonical_definition", "Canonical Definition"],
+  ["semantic_meaning_and_boundaries", "Semantic Meaning and Boundaries"],
+  ["aliases_and_related_terms", "Aliases and Related Terms"],
+  ["axioms_and_dependencies", "Axioms and Dependencies"],
+  ["math_0_translation_layer", "Math 0 Translation Layer"],
+  ["formal_mathematics", "Formal Mathematics"],
+  ["symbols_and_notation", "Symbols and Notation"],
+  ["derivations_and_laws", "Derivations and Laws"],
+  ["theological_meaning", "Theological Meaning"],
+  ["scripture_anchors", "Scripture Anchors"],
+  ["physics_interpretation", "Physics Interpretation"],
+  ["empirical_content_and_limits", "Empirical Content and Limits"],
+  ["formal_lean_references", "Formal / Lean References"],
+  ["bridge_claims", "Bridge Claims"],
+  ["anti_terms", "Anti-terms"],
+  ["drift_gates_and_kill_conditions", "Drift Gates and Kill Conditions"],
+  ["historical_scientific_comparison", "Historical / Scientific Comparison"],
+  ["objections_and_alternatives", "Objections and Alternatives"],
+  ["open_research_questions", "Open Research Questions"],
+  ["mermaid_diagrams", "Mermaid Diagrams"],
+  ["truth_predicates_and_why_closure", "Truth Predicates and Why-Closure"]
+];
+var headingAliases = Object.fromEntries(CANDIDATE_FIELDS.map(([id, label]) => [id, [label.toLowerCase(), id.replace(/_/g, " ")]]));
+headingAliases.math_0_translation_layer.push("math 0", "translation layer");
+headingAliases.truth_predicates_and_why_closure.push("why-closure", "why closure", "truth predicates");
+headingAliases.formal_lean_references.push("lean references", "formal references");
+function sections(content) {
+  const lines = content.split(/\r?\n/);
+  const found = [];
+  for (let i = 0; i < lines.length; i++) {
+    const match = /^(#{1,6})\s+(.+?)\s*$/.exec(lines[i]);
+    if (!match)
+      continue;
+    let end = i + 1;
+    while (end < lines.length && !/^#{1,6}\s+/.test(lines[end]))
+      end++;
+    const bodyLines = lines.slice(i + 1, end);
+    const first = bodyLines.findIndex((line) => line.trim().length > 0);
+    if (first < 0)
+      continue;
+    let last = bodyLines.length - 1;
+    while (last >= 0 && !bodyLines[last].trim())
+      last--;
+    found.push({ heading: match[2].trim(), body: bodyLines.slice(first, last + 1).join("\n").trim(), start: i + 2 + first, end: i + 1 + last });
+  }
+  return found;
+}
+function structuredSections(content) {
+  const lines = content.split(/\r?\n/);
+  const found = [];
+  for (let index = 0; index < lines.length; index++) {
+    const match = /^(\s*)["']?([A-Za-z0-9_ /-]+)["']?\s*:\s*(.*)$/.exec(lines[index]);
+    if (!match)
+      continue;
+    const key = match[2].trim();
+    const field = CANDIDATE_FIELDS.find(([id]) => matches(id, key));
+    if (!field)
+      continue;
+    const indent = match[1].length;
+    let end = index + 1;
+    while (end < lines.length) {
+      const next = /^(\s*)["']?[A-Za-z0-9_ /-]+["']?\s*:/.exec(lines[end]);
+      if (next && next[1].length <= indent)
+        break;
+      if (/^\s*[}\]]\s*,?\s*$/.test(lines[end]) && lines[end].search(/\S/) <= indent)
+        break;
+      end++;
+    }
+    const quoteLines = lines.slice(index, Math.max(index + 1, end));
+    const rawValue = [match[3], ...quoteLines.slice(1)].join("\n").replace(/,\s*$/, "").trim();
+    let value = rawValue;
+    try {
+      value = typeof JSON.parse(rawValue) === "string" ? JSON.parse(rawValue) : JSON.stringify(JSON.parse(rawValue), null, 2);
+    } catch (e) {
+      value = rawValue.replace(/^['"]|['"]$/g, "").trim();
+    }
+    if (value)
+      found.push({ heading: key, body: value, start: index + 1, end: Math.max(index + 1, end), quotation: quoteLines.join("\n"), operation: "normalized" });
+  }
+  return found;
+}
+function sourceSections(source) {
+  const markdown2 = sections(source.content);
+  return /\.(json|ya?ml)$/i.test(source.path) ? [...markdown2, ...structuredSections(source.content)] : markdown2;
+}
+function matches(field, heading) {
+  const value = heading.toLowerCase().replace(/_/g, " ").replace(/[*`]/g, "").trim();
+  return headingAliases[field].some((alias) => value === alias || value.startsWith(`${alias} `));
+}
+function provenance(field, source, section, operation = ((_a) => (_a = section.operation) != null ? _a : "copied")()) {
+  var _a2;
+  return {
+    field,
+    value: section.body,
+    source_type: source.sourceType,
+    source_path: source.path,
+    source_hash: source.hash,
+    source_span: { heading: section.heading, line_start: section.start, line_end: section.end, exact_quotation: (_a2 = section.quotation) != null ? _a2 : section.body },
+    operation,
+    confidence: operation === "copied" ? "high" : "low",
+    conflicts: [],
+    human_ruling_required: true
+  };
+}
+var order = ["current_note", "sidecar", "sibling", "parent_index", "registry", "dependency", "receipt", "ai_proposal"];
+async function resolveCoverage(current, sources, proposalProvider, now = (/* @__PURE__ */ new Date()).toISOString()) {
+  var _a;
+  if (current.sourceType !== "current_note")
+    throw new Error("CURRENT_NOTE_REQUIRED");
+  const stableId2 = current.stableObjectId;
+  const allowed = sources.filter((source) => {
+    if (source.sourceType === "sibling")
+      return true;
+    if (source.sourceType === "registry")
+      return Boolean(stableId2 && source.stableObjectId === stableId2);
+    if (source.sourceType === "dependency")
+      return source.declaredByCurrentNote === true;
+    return true;
+  }).sort((a, b) => order.indexOf(a.sourceType) - order.indexOf(b.sourceType) || a.path.localeCompare(b.path));
+  const all = [current, ...allowed];
+  const fields = [];
+  for (const [field, label] of CANDIDATE_FIELDS) {
+    const currentMatches = sourceSections(current).filter((section) => matches(field, section.heading)).map((section) => provenance(field, current, section));
+    if (currentMatches.length) {
+      fields.push({ field, label, status: "PRESENT", yours: currentMatches[0], candidates: [] });
+      continue;
+    }
+    const candidates = all.slice(1).flatMap((source) => sourceSections(source).filter((section) => matches(field, section.heading)).map((section) => provenance(field, source, section)));
+    const unique = [...new Map(candidates.map((item) => [item.value.trim(), item])).values()];
+    if (unique.length > 1) {
+      const paths = unique.map((item) => item.source_path);
+      unique.forEach((item) => {
+        item.conflicts = paths.filter((path) => path !== item.source_path);
+      });
+      fields.push({ field, label, status: "CONFLICT", candidates: unique, recommendation: "Human ruling required: compare every preserved version; none was selected." });
+      continue;
+    }
+    if (unique.length === 1) {
+      fields.push({ field, label, status: "RECOVERABLE", candidates: unique });
+      continue;
+    }
+    const proposal = proposalProvider ? await proposalProvider(field, label, current.content) : null;
+    if (proposal == null ? void 0 : proposal.trim()) {
+      fields.push({ field, label, status: "PROPOSED", candidates: [{ field, value: proposal.trim(), source_type: "ai_proposal", source_path: "provider://active", source_hash: "sha256:" + "0".repeat(64), source_span: { heading: label, line_start: 0, line_end: 0, exact_quotation: "" }, operation: "proposed", confidence: "low", conflicts: [], human_ruling_required: true }] });
+    } else
+      fields.push({ field, label, status: field === "open_research_questions" ? "OPEN" : "MISSING", candidates: [] });
+  }
+  const summary = {};
+  for (const field of fields)
+    summary[field.status] = ((_a = summary[field.status]) != null ? _a : 0) + 1;
+  return { schema_version: "candidate-assembly/1.0.0", status_label: ASSEMBLY_STATUS, source_note: current.path, source_hash: current.hash, created_at: now, stage_1_policy: "SOURCE_CONTENT_ONLY_NO_INHERITED_METADATA", inherited_labels_revealed_during_discovery: false, fields, summary, admission_event_reference: null, canonical_admission_performed: false, source_modified: false, human_ruling_required: true };
+}
+function verifyAssemblySources(ledger, available) {
+  const copy = structuredClone(ledger);
+  for (const field of copy.fields)
+    for (const item of [...field.yours ? [field.yours] : [], ...field.candidates]) {
+      if (item.source_type === "ai_proposal")
+        continue;
+      const source = available.get(item.source_path);
+      if (!source)
+        item.provenance_failure = "SOURCE_MISSING_OR_MOVED";
+      else if (source.hash !== item.source_hash)
+        item.provenance_failure = "SOURCE_HASH_MISMATCH";
+      else if (!source.content.includes(item.source_span.exact_quotation))
+        item.provenance_failure = "SOURCE_SPAN_NOT_FOUND";
+    }
+  return copy;
+}
+
+// src/obsidian/assembly-client.ts
+var OUTPUT_ROOT = "Canonization/assemblies";
+var sha2563 = async (value) => {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return `sha256:${Array.from(new Uint8Array(bytes)).map((item) => item.toString(16).padStart(2, "0")).join("")}`;
+};
+var extension = (file) => file.extension.toLowerCase();
+var stableId = (content) => {
+  var _a;
+  return (_a = /^(?:object_id|objectId|recordId|stable_object_id):\s*["']?([^\s"']+)/m.exec(content)) == null ? void 0 : _a[1];
+};
+var links = (content) => new Set([...content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)].map((match) => match[1].trim()));
+async function ensureFolder2(app, target) {
+  let path = "";
+  for (const part of (0, import_obsidian11.normalizePath)(target).split("/")) {
+    path = path ? `${path}/${part}` : part;
+    if (!app.vault.getAbstractFileByPath(path))
+      await app.vault.createFolder(path);
+  }
+}
+var AssemblyClient = class {
+  constructor(app, classifier) {
+    this.app = app;
+    this.classifier = classifier;
+    this.lastLedgers = [];
+  }
+  getLastLedgers() {
+    return structuredClone(this.lastLedgers);
+  }
+  async analyze(files, includeAi = false) {
+    const results = [];
+    for (const file of files)
+      results.push(await this.analyzeOne(file, includeAi));
+    this.lastLedgers = results;
+    return structuredClone(results);
+  }
+  async analyzeOne(file, includeAi) {
+    const content = await this.app.vault.cachedRead(file);
+    const current = await this.makeSource(file, content, "current_note");
+    const sources = await this.collectSources(file, content, current.stableObjectId);
+    const preserved = await resolveCoverage(current, sources);
+    if (!includeAi)
+      return preserved;
+    const missing = preserved.fields.filter((item) => item.status === "MISSING" || item.status === "OPEN").map((item) => ({ field: item.field, label: item.label }));
+    if (!missing.length)
+      return preserved;
+    const prompt = `You are filling empty fields in a candidate-only Canonization card. Do not claim canon status, admission, proof propagation, or certainty. Human-authored fields are unavailable and must not be replaced. Return one JSON object mapping only these field ids to concise proposed text, or null when responsible proposal is impossible: ${JSON.stringify(missing)}
+
+SOURCE CONTENT:
+${content}`;
+    const raw = await this.classifier.complete(prompt, 4096);
+    const match = /\{[\s\S]*\}/.exec(raw);
+    if (!match)
+      throw new Error("AI proposal response did not contain a JSON object");
+    const proposals = JSON.parse(match[0]);
+    return resolveCoverage(current, sources, async (field) => typeof proposals[field] === "string" ? proposals[field] : null);
+  }
+  async verify(ledgers = this.lastLedgers) {
+    const paths = /* @__PURE__ */ new Set();
+    for (const ledger of ledgers)
+      for (const field of ledger.fields)
+        for (const item of [...field.yours ? [field.yours] : [], ...field.candidates])
+          if (item.source_type !== "ai_proposal")
+            paths.add(item.source_path);
+    const available = /* @__PURE__ */ new Map();
+    for (const path of paths) {
+      const found = this.app.vault.getAbstractFileByPath(path);
+      if (found instanceof import_obsidian11.TFile) {
+        const content = await this.app.vault.cachedRead(found);
+        available.set(path, { content, hash: await sha2563(content) });
+      }
+    }
+    this.lastLedgers = ledgers.map((ledger) => verifyAssemblySources(ledger, available));
+    return this.getLastLedgers();
+  }
+  async export(ledgers = this.lastLedgers) {
+    await ensureFolder2(this.app, OUTPUT_ROOT);
+    const outputs = [];
+    for (const ledger of ledgers) {
+      if (ledger.canonical_admission_performed || ledger.admission_event_reference)
+        throw new Error("Assembly export cannot carry admission");
+      const safe = ledger.source_note.replace(/[^A-Za-z0-9_.-]/g, "_");
+      const path = (0, import_obsidian11.normalizePath)(`${OUTPUT_ROOT}/${safe}.assembly.json`);
+      const json = JSON.stringify(ledger, null, 2) + "\n";
+      const existing = this.app.vault.getAbstractFileByPath(path);
+      if (existing instanceof import_obsidian11.TFile)
+        await this.app.vault.process(existing, () => json);
+      else
+        await this.app.vault.create(path, json);
+      outputs.push(path);
+    }
+    return outputs;
+  }
+  async makeSource(file, content, sourceType, extra = {}) {
+    return { path: file.path, content, hash: await sha2563(content), sourceType, stableObjectId: stableId(content), ...extra };
+  }
+  resolveLinkedFile(link, sourcePath) {
+    const found = this.app.metadataCache.getFirstLinkpathDest(link, sourcePath);
+    return found instanceof import_obsidian11.TFile ? found : null;
+  }
+  async collectSources(file, content, objectId) {
+    const sources = [];
+    const seen = /* @__PURE__ */ new Set([file.path]);
+    const add = async (candidate, type, extra = {}) => {
+      if (!(candidate instanceof import_obsidian11.TFile) || seen.has(candidate.path))
+        return;
+      if (!["md", "json", "yaml", "yml"].includes(extension(candidate)))
+        return;
+      seen.add(candidate.path);
+      sources.push(await this.makeSource(candidate, await this.app.vault.cachedRead(candidate), type, extra));
+    };
+    const parent = file.parent;
+    if (parent) {
+      for (const child of parent.children) {
+        if (!(child instanceof import_obsidian11.TFile))
+          continue;
+        if (child.basename === file.basename && ["json", "yaml", "yml"].includes(extension(child)))
+          await add(child, "sidecar");
+        else if (extension(child) === "md")
+          await add(child, /^(index|overview|readme)$/i.test(child.basename) ? "parent_index" : "sibling");
+      }
+      const parentParent = parent.parent;
+      if (parentParent) {
+        for (const child of parentParent.children)
+          if (child instanceof import_obsidian11.TFile && extension(child) === "md" && /^(index|overview|readme)$/i.test(child.basename))
+            await add(child, "parent_index");
+      }
+    }
+    if (objectId)
+      for (const record of this.app.vault.getFiles().filter((item) => item.path.startsWith("Canonization/records/") && item.extension === "json")) {
+        const recordContent = await this.app.vault.cachedRead(record);
+        if (recordContent.includes(objectId))
+          await add(record, "registry", { stableObjectId: objectId });
+      }
+    for (const link of links(content))
+      await add(this.resolveLinkedFile(link, file.path), "dependency", { declaredByCurrentNote: true });
+    for (const receipt of this.app.vault.getFiles().filter((item) => /receipt/i.test(item.path) && ["json", "md"].includes(extension(item)))) {
+      const receiptContent = await this.app.vault.cachedRead(receipt);
+      if (receiptContent.includes(file.path) || objectId && receiptContent.includes(objectId))
+        await add(receipt, "receipt", { immutable: true });
+    }
+    return sources;
+  }
+};
+
+// src/ui/assembly-modal.ts
+var import_obsidian12 = require("obsidian");
+var AssemblyScopeModal = class extends import_obsidian12.Modal {
+  constructor(app, current, onSelect) {
+    super(app);
+    this.current = current;
+    this.onSelect = onSelect;
+  }
+  onOpen() {
+    this.contentEl.addClass("canonization-assembly-modal");
+    this.titleEl.setText("Choose candidate coverage scope");
+    const folderFiles = this.app.vault.getMarkdownFiles().filter((file) => {
+      var _a, _b;
+      return ((_a = file.parent) == null ? void 0 : _a.path) === ((_b = this.current.parent) == null ? void 0 : _b.path);
+    }).sort((a, b) => a.path.localeCompare(b.path));
+    const selected = /* @__PURE__ */ new Set([this.current.path]);
+    new import_obsidian12.Setting(this.contentEl).setName("Current note").setDesc(this.current.path).addButton((button) => button.setButtonText("Analyze current note").setCta().onClick(() => {
+      this.close();
+      this.onSelect([this.current]);
+    }));
+    const heading = this.contentEl.createEl("h3", { text: "Selected notes" });
+    heading.addClass("canonization-assembly-heading");
+    for (const file of folderFiles)
+      new import_obsidian12.Setting(this.contentEl).setName(file.basename).setDesc(file.path).addToggle((toggle) => toggle.setValue(selected.has(file.path)).onChange((value) => {
+        if (value)
+          selected.add(file.path);
+        else
+          selected.delete(file.path);
+      }));
+    new import_obsidian12.Setting(this.contentEl).addButton((button) => button.setButtonText("Analyze selected notes").onClick(() => {
+      const files = folderFiles.filter((file) => selected.has(file.path));
+      if (files.length) {
+        this.close();
+        this.onSelect(files);
+      }
+    }));
+    new import_obsidian12.Setting(this.contentEl).setName("Folder scope").setDesc("Creates one result per Markdown source note; notes are never merged into one atom.").addButton((button) => button.setButtonText("Analyze folder").onClick(() => {
+      this.close();
+      this.onSelect(folderFiles);
+    }));
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+var AssemblyReviewModal = class extends import_obsidian12.Modal {
+  constructor(app, ledgers, onExport, onVerify) {
+    super(app);
+    this.ledgers = ledgers;
+    this.onExport = onExport;
+    this.onVerify = onVerify;
+  }
+  onOpen() {
+    this.render(this.ledgers);
+  }
+  render(ledgers) {
+    this.contentEl.empty();
+    this.contentEl.addClass("canonization-assembly-modal");
+    this.titleEl.setText("Coverage and assembly resolver");
+    this.contentEl.createEl("p", { text: "CANDIDATE_DRAFT  NOT ADMITTED. Human-authored material stays YOURS. AI assistance fills only empty sections and remains PROPOSED until review." });
+    new import_obsidian12.Setting(this.contentEl).addButton((button) => button.setButtonText("Review assembly sources").onClick(async () => this.render(await this.onVerify()))).addButton((button) => button.setButtonText("Export assembly JSON").setCta().onClick(async () => this.onExport()));
+    for (const ledger of ledgers) {
+      this.contentEl.createEl("h3", { text: ledger.source_note });
+      const summary = this.contentEl.createDiv({ cls: "canonization-assembly-summary" });
+      for (const status of ["PRESENT", "RECOVERABLE", "CONFLICT", "PROPOSED", "NOT_APPLICABLE", "OPEN", "MISSING"])
+        if (ledger.summary[status])
+          summary.createSpan({ text: `${ledger.summary[status]} ${status}` });
+      for (const field of ledger.fields) {
+        const details = this.contentEl.createEl("details", { cls: "canonization-assembly-field" });
+        details.createEl("summary", { text: `${field.label} \u2014 ${field.status}` });
+        if (field.yours) {
+          details.createEl("strong", { text: "YOURS" });
+          this.renderSource(details, field.yours);
+        }
+        for (const item of field.candidates) {
+          details.createEl("strong", { text: item.source_type === "ai_proposal" ? "AI PROPOSAL" : "PRESERVED SOURCE" });
+          this.renderSource(details, item);
+        }
+        if (field.recommendation)
+          details.createEl("p", { text: field.recommendation });
+      }
+    }
+  }
+  renderSource(container, item) {
+    var _a;
+    container.createEl("p", { text: item.value });
+    const provenance2 = container.createEl("pre");
+    provenance2.setText(JSON.stringify({ source_type: item.source_type, source_path: item.source_path, source_hash: item.source_hash, source_span: item.source_span, operation: item.operation, confidence: item.confidence, conflicts: item.conflicts, provenance_failure: (_a = item.provenance_failure) != null ? _a : null, human_ruling_required: item.human_ruling_required }, null, 2));
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
+// src/ui/stage-selection-modal.ts
+var import_obsidian13 = require("obsidian");
+var StageSelectionModal = class extends import_obsidian13.Modal {
   constructor(app, onRun) {
     super(app);
     this.onRun = onRun;
@@ -13638,14 +14052,14 @@ var StageSelectionModal = class extends import_obsidian11.Modal {
     this.titleEl.setText("Select governed candidate stages");
     this.contentEl.createEl("p", { text: "Preview only. No stage runs until Run selected stages is pressed; no hidden reruns are permitted." });
     for (const stage of GOVERNED_STAGES) {
-      new import_obsidian11.Setting(this.contentEl).setName(stage.label).setDesc(stage.dependencies.length ? `Depends on: ${stage.dependencies.join(", ")}` : "Protected first-stage capture").addToggle((toggle) => toggle.onChange((enabled) => {
+      new import_obsidian13.Setting(this.contentEl).setName(stage.label).setDesc(stage.dependencies.length ? `Depends on: ${stage.dependencies.join(", ")}` : "Protected first-stage capture").addToggle((toggle) => toggle.onChange((enabled) => {
         enabled ? this.selected.add(stage.id) : this.selected.delete(stage.id);
         this.renderWarnings();
       }));
     }
     this.warningEl = this.contentEl.createEl("pre");
     this.renderWarnings();
-    new import_obsidian11.Setting(this.contentEl).addButton((button) => button.setButtonText("Select complete run").onClick(() => {
+    new import_obsidian13.Setting(this.contentEl).addButton((button) => button.setButtonText("Select complete run").onClick(() => {
       this.close();
       void this.onRun([...COMPLETE_STAGE_RUN]);
     })).addButton((button) => button.setCta().setButtonText("Run selected stages").onClick(() => {
@@ -13671,8 +14085,8 @@ Warnings:
 };
 
 // src/ui/governed-review-registry-modal.ts
-var import_obsidian12 = require("obsidian");
-var GovernedReviewRegistryModal = class extends import_obsidian12.Modal {
+var import_obsidian14 = require("obsidian");
+var GovernedReviewRegistryModal = class extends import_obsidian14.Modal {
   constructor(app) {
     super(app);
   }
@@ -13700,8 +14114,8 @@ var GovernedReviewRegistryModal = class extends import_obsidian12.Modal {
 };
 
 // src/ui/index-modal.ts
-var import_obsidian13 = require("obsidian");
-var IndexConfirmationModal = class extends import_obsidian13.Modal {
+var import_obsidian15 = require("obsidian");
+var IndexConfirmationModal = class extends import_obsidian15.Modal {
   constructor(app, scope, scopePath, estimate, onConfirm) {
     super(app);
     this.indexScope = scope;
@@ -13743,7 +14157,7 @@ var IndexConfirmationModal = class extends import_obsidian13.Modal {
     infoList.createEl("li", { text: "A cross-reference of every tagged concept" });
     infoList.createEl("li", { text: "Where each concept appears" });
     infoList.createEl("li", { text: "Which notes share concepts, and how strongly" });
-    new import_obsidian13.Setting(contentEl).addButton((button) => {
+    new import_obsidian15.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => this.close());
     }).addButton((button) => {
       button.setButtonText(this.indexScope === "vault" ? "Index vault" : "Index folder").setCta().onClick(() => {
@@ -13762,7 +14176,7 @@ var IndexConfirmationModal = class extends import_obsidian13.Modal {
     this.contentEl.empty();
   }
 };
-var IndexProgressModal = class extends import_obsidian13.Modal {
+var IndexProgressModal = class extends import_obsidian15.Modal {
   constructor() {
     super(...arguments);
     this.statusEl = null;
@@ -13812,7 +14226,7 @@ var IndexProgressModal = class extends import_obsidian13.Modal {
     list.createEl("li", { text: `Concepts found: ${stats.concepts}` });
     list.createEl("li", { text: `Relationships: ${stats.relations}` });
     list.createEl("li", { text: `Time taken: ${(stats.timeMs / 1e3).toFixed(2)}s` });
-    new import_obsidian13.Setting(this.contentEl).addButton((button) => {
+    new import_obsidian15.Setting(this.contentEl).addButton((button) => {
       button.setButtonText("Close").setCta().onClick(() => this.close());
       window.setTimeout(() => button.buttonEl.focus(), 0);
     });
@@ -13821,7 +14235,7 @@ var IndexProgressModal = class extends import_obsidian13.Modal {
     this.contentEl.empty();
   }
 };
-var FolderSelectionModal = class extends import_obsidian13.Modal {
+var FolderSelectionModal = class extends import_obsidian15.Modal {
   constructor(app, folders, onSelect) {
     super(app);
     this.folders = folders;
@@ -13847,7 +14261,7 @@ var FolderSelectionModal = class extends import_obsidian13.Modal {
         window.setTimeout(() => item.focus(), 0);
       }
     });
-    new import_obsidian13.Setting(contentEl).addButton((button) => {
+    new import_obsidian15.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => this.close());
     });
   }
@@ -13858,13 +14272,14 @@ var FolderSelectionModal = class extends import_obsidian13.Modal {
 
 // src/main.ts
 var TAG_BLOCK_END2 = "%%--- END SEMANTIC TAGS ---%%";
-var SemanticAIPlugin = class extends import_obsidian14.Plugin {
+var SemanticAIPlugin = class extends import_obsidian16.Plugin {
   async onload() {
     await this.loadSettings();
     this.promptManager = new PromptManager(this.settings);
     this.classifier = new AIClassifier(this.settings, this.promptManager);
     this.vaultIndexer = new VaultIndexer(this.app.vault);
     this.canonizationClient = new CanonizationClient(this.app);
+    this.assemblyClient = new AssemblyClient(this.app, this.classifier);
     this.conceptRegistry = new ConceptRegistry(this.app.vault, this.manifest.dir);
     await this.conceptRegistry.load();
     setConceptRegistry(this.conceptRegistry);
@@ -13917,28 +14332,77 @@ var SemanticAIPlugin = class extends import_obsidian14.Plugin {
       }
     }
   }
+  openAssemblyReview(ledgers) {
+    new AssemblyReviewModal(
+      this.app,
+      ledgers,
+      async () => {
+        const paths = await this.assemblyClient.export();
+        new import_obsidian16.Notice(`Exported ${paths.length} candidate assembly ledger${paths.length === 1 ? "" : "s"}; zero admissions.`);
+      },
+      async () => this.assemblyClient.verify()
+    ).open();
+  }
   /* ---------------------------------------------------------------------- */
   /* Commands                                                               */
   /* ---------------------------------------------------------------------- */
   registerCommands() {
+    this.addCommand({ id: "canonization-analyze-candidate-coverage", name: "Analyze candidate coverage", callback: () => {
+      const current = this.app.workspace.getActiveFile();
+      if (!current)
+        return new import_obsidian16.Notice("Open a Markdown note first.");
+      new AssemblyScopeModal(this.app, current, async (files) => {
+        const ledgers = await this.assemblyClient.analyze(files);
+        this.openAssemblyReview(ledgers);
+      }).open();
+    } });
+    this.addCommand({ id: "canonization-find-recoverable-fields", name: "Find recoverable fields", editorCallback: async (_editor, view) => {
+      if (!view.file)
+        return;
+      const ledgers = await this.assemblyClient.analyze([view.file]);
+      this.openAssemblyReview(ledgers);
+    } });
+    this.addCommand({ id: "canonization-assemble-proposed-candidate", name: "Assemble proposed candidate", editorCallback: async (_editor, view) => {
+      if (!view.file)
+        return;
+      try {
+        const ledgers = await this.assemblyClient.analyze([view.file], true);
+        this.openAssemblyReview(ledgers);
+      } catch (error) {
+        new import_obsidian16.Notice(error instanceof Error ? error.message : "Candidate assembly failed.");
+      }
+    } });
+    this.addCommand({ id: "canonization-review-assembly-sources", name: "Review assembly sources", callback: () => {
+      const ledgers = this.assemblyClient.getLastLedgers();
+      if (!ledgers.length)
+        return new import_obsidian16.Notice("Analyze candidate coverage first.");
+      this.openAssemblyReview(ledgers);
+    } });
+    this.addCommand({ id: "canonization-export-assembly-json", name: "Export assembly JSON", callback: async () => {
+      const ledgers = this.assemblyClient.getLastLedgers();
+      if (!ledgers.length)
+        return new import_obsidian16.Notice("Analyze candidate coverage first.");
+      const paths = await this.assemblyClient.export(ledgers);
+      new import_obsidian16.Notice(`Exported ${paths.length} candidate assembly ledger${paths.length === 1 ? "" : "s"}; zero admissions.`);
+    } });
     this.addCommand({ id: "canonization-canonize-paper", name: "Canonize this paper", editorCallback: async (_editor, view) => {
       if (view.file) {
         const record = await this.canonizationClient.canonizeFile(view.file);
-        new import_obsidian14.Notice(`Created candidate ${record.recordId}; not admitted.`);
+        new import_obsidian16.Notice(`Created candidate ${record.recordId}; not admitted.`);
       }
     } });
     this.addCommand({ id: "canonization-canonize-folder", name: "Canonize this folder", callback: async () => {
       var _a;
       const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
       if (!folder)
-        return new import_obsidian14.Notice("Open a note in the folder first.");
+        return new import_obsidian16.Notice("Open a note in the folder first.");
       const records = await this.canonizationClient.canonizeFolder(folder);
-      new import_obsidian14.Notice(`Created ${records.length} candidate records; zero admissions.`);
+      new import_obsidian16.Notice(`Created ${records.length} candidate records; zero admissions.`);
     } });
     this.addCommand({ id: "canonization-canonize-complete", name: "Run complete canonization", editorCallback: async (_editor, view) => {
       if (view.file)
         await this.canonizationClient.canonizeFile(view.file, [...COMPLETE_STAGE_RUN]);
-      new import_obsidian14.Notice("Complete candidate-stage packet created; not admitted.");
+      new import_obsidian16.Notice("Complete candidate-stage packet created; not admitted.");
     } });
     this.addCommand({ id: "canonization-canonize-selected-stages", name: "Run selected canonization stages", editorCallback: async (_editor, view) => {
       if (!view.file)
@@ -13946,29 +14410,29 @@ var SemanticAIPlugin = class extends import_obsidian14.Plugin {
       const file = view.file;
       new StageSelectionModal(this.app, async (stages) => {
         const record = await this.canonizationClient.canonizeFile(file, stages);
-        new import_obsidian14.Notice(`Executed ${stages.join(", ")} for candidate ${record.recordId}; not admitted.`);
+        new import_obsidian16.Notice(`Executed ${stages.join(", ")} for candidate ${record.recordId}; not admitted.`);
       }).open();
     } });
     this.addCommand({ id: "canonization-open-governed-review-registry", name: "Open governed review registry", callback: () => new GovernedReviewRegistryModal(this.app).open() });
     this.addCommand({ id: "canonization-open-candidate-workbench", name: "Open candidate in workbench", callback: () => {
-      const workbenchPath = (0, import_obsidian14.normalizePath)(`${this.manifest.dir}/web/workbench.html`);
+      const workbenchPath = (0, import_obsidian16.normalizePath)(`${this.manifest.dir}/web/workbench.html`);
       window.open(this.app.vault.adapter.getResourcePath(workbenchPath), "_blank", "noopener");
     } });
     this.addCommand({ id: "canonization-export-candidate-json", name: "Export candidate JSON", editorCallback: async (_editor, view) => {
       if (view.file)
         await this.canonizationClient.importReviewed(view.file);
-      new import_obsidian14.Notice("Candidate JSON validated and exported to Canonization/records.");
+      new import_obsidian16.Notice("Candidate JSON validated and exported to Canonization/records.");
     } });
     this.addCommand({ id: "canonization-import-reviewed-json", name: "Import reviewed JSON", editorCallback: async (_editor, view) => {
       if (view.file) {
         const record = await this.canonizationClient.importReviewed(view.file);
-        new import_obsidian14.Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`);
+        new import_obsidian16.Notice(`Imported reviewed candidate ${record.recordId}; not admitted.`);
       }
     } });
     this.addCommand({ id: "canonization-refresh-candidate-markdown", name: "Refresh candidate Markdown from JSON", editorCallback: async (_editor, view) => {
       if (view.file)
         await this.canonizationClient.refreshFromJson(view.file);
-      new import_obsidian14.Notice("Candidate Markdown projection refreshed from governed JSON.");
+      new import_obsidian16.Notice("Candidate Markdown projection refreshed from governed JSON.");
     } });
     this.addCommand({
       id: "canonization-classify-note",
@@ -14008,7 +14472,7 @@ var SemanticAIPlugin = class extends import_obsidian14.Plugin {
       callback: async () => {
         this.settings.showHiddenTags = !this.settings.showHiddenTags;
         await this.saveSettings();
-        new import_obsidian14.Notice(this.settings.showHiddenTags ? "Tag blocks shown" : "Tag blocks hidden");
+        new import_obsidian16.Notice(this.settings.showHiddenTags ? "Tag blocks shown" : "Tag blocks hidden");
       }
     });
     this.addCommand({
@@ -14034,7 +14498,7 @@ var SemanticAIPlugin = class extends import_obsidian14.Plugin {
         if (folder) {
           await this.batchClassifyFolder(folder);
         } else {
-          new import_obsidian14.Notice("Open a note first, so there is a folder to work on.");
+          new import_obsidian16.Notice("Open a note first, so there is a folder to work on.");
         }
       }
     });
@@ -14047,7 +14511,7 @@ var SemanticAIPlugin = class extends import_obsidian14.Plugin {
         if (folder) {
           await this.indexFolder(folder);
         } else {
-          new import_obsidian14.Notice("Open a note first, so there is a folder to index.");
+          new import_obsidian16.Notice("Open a note first, so there is a folder to index.");
         }
       }
     });
@@ -14058,7 +14522,7 @@ var SemanticAIPlugin = class extends import_obsidian14.Plugin {
         var _a;
         const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
         if (!folder) {
-          new import_obsidian14.Notice("Open a note first, so there is a folder to index.");
+          new import_obsidian16.Notice("Open a note first, so there is a folder to index.");
           return;
         }
         try {
@@ -14068,10 +14532,10 @@ var SemanticAIPlugin = class extends import_obsidian14.Plugin {
           const jsonPath = await writeIndexJSON(this.app.vault, index, folder.path);
           const graphPaths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
           const reportPath = await writeIndexReport(this.app.vault, index, folder.path, this.indexReportContext(this.supraInfraqueGraph.exportFolder(folder.path)));
-          new import_obsidian14.Notice(`Saved ${markdownPath}, ${jsonPath}, ${reportPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
+          new import_obsidian16.Notice(`Saved ${markdownPath}, ${jsonPath}, ${reportPath}, ${graphPaths.markdownPath}, ${graphPaths.jsonPath} (${graphCount} notes)`);
           await this.openConceptTracker();
         } catch (error) {
-          new import_obsidian14.Notice(`Index export failed: ${this.errorMessage(error)}`);
+          new import_obsidian16.Notice(`Index export failed: ${this.errorMessage(error)}`);
         }
       }
     });
@@ -14109,7 +14573,7 @@ var SemanticAIPlugin = class extends import_obsidian14.Plugin {
       callback: () => {
         const stats = this.conceptRegistry.getStats();
         const typeBreakdown = Object.entries(stats.byType).map(([type, count]) => `  ${type}: ${count}`).join("\n");
-        new import_obsidian14.Notice(
+        new import_obsidian16.Notice(
           `Concepts: ${stats.totalConcepts}
 With aliases: ${stats.withAliases}
 Updated: ${new Date(stats.lastUpdated).toLocaleString()}
@@ -14125,11 +14589,11 @@ ${typeBreakdown}`,
       callback: async () => {
         const filename = `concept-registry-${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.json`;
         if (this.app.vault.getAbstractFileByPath(filename)) {
-          new import_obsidian14.Notice(`${filename} already exists. Delete or rename it first.`);
+          new import_obsidian16.Notice(`${filename} already exists. Delete or rename it first.`);
           return;
         }
         await this.app.vault.create(filename, this.conceptRegistry.exportJSON());
-        new import_obsidian14.Notice(`Exported to ${filename}`);
+        new import_obsidian16.Notice(`Exported to ${filename}`);
       }
     });
     this.addCommand({
@@ -14137,7 +14601,7 @@ ${typeBreakdown}`,
       name: "Save concept registry",
       callback: async () => {
         await this.conceptRegistry.save();
-        new import_obsidian14.Notice("Concept registry saved");
+        new import_obsidian16.Notice("Concept registry saved");
       }
     });
     this.addCommand({
@@ -14145,11 +14609,11 @@ ${typeBreakdown}`,
       name: "Supra Infraque: register current note as candidate object",
       editorCallback: async (_editor, view) => {
         if (!view.file) {
-          new import_obsidian14.Notice("No note is open.");
+          new import_obsidian16.Notice("No note is open.");
           return;
         }
         const object = await this.supraInfraqueGraph.registerNote(view.file);
-        new import_obsidian14.Notice(`Registered ${object.humanCode} as a proposed candidate; source note unchanged.`);
+        new import_obsidian16.Notice(`Registered ${object.humanCode} as a proposed candidate; source note unchanged.`);
       }
     });
     this.addCommand({
@@ -14159,11 +14623,11 @@ ${typeBreakdown}`,
         var _a;
         const folder = (_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.parent;
         if (!folder) {
-          new import_obsidian14.Notice("Open a note first, so there is a folder to export.");
+          new import_obsidian16.Notice("Open a note first, so there is a folder to export.");
           return;
         }
         const paths = await writeGraphExports(this.app.vault, this.supraInfraqueGraph, folder.path);
-        new import_obsidian14.Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
+        new import_obsidian16.Notice(`Saved ${paths.markdownPath} and ${paths.jsonPath}`);
       }
     });
     this.addCommand({
@@ -14187,12 +14651,12 @@ ${typeBreakdown}`,
   registerContextMenu() {
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file) => {
-        if (file instanceof import_obsidian14.TFile && file.extension === "md") {
+        if (file instanceof import_obsidian16.TFile && file.extension === "md") {
           menu.addSeparator();
           menu.addItem((item) => {
             item.setTitle("Canonize note as candidate").setIcon("shield-check").onClick(async () => {
               const record = await this.canonizationClient.canonizeFile(file);
-              new import_obsidian14.Notice(`Created candidate ${record.recordId}; not admitted.`);
+              new import_obsidian16.Notice(`Created candidate ${record.recordId}; not admitted.`);
             });
           });
           menu.addItem((item) => {
@@ -14211,12 +14675,12 @@ ${typeBreakdown}`,
             });
           });
         }
-        if (file instanceof import_obsidian14.TFolder) {
+        if (file instanceof import_obsidian16.TFolder) {
           menu.addSeparator();
           menu.addItem((item) => {
             item.setTitle("Canonize folder as candidates").setIcon("shield-check").onClick(async () => {
               const records = await this.canonizationClient.canonizeFolder(file);
-              new import_obsidian14.Notice(`Created ${records.length} candidates; zero admissions.`);
+              new import_obsidian16.Notice(`Created ${records.length} candidates; zero admissions.`);
             });
           });
           menu.addItem((item) => {
@@ -14249,7 +14713,7 @@ ${typeBreakdown}`,
     );
   }
   showSemanticMenu(evt) {
-    const menu = new import_obsidian14.Menu();
+    const menu = new import_obsidian16.Menu();
     menu.addItem((item) => {
       item.setTitle("Classify current note").setIcon("brain").onClick(async () => {
         await this.runClassifier(this.app.workspace.getActiveFile());
@@ -14291,7 +14755,7 @@ ${typeBreakdown}`,
   }
   async runClassifierWithSelection(file) {
     if (!file) {
-      new import_obsidian14.Notice("No note is open.");
+      new import_obsidian16.Notice("No note is open.");
       return;
     }
     new TagSelectionModal(
@@ -14305,72 +14769,72 @@ ${typeBreakdown}`,
   }
   async runClassifierWithTypes(file, types) {
     if (!file) {
-      new import_obsidian14.Notice("No note is open.");
+      new import_obsidian16.Notice("No note is open.");
       return;
     }
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian14.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian16.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
-    const notice = new import_obsidian14.Notice("Classifying\u2026", 0);
+    const notice = new import_obsidian16.Notice("Classifying\u2026", 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classify(content, types, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian14.Notice("Nothing matched the selected categories.");
+        new import_obsidian16.Notice("Nothing matched the selected categories.");
         return;
       }
       this.showResult(file, result.tags, () => this.settings.autoGenerateMermaid);
     } catch (error) {
       notice.hide();
-      new import_obsidian14.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian16.Notice(this.errorMessage(error), 1e4);
     }
   }
   async classifyAs(file, type) {
     if (!file) {
-      new import_obsidian14.Notice("No note is open.");
+      new import_obsidian16.Notice("No note is open.");
       return;
     }
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian14.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian16.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
-    const notice = new import_obsidian14.Notice("Classifying\u2026", 0);
+    const notice = new import_obsidian16.Notice("Classifying\u2026", 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classifySingleType(content, type, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian14.Notice(`No ${this.promptManager.getTagTypeName(type).toLowerCase()} found.`);
+        new import_obsidian16.Notice(`No ${this.promptManager.getTagTypeName(type).toLowerCase()} found.`);
         return;
       }
       this.showResult(file, result.tags, () => false);
     } catch (error) {
       notice.hide();
-      new import_obsidian14.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian16.Notice(this.errorMessage(error), 1e4);
     }
   }
   async runCustomClassifier(file, keyword) {
     if (!file) {
-      new import_obsidian14.Notice("No note is open.");
+      new import_obsidian16.Notice("No note is open.");
       return;
     }
-    const notice = new import_obsidian14.Notice(`Running "${keyword}"\u2026`, 0);
+    const notice = new import_obsidian16.Notice(`Running "${keyword}"\u2026`, 0);
     try {
       const content = await this.app.vault.cachedRead(file);
       const result = await this.classifier.classifyCustom(content, keyword, file.path);
       notice.hide();
       if (result.tags.length === 0) {
-        new import_obsidian14.Notice(`"${keyword}" found nothing.`);
+        new import_obsidian16.Notice(`"${keyword}" found nothing.`);
         return;
       }
       this.showResult(file, result.tags, () => false);
     } catch (error) {
       notice.hide();
-      new import_obsidian14.Notice(this.errorMessage(error), 1e4);
+      new import_obsidian16.Notice(this.errorMessage(error), 1e4);
     }
   }
   /** Preview the tags, then write them if the user confirms. */
@@ -14382,7 +14846,7 @@ ${typeBreakdown}`,
       file.path,
       async () => {
         await writeTags(this.app.vault, file, tags);
-        new import_obsidian14.Notice(`Applied ${tags.length} tag${tags.length === 1 ? "" : "s"}`);
+        new import_obsidian16.Notice(`Applied ${tags.length} tag${tags.length === 1 ? "" : "s"}`);
         if (this.conceptRegistry.isDirty()) {
           await this.conceptRegistry.save();
         }
@@ -14404,7 +14868,7 @@ ${typeBreakdown}`,
   /* ---------------------------------------------------------------------- */
   async openSemanticMap(file) {
     if (!file) {
-      new import_obsidian14.Notice("No note is open.");
+      new import_obsidian16.Notice("No note is open.");
       return;
     }
     const leaf = await this.revealLeaf(MERMAID_VIEW_TYPE);
@@ -14419,12 +14883,12 @@ ${typeBreakdown}`,
   }
   async regenerateGraph(file) {
     if (!file) {
-      new import_obsidian14.Notice("No note is open.");
+      new import_obsidian16.Notice("No note is open.");
       return;
     }
     const tags = await readTags(this.app.vault, file);
     if (tags.length === 0) {
-      new import_obsidian14.Notice("This note has no tags yet.");
+      new import_obsidian16.Notice("This note has no tags yet.");
       return;
     }
     if (this.settings.mermaidPosition === "panel") {
@@ -14459,13 +14923,13 @@ ${typeBreakdown}`,
   async batchClassifyFolder(folder) {
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian14.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
+      new import_obsidian16.Notice(`Cannot classify: ${validation.error}. Check the plugin settings.`);
       return;
     }
     const prefix = folder.isRoot() ? "" : `${folder.path}/`;
     const files = this.app.vault.getMarkdownFiles().filter((f) => f.path.startsWith(prefix));
     if (files.length === 0) {
-      new import_obsidian14.Notice("No markdown notes in that folder.");
+      new import_obsidian16.Notice("No markdown notes in that folder.");
       return;
     }
     const types = enabledCategoryIds(this.settings);
@@ -14504,7 +14968,7 @@ ${typeBreakdown}`,
             continue;
           }
           const file = this.app.vault.getAbstractFileByPath(path);
-          if (file instanceof import_obsidian14.TFile) {
+          if (file instanceof import_obsidian16.TFile) {
             await writeTags(this.app.vault, file, result.tags);
           }
         }
@@ -14564,13 +15028,13 @@ ${typeBreakdown}`,
         relations: index.relations.length,
         timeMs: index.metadata.processingTimeMs || 0
       });
-      new import_obsidian14.Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? "" : "s"} to ${graphPaths.markdownPath}; report: ${reportPath}`);
+      new import_obsidian16.Notice(`Supra Infraque exported ${graphCount} note${graphCount === 1 ? "" : "s"} to ${graphPaths.markdownPath}; report: ${reportPath}`);
       if (this.settings.enablePostgresSync)
         await this.syncSupraInfraqueGraph();
       await this.openConceptTracker();
     } catch (error) {
       progressModal.close();
-      new import_obsidian14.Notice(`Indexing failed: ${this.errorMessage(error)}`);
+      new import_obsidian16.Notice(`Indexing failed: ${this.errorMessage(error)}`);
     }
   }
   async registerGraphForScope(folderPath) {
@@ -14593,11 +15057,11 @@ ${typeBreakdown}`,
     const serviceUrl = (this.settings.pythonServiceUrl || "").replace(/\/$/, "");
     const connection = this.settings.postgresConnections.find((item) => item.id === this.settings.activeConnectionId);
     if (!serviceUrl || !(connection == null ? void 0 : connection.connectionString)) {
-      new import_obsidian14.Notice("Set the PostgreSQL helper URL and an active connection first.");
+      new import_obsidian16.Notice("Set the PostgreSQL helper URL and an active connection first.");
       return;
     }
     try {
-      const response = await (0, import_obsidian14.requestUrl)({
+      const response = await (0, import_obsidian16.requestUrl)({
         url: `${serviceUrl}/sync/graph`,
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -14610,23 +15074,23 @@ ${typeBreakdown}`,
       });
       const result = response.json;
       if (response.status !== 200 || !(result == null ? void 0 : result.success)) {
-        new import_obsidian14.Notice(`Graph sync failed: ${(result == null ? void 0 : result.detail) || (result == null ? void 0 : result.error) || `HTTP ${response.status}`}`);
+        new import_obsidian16.Notice(`Graph sync failed: ${(result == null ? void 0 : result.detail) || (result == null ? void 0 : result.error) || `HTTP ${response.status}`}`);
         return;
       }
-      new import_obsidian14.Notice(`Graph sync complete: ${result.recordsUpserted || 0} records.`);
+      new import_obsidian16.Notice(`Graph sync complete: ${result.recordsUpserted || 0} records.`);
     } catch (error) {
-      new import_obsidian14.Notice(`Could not reach PostgreSQL helper: ${this.errorMessage(error)}`);
+      new import_obsidian16.Notice(`Could not reach PostgreSQL helper: ${this.errorMessage(error)}`);
     }
   }
   async buildBridgeDossierProposal(file) {
     var _a;
     if (!file) {
-      new import_obsidian14.Notice("No note is open.");
+      new import_obsidian16.Notice("No note is open.");
       return;
     }
     const validation = this.classifier.validateConfiguration();
     if (!validation.valid) {
-      new import_obsidian14.Notice(`Cannot build bridge dossier: ${validation.error}.`);
+      new import_obsidian16.Notice(`Cannot build bridge dossier: ${validation.error}.`);
       return;
     }
     try {
@@ -14655,13 +15119,13 @@ ${typeBreakdown}`,
         ""
       ].join("\n");
       await this.app.vault.create(outputPath, proposal);
-      new import_obsidian14.Notice(`Saved neutral bridge dossier proposal: ${outputPath}`);
+      new import_obsidian16.Notice(`Saved neutral bridge dossier proposal: ${outputPath}`);
     } catch (error) {
-      new import_obsidian14.Notice(`Bridge dossier failed: ${this.errorMessage(error)}`);
+      new import_obsidian16.Notice(`Bridge dossier failed: ${this.errorMessage(error)}`);
     }
   }
   async showFolderSelectionForIndex() {
-    const folders = this.app.vault.getAllLoadedFiles().filter((f) => f instanceof import_obsidian14.TFolder);
+    const folders = this.app.vault.getAllLoadedFiles().filter((f) => f instanceof import_obsidian16.TFolder);
     new FolderSelectionModal(
       this.app,
       folders,
@@ -14682,7 +15146,7 @@ ${typeBreakdown}`,
     }
     const leaf = this.app.workspace.getRightLeaf(false);
     if (!leaf) {
-      new import_obsidian14.Notice("Could not open the side panel.");
+      new import_obsidian16.Notice("Could not open the side panel.");
       return null;
     }
     await leaf.setViewState({ type: viewType, active: true });
@@ -14691,7 +15155,7 @@ ${typeBreakdown}`,
   }
   openFileByPath(filePath) {
     const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (file instanceof import_obsidian14.TFile) {
+    if (file instanceof import_obsidian16.TFile) {
       this.app.workspace.getLeaf().openFile(file);
     }
   }
@@ -14761,7 +15225,7 @@ ${typeBreakdown}`,
    */
   async generateConceptForwardLinks(journey) {
     if (journey.occurrences.length < 2) {
-      new import_obsidian14.Notice("A concept needs at least two occurrences to link them up.");
+      new import_obsidian16.Notice("A concept needs at least two occurrences to link them up.");
       return;
     }
     let linksAdded = 0;
@@ -14769,7 +15233,7 @@ ${typeBreakdown}`,
       const current = journey.occurrences[i];
       const next = journey.occurrences[i + 1];
       const file = this.app.vault.getAbstractFileByPath(current.file);
-      if (!(file instanceof import_obsidian14.TFile)) {
+      if (!(file instanceof import_obsidian16.TFile)) {
         continue;
       }
       const forwardLink = `
@@ -14791,6 +15255,6 @@ ${typeBreakdown}`,
         linksAdded++;
       }
     }
-    new import_obsidian14.Notice(`Added ${linksAdded} forward link${linksAdded === 1 ? "" : "s"} for "${journey.concept}"`);
+    new import_obsidian16.Notice(`Added ${linksAdded} forward link${linksAdded === 1 ? "" : "s"} for "${journey.concept}"`);
   }
 };
