@@ -65,3 +65,14 @@ test("working copy is integrated without modifying preserved source", () => {
   assert.match(page, /Claim Atom Builder/); assert.match(page, /prompt-rail\.js/); assert.doesNotMatch(preserved, /prompt-rail\.js/);
   for (const code of ["ID001", "C001", "C002", "E001", "PR001"]) assert.match(fs.readFileSync("workbench/field-registry.js", "utf8"), new RegExp(code));
 });
+
+test("accepted proposals populate their actual builder control", () => {
+  const fired: string[] = [];
+  const control = {
+    value: "",
+    dispatchEvent(event: Event) { fired.push(event.type); return true; }
+  };
+  Rail.applyAcceptedValue(control, "PHILOSOPHICAL");
+  assert.equal(control.value, "PHILOSOPHICAL");
+  assert.deepEqual(fired, ["input", "change"]);
+});

@@ -10,14 +10,16 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .auth import clear_session, create_session, current_user, verify_password
 from .db import get_db, pg_version, start_embedded_postgres
 from .schemas import LoginRequest
-from .routers import governance, objects, pipeline, system
+from .routers import atom_builder, governance, objects, pipeline, system
 
-FRONTEND_DIST = Path(__file__).resolve().parents[3] / "frontend" / "dist"
+WORKBENCH_DIR = Path(__file__).resolve().parents[2]
+FRONTEND_DIST = WORKBENCH_DIR / "frontend" / "dist"
 
 
 @asynccontextmanager
@@ -61,6 +63,28 @@ app.include_router(objects.router, dependencies=[Depends(current_user)])
 app.include_router(governance.router, dependencies=[Depends(current_user)])
 app.include_router(pipeline.router, dependencies=[Depends(current_user)])
 app.include_router(system.router, dependencies=[Depends(current_user)])
+app.include_router(atom_builder.router, dependencies=[Depends(current_user)])
+
+
+@app.get("/atom-builder")
+@app.get("/atom-builder.html")
+def atom_builder_page(user: str = Depends(current_user)):
+    return FileResponse(WORKBENCH_DIR / "atom-builder.html")
+
+
+@app.get("/field-registry.js")
+def atom_builder_registry():
+    return FileResponse(WORKBENCH_DIR / "field-registry.js")
+
+
+@app.get("/prompt-rail.js")
+def atom_builder_script():
+    return FileResponse(WORKBENCH_DIR / "prompt-rail.js")
+
+
+@app.get("/prompt-rail.css")
+def atom_builder_styles():
+    return FileResponse(WORKBENCH_DIR / "prompt-rail.css")
 
 
 if FRONTEND_DIST.exists():
