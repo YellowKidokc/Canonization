@@ -69,6 +69,7 @@ app.include_router(atom_builder.router, dependencies=[Depends(current_user)])
 @app.get("/atom-builder")
 @app.get("/atom-builder.html")
 @app.get("/atom-builder-v2")
+@app.get("/atom-builder-v3")
 def atom_builder_page(user: str = Depends(current_user)):
     return FileResponse(WORKBENCH_DIR / "atom-builder.html", headers={"Cache-Control": "no-store"})
 
