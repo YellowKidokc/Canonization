@@ -28,3 +28,7 @@ workbench/backend/.venv/
 workbench/frontend/node_modules/
 workbench/frontend/dist/
 workbench/tests/_tmp/
+
+# Python
+__pycache__/
+*.pyc
