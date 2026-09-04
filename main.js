@@ -2995,7 +2995,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve.call(this, root, ref);
+      let _sch = resolve2.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3022,7 +3022,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve(root, ref) {
+    function resolve2(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3865,7 +3865,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve(baseURI, relativeURI, options) {
+    function resolve2(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4229,7 +4229,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve,
+      resolve: resolve2,
       resolveComponent,
       equal,
       serialize,
@@ -10003,7 +10003,7 @@ var BatchClassifier = class {
         this.onProgress(file.path, `error: ${error instanceof Error ? error.message : "Unknown error"}`);
         results.set(file.path, { tags: [], summary: "Classification failed" });
       }
-      await new Promise((resolve) => window.setTimeout(resolve, 500));
+      await new Promise((resolve2) => window.setTimeout(resolve2, 500));
     }
     return results;
   }
@@ -11520,7 +11520,7 @@ var MAX_FILES_FOR_RELATIONS = 200;
 var MAX_CONCEPTS_FOR_RELATED = 1e3;
 var BATCH_SIZE = 50;
 var BATCH_DELAY_MS = 10;
-var sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+var sleep = (ms) => new Promise((resolve2) => window.setTimeout(resolve2, ms));
 var VaultIndexer = class {
   constructor(vault) {
     this.currentIndex = null;
@@ -13937,14 +13937,259 @@ ${content}`;
       }
     for (const link of links(content))
       await add(this.resolveLinkedFile(link, file.path), "dependency", { declaredByCurrentNote: true });
-    for (const receipt of this.app.vault.getFiles().filter((item) => /receipt/i.test(item.path) && ["json", "md"].includes(extension(item)))) {
-      const receiptContent = await this.app.vault.cachedRead(receipt);
+    for (const receipt2 of this.app.vault.getFiles().filter((item) => /receipt/i.test(item.path) && ["json", "md"].includes(extension(item)))) {
+      const receiptContent = await this.app.vault.cachedRead(receipt2);
       if (receiptContent.includes(file.path) || objectId && receiptContent.includes(objectId))
-        await add(receipt, "receipt", { immutable: true });
+        await add(receipt2, "receipt", { immutable: true });
     }
     return sources;
   }
 };
+
+// src/obsidian/cross-vault-client.ts
+var import_promises = require("fs/promises");
+var import_path = require("path");
+
+// src/package/portable-package.ts
+var import_crypto = require("crypto");
+var PACKAGE_FORMAT_VERSION = "1.0.0";
+var stable = (value) => {
+  if (Array.isArray(value))
+    return `[${value.map(stable).join(",")}]`;
+  if (value && typeof value === "object")
+    return `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stable(item)}`).join(",")}}`;
+  return JSON.stringify(value);
+};
+var sha2564 = (text) => (0, import_crypto.createHash)("sha256").update(text, "utf8").digest("hex");
+var receipt = (type, at, ids, outcome, details) => ({ receiptId: `receipt:${sha2564(stable({ type, at, ids, outcome, details }))}`, type, at, recordIds: [...ids].sort(), outcome, details });
+var safeName = (id) => id.replace(/[^A-Za-z0-9_.-]/g, "_");
+var addFiles = (target, prefix, values) => {
+  for (const [name, contents] of Object.entries(values != null ? values : {}))
+    target[`${prefix}/${name}`] = contents;
+};
+var hashCsv = (files) => ["sha256,path", ...Object.keys(files).sort().map((name) => `${sha2564(files[name])},${name}`)].join("\n") + "\n";
+function exportPackage(records, options) {
+  var _a, _b;
+  const at = (_a = options.at) != null ? _a : (/* @__PURE__ */ new Date()).toISOString();
+  const ids = records.map((record) => record.recordId);
+  if (new Set(ids).size !== ids.length)
+    throw new Error("DUPLICATE_STABLE_ID: export selection contains duplicate record IDs");
+  const files = {};
+  for (const record of [...records].sort((a, b) => a.recordId.localeCompare(b.recordId))) {
+    const check = validateCanonizationRecord(record);
+    if (!check.valid)
+      throw new Error(`INVALID_RECORD: ${record.recordId}`);
+    const name = safeName(record.recordId);
+    files[`records/${name}.json`] = stable(record) + "\n";
+    files[`projections/${name}.md`] = projectMarkdown(record, `../records/${name}.json`, "../web-backup/workbench.html");
+  }
+  addFiles(files, "sources", options.sources);
+  addFiles(files, "relationships", options.relationships);
+  addFiles(files, "receipts", options.externalReceipts);
+  if (!Object.keys(files).some((name) => name.startsWith("sources/")))
+    files["sources/.keep"] = "";
+  if (!Object.keys(files).some((name) => name.startsWith("relationships/")))
+    files["relationships/.keep"] = "";
+  files["schemas/canonization-record.schema.json"] = JSON.stringify({ $id: "canonization-record", version: SCHEMA_VERSION2, bundledFrom: "schemas/canonization-record.schema.json" }, null, 2) + "\n";
+  if (options.webBackup !== void 0)
+    files["web-backup/browser-state.json"] = stable(options.webBackup) + "\n";
+  for (const item of (_b = options.receipts) != null ? _b : [])
+    files[`receipts/${safeName(item.receiptId)}.json`] = stable(item) + "\n";
+  const exportReceipt = receipt("export", at, ids, "accepted", { projectId: options.projectId, fileCount: Object.keys(files).length });
+  files[`receipts/${safeName(exportReceipt.receiptId)}.json`] = stable(exportReceipt) + "\n";
+  const manifest = { packageFormatVersion: PACKAGE_FORMAT_VERSION, createdAt: at, createdBy: options.actor, projectId: options.projectId, recordIds: [...ids].sort(), recordVersions: Object.fromEntries(ids.map((id) => {
+    var _a2, _b2;
+    return [id, (_b2 = (_a2 = options.recordVersions) == null ? void 0 : _a2[id]) != null ? _b2 : 1];
+  })), schemaVersions: { record: SCHEMA_VERSION2 }, authority: "PORTABLE_CANDIDATE_DATA_NOT_ADMISSION", files: [] };
+  manifest.files = Object.keys(files).sort();
+  files["manifest.json"] = stable(manifest) + "\n";
+  files["PACKAGE_SHA256.csv"] = hashCsv(files);
+  return { manifest, files };
+}
+function validatePackage(pkg, at = (/* @__PURE__ */ new Date()).toISOString()) {
+  var _a, _b, _c, _d, _e;
+  const errors = [], warnings = [], records = [], seen = /* @__PURE__ */ new Set();
+  if (pkg.manifest.packageFormatVersion !== PACKAGE_FORMAT_VERSION)
+    errors.push(`PACKAGE_SCHEMA_VERSION_MISMATCH: expected ${PACKAGE_FORMAT_VERSION}`);
+  if (pkg.manifest.schemaVersions.record !== SCHEMA_VERSION2)
+    errors.push(`RECORD_SCHEMA_VERSION_MISMATCH: expected ${SCHEMA_VERSION2}`);
+  if (pkg.manifest.authority !== "PORTABLE_CANDIDATE_DATA_NOT_ADMISSION")
+    errors.push("INVALID_AUTHORITY: packages cannot grant admission");
+  const csv = (_a = pkg.files["PACKAGE_SHA256.csv"]) != null ? _a : "";
+  try {
+    if (stable(JSON.parse((_b = pkg.files["manifest.json"]) != null ? _b : "null")) !== stable(pkg.manifest))
+      errors.push("MANIFEST_OBJECT_MISMATCH");
+  } catch (e) {
+    errors.push("INVALID_JSON: manifest.json");
+  }
+  const expected = new Map(csv.trim().split("\n").slice(1).map((line) => {
+    const split = line.indexOf(",");
+    return [line.slice(split + 1), line.slice(0, split)];
+  }));
+  for (const name of [...pkg.manifest.files, "manifest.json"]) {
+    if (!(name in pkg.files))
+      errors.push(`MISSING_FILE: ${name}`);
+    else if (expected.get(name) !== sha2564(pkg.files[name]))
+      errors.push(`HASH_MISMATCH: ${name}`);
+  }
+  for (const [name, text] of Object.entries(pkg.files).filter(([name2]) => name2.startsWith("records/") && name2.endsWith(".json"))) {
+    try {
+      const value = JSON.parse(text);
+      const check = validateCanonizationRecord(value);
+      if (!check.valid) {
+        errors.push(`INVALID_RECORD: ${name}`);
+        continue;
+      }
+      const record = value;
+      if (seen.has(record.recordId))
+        errors.push(`DUPLICATE_STABLE_ID: ${record.recordId}`);
+      seen.add(record.recordId);
+      records.push(record);
+      if (!pkg.manifest.recordIds.includes(record.recordId))
+        errors.push(`UNDECLARED_RECORD: ${record.recordId}`);
+      if (record.workflowState === "Admitted")
+        errors.push(`ADMISSION_IMPORT_REFUSED: ${record.recordId}; separately authorized admission receipt required`);
+      const sourceFile = Object.entries(pkg.files).find(([path]) => path.startsWith("sources/") && path.includes(safeName(record.source.sourceId)));
+      if (sourceFile && `sha256:${sha2564(sourceFile[1])}` !== record.source.contentHash)
+        errors.push(`SOURCE_HASH_CONFLICT: ${record.recordId}`);
+      for (const atom3 of [...(_c = record.claims) != null ? _c : [], ...(_d = record.bridges) != null ? _d : []])
+        for (const dependency of (_e = atom3.dependencies) != null ? _e : [])
+          if (!pkg.manifest.recordIds.includes(dependency) && !seen.has(dependency))
+            warnings.push(`MISSING_DEPENDENCY: ${atom3.id} -> ${dependency}`);
+    } catch (e) {
+      errors.push(`INVALID_JSON: ${name}`);
+    }
+  }
+  for (const id of pkg.manifest.recordIds)
+    if (!seen.has(id))
+      errors.push(`MISSING_RECORD: ${id}`);
+  return { valid: errors.length === 0, errors, warnings, records, receipt: receipt("validation", at, pkg.manifest.recordIds, errors.length ? "refused" : "accepted", { errors, warnings }) };
+}
+
+// src/obsidian/cross-vault-client.ts
+var safeName2 = (value) => value.replace(/[^A-Za-z0-9_.-]/g, "_");
+var stamp = () => (/* @__PURE__ */ new Date()).toISOString().replace(/[-:]/g, "").replace(/\..+/, "Z");
+var CrossVaultClient = class {
+  constructor(app) {
+    this.app = app;
+  }
+  roots() {
+    var _a;
+    const adapter = this.app.vault.adapter;
+    const source = (_a = adapter.getBasePath) == null ? void 0 : _a.call(adapter);
+    if (!source)
+      throw new Error("Cross-vault transfer requires Obsidian Desktop.");
+    const destination = (0, import_path.resolve)((0, import_path.dirname)(source), "02_CANONIZATION", "Canonization");
+    return { source, destination };
+  }
+  async send(file, record, externalReceipts) {
+    if (record.workflowState === "Admitted" || record.admissionEventReference) {
+      throw new Error("Cross-vault transfer refused an admitted record.");
+    }
+    const content = await this.app.vault.cachedRead(file);
+    const sourceName = `${safeName2(record.source.sourceId)}.md`;
+    const pkg = exportPackage([record], {
+      projectId: "faiththruphysics.com",
+      actor: "David",
+      sources: { [sourceName]: content },
+      externalReceipts
+    });
+    const check = validatePackage(pkg);
+    if (!check.valid)
+      throw new Error(`Package validation failed: ${check.errors.join("; ")}`);
+    const { destination } = this.roots();
+    const packageFolder = (0, import_path.join)(destination, "Canonization", "packages", "inbox", `${stamp()}_${safeName2(record.recordId)}`);
+    for (const [relative, bytes] of Object.entries(pkg.files)) {
+      const target = (0, import_path.join)(packageFolder, ...relative.split("/"));
+      await (0, import_promises.mkdir)((0, import_path.dirname)(target), { recursive: true });
+      await (0, import_promises.writeFile)(target, bytes, "utf8");
+    }
+    const recordName = `${safeName2(record.recordId)}.json`;
+    const projectionName = `${safeName2(record.recordId)}.md`;
+    const recordText = pkg.files[`records/${recordName}`];
+    const projectionText = pkg.files[`projections/${projectionName}`];
+    if (!recordText || !projectionText)
+      throw new Error("Validated package omitted its record projection.");
+    const recordFolder = (0, import_path.join)(destination, "Canonization", "records");
+    const candidateFolder = (0, import_path.join)(destination, "Canonization", "candidates");
+    await (0, import_promises.mkdir)(recordFolder, { recursive: true });
+    await (0, import_promises.mkdir)(candidateFolder, { recursive: true });
+    await (0, import_promises.writeFile)((0, import_path.join)(recordFolder, recordName), recordText, "utf8");
+    await (0, import_promises.writeFile)((0, import_path.join)(candidateFolder, projectionName), projectionText, "utf8");
+    const reviewPath = `Canonization/candidates/${projectionName}`;
+    const uri = `obsidian://open?vault=Canonization&file=${encodeURIComponent(reviewPath)}`;
+    const marker = `<!-- canonization-cross-vault:${record.recordId} -->`;
+    await this.app.vault.process(file, (current) => current.includes(marker) ? current : `${current.trimEnd()}
+
+> [!info] Canonization review
+> [Open this candidate in the Canonization vault](${uri})
+> Candidate data remains **CANDIDATE_DRAFT - NOT ADMITTED**.
+${marker}
+`);
+    return { destinationVault: destination, packageFolder, reviewPath, recordId: record.recordId };
+  }
+};
+
+// src/obsidian/atoms-api-client.ts
+var import_child_process = require("child_process");
+var import_promises2 = require("fs/promises");
+var import_path2 = require("path");
+var import_util = require("util");
+var execute = (0, import_util.promisify)(import_child_process.execFile);
+var ATOMS = "D:\\GitHub\\Faith-through-physics-atoms";
+var AtomsApiClient = class {
+  constructor(app) {
+    this.app = app;
+  }
+  async discover(file, model = "deepseek-chat", apiKey = "") {
+    var _a, _b;
+    const base = (_b = (_a = this.app.vault.adapter).getBasePath) == null ? void 0 : _b.call(_a);
+    if (!base)
+      throw new Error("Atoms API integration requires Obsidian Desktop.");
+    const output = (0, import_path2.join)(base, "Canonization", "atoms-receipts", file.basename);
+    await (0, import_promises2.mkdir)(output, { recursive: true });
+    const launcher = (0, import_path2.join)(ATOMS, "_final_api_calls", "run_embedded_markdown.py");
+    const spec = (0, import_path2.join)(ATOMS, "_final_api_calls", "01_NONDISCRIMINATORY_DISCOVERY.md");
+    const source = (0, import_path2.join)(base, ...file.path.split("/"));
+    const env = { ...process.env, ...apiKey ? { DEEPSEEK_API_KEY: apiKey } : {} };
+    const { stdout } = await execute("python", [launcher, spec, "--source", source, "--provider", "deepseek", "--model", model, "--output-dir", output, "--projection-dir", output], { cwd: ATOMS, env, maxBuffer: 8 * 1024 * 1024 });
+    const result = JSON.parse(stdout);
+    if (!result.receipt)
+      throw new Error("Atoms API did not return a receipt path.");
+    const raw = await (0, import_promises2.readFile)(result.receipt, "utf8");
+    return { receipt: JSON.parse(raw), raw, receiptPath: result.receipt };
+  }
+};
+
+// src/integration/atoms-receipt.ts
+var atom2 = (item) => ({ ...structuredClone(item), id: crypto.randomUUID(), discoveryId: item.discovery_id, kind: "unclassified-discovered-object", statement: item.exact_quotation, origin: "ATOMS_BLIND_DISCOVERY", authority: "candidate-only" });
+function applyAtomsReceipt(record, receipt2, raw, at = (/* @__PURE__ */ new Date()).toISOString()) {
+  var _a, _b, _c, _d, _e;
+  if (receipt2.canonical_admission_performed !== false || receipt2.human_ruling_required !== true)
+    throw new Error("Atoms receipt crossed the candidate authority boundary.");
+  if (receipt2.post_discovery_source_binding.source_hash.toLowerCase() !== record.source.contentHash.toLowerCase())
+    throw new Error("Atoms receipt source hash does not match the open paper.");
+  const objects = (_a = receipt2.frozen_discovery.discovered_objects) != null ? _a : [];
+  const mapped = structuredClone(record);
+  mapped.protectedBlindDiscovery = { immutable: true, recordedAt: at, inputPolicy: "SOURCE_CONTENT_ONLY_NO_INHERITED_METADATA", result: structuredClone(receipt2.frozen_discovery), atomsReceiptVersion: receipt2.receipt_version };
+  mapped.recoveredObjects = objects.map(atom2);
+  mapped.countermodels = objects.flatMap((item) => {
+    var _a2;
+    return ((_a2 = item.countermodels) != null ? _a2 : []).map((statement) => ({ id: crypto.randomUUID(), kind: "countermodel", statement, sourceCoordinates: { discoveryId: item.discovery_id }, origin: "ATOMS_BLIND_DISCOVERY", authority: "candidate-only" }));
+  });
+  mapped.openGaps = [...(_b = receipt2.frozen_discovery.global_open_questions) != null ? _b : [], ...objects.flatMap((item) => {
+    var _a2;
+    return (_a2 = item.open_questions) != null ? _a2 : [];
+  })].filter((value, index, all) => all.indexOf(value) === index).map((statement) => ({ id: crypto.randomUUID(), kind: "open-gap", statement, origin: "ATOMS_BLIND_DISCOVERY", authority: "candidate-only" }));
+  mapped.summary = (_d = (_c = receipt2.emergent_organization) == null ? void 0 : _c.organizing_principle) != null ? _d : "Blind discovery imported from the Atoms API.";
+  mapped.emergentOrganization = structuredClone((_e = receipt2.emergent_organization) != null ? _e : {});
+  mapped.classificationPending = true;
+  mapped.hashes.atomsReceipt = `sha256:${sha2564(raw)}`;
+  mapped.updated = { at, by: "atoms-import-adapter" };
+  mapped.provenance.push({ event: "atoms-blind-discovery-imported", at, provider: receipt2.provider, model: receipt2.model, receiptHash: mapped.hashes.atomsReceipt, discoveredObjectCount: objects.length, inheritedClassificationApplied: false, sourceModified: false, admissionPerformed: false });
+  assertCanonizationRecord(mapped);
+  return mapped;
+}
 
 // src/ui/assembly-modal.ts
 var import_obsidian12 = require("obsidian");
@@ -14280,6 +14525,8 @@ var SemanticAIPlugin = class extends import_obsidian16.Plugin {
     this.vaultIndexer = new VaultIndexer(this.app.vault);
     this.canonizationClient = new CanonizationClient(this.app);
     this.assemblyClient = new AssemblyClient(this.app, this.classifier);
+    this.crossVaultClient = new CrossVaultClient(this.app);
+    this.atomsApiClient = new AtomsApiClient(this.app);
     this.conceptRegistry = new ConceptRegistry(this.app.vault, this.manifest.dir);
     await this.conceptRegistry.load();
     setConceptRegistry(this.conceptRegistry);
@@ -14347,6 +14594,46 @@ var SemanticAIPlugin = class extends import_obsidian16.Plugin {
   /* Commands                                                               */
   /* ---------------------------------------------------------------------- */
   registerCommands() {
+    this.addCommand({ id: "canonization-send-to-canonization-vault", name: "Send to Canonization Vault", editorCallback: async (_editor, view) => {
+      if (!view.file)
+        return new import_obsidian16.Notice("Open a Markdown note first.");
+      try {
+        const baseRecord = await this.canonizationClient.canonizeFile(view.file);
+        const provider = this.settings.providers.deepseek;
+        const atoms = await this.atomsApiClient.discover(view.file, provider.model || "deepseek-chat", provider.apiKey);
+        const record = applyAtomsReceipt(baseRecord, atoms.receipt, atoms.raw);
+        await this.canonizationClient.writeRecord(record);
+        const result = await this.crossVaultClient.send(view.file, record, { [`atoms-${record.recordId}.json`]: atoms.raw });
+        new import_obsidian16.Notice(`Sent ${result.recordId} to the Canonization vault; not admitted.`);
+      } catch (error) {
+        new import_obsidian16.Notice(error instanceof Error ? error.message : "Cross-vault transfer failed.");
+      }
+    } });
+    this.addCommand({ id: "canonization-send-folder-to-canonization-vault", name: "Send current folder to Canonization Vault", callback: async () => {
+      const current = this.app.workspace.getActiveFile();
+      const folder = current == null ? void 0 : current.parent;
+      if (!folder)
+        return new import_obsidian16.Notice("Open a note in the folder you want to send first.");
+      const prefix = folder.path ? `${folder.path}/` : "";
+      const files = this.app.vault.getMarkdownFiles().filter((file) => file.path.startsWith(prefix));
+      if (!files.length)
+        return new import_obsidian16.Notice("No Markdown papers were found in this folder.");
+      let sent = 0;
+      try {
+        for (const file of files) {
+          const baseRecord = await this.canonizationClient.canonizeFile(file);
+          const provider = this.settings.providers.deepseek;
+          const atoms = await this.atomsApiClient.discover(file, provider.model || "deepseek-chat", provider.apiKey);
+          const record = applyAtomsReceipt(baseRecord, atoms.receipt, atoms.raw);
+          await this.canonizationClient.writeRecord(record);
+          await this.crossVaultClient.send(file, record, { [`atoms-${record.recordId}.json`]: atoms.raw });
+          sent += 1;
+        }
+        new import_obsidian16.Notice(`Sent ${sent} papers to the Canonization vault; zero admissions.`);
+      } catch (error) {
+        new import_obsidian16.Notice(`Sent ${sent} papers, then stopped: ${error instanceof Error ? error.message : "cross-vault transfer failed."}`);
+      }
+    } });
     this.addCommand({ id: "canonization-analyze-candidate-coverage", name: "Analyze candidate coverage", callback: () => {
       const current = this.app.workspace.getActiveFile();
       if (!current)
@@ -15096,13 +15383,13 @@ ${typeBreakdown}`,
     try {
       const content = await this.app.vault.read(file);
       const response = await this.classifier.complete(this.promptManager.buildBridgeDossierPrompt(content), 8192);
-      const safeName = file.basename.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "note";
+      const safeName3 = file.basename.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "note";
       const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) ? `${file.parent.path}/SUPRA_INFRAQUE` : "SUPRA_INFRAQUE";
       try {
         await this.app.vault.createFolder(folderPath);
       } catch (e) {
       }
-      const outputPath = `${folderPath}/BRIDGE_DOSSIER_PROPOSAL_${safeName}_${Date.now()}.md`;
+      const outputPath = `${folderPath}/BRIDGE_DOSSIER_PROPOSAL_${safeName3}_${Date.now()}.md`;
       const proposal = [
         `# Bridge Dossier Proposal: ${file.basename}`,
         "",

@@ -54,6 +54,9 @@ import { SupraInfraqueGraphRegistry } from './epistemic/graph-registry';
 import { writeGraphExports } from './epistemic/graph-exporter';
 import { CanonizationClient } from './obsidian/canonization-client';
 import { AssemblyClient } from './obsidian/assembly-client';
+import { CrossVaultClient } from './obsidian/cross-vault-client';
+import { AtomsApiClient } from './obsidian/atoms-api-client';
+import { applyAtomsReceipt } from './integration/atoms-receipt';
 import { AssemblyReviewModal, AssemblyScopeModal } from './ui/assembly-modal';
 import { COMPLETE_STAGE_RUN } from './engine/stages';
 import { StageSelectionModal } from './ui/stage-selection-modal';
@@ -75,6 +78,8 @@ export default class SemanticAIPlugin extends Plugin {
   supraInfraqueGraph: SupraInfraqueGraphRegistry;
   canonizationClient: CanonizationClient;
   assemblyClient: AssemblyClient;
+  crossVaultClient: CrossVaultClient;
+  atomsApiClient: AtomsApiClient;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -84,6 +89,8 @@ export default class SemanticAIPlugin extends Plugin {
     this.vaultIndexer = new VaultIndexer(this.app.vault);
     this.canonizationClient = new CanonizationClient(this.app);
     this.assemblyClient = new AssemblyClient(this.app, this.classifier);
+    this.crossVaultClient = new CrossVaultClient(this.app);
+    this.atomsApiClient = new AtomsApiClient(this.app);
 
     // Shared registry so the same concept keeps the same UUID across notes.
     this.conceptRegistry = new ConceptRegistry(this.app.vault, this.manifest.dir);
@@ -161,6 +168,43 @@ export default class SemanticAIPlugin extends Plugin {
   /* ---------------------------------------------------------------------- */
 
   private registerCommands(): void {
+    this.addCommand({ id: 'canonization-send-to-canonization-vault', name: 'Send to Canonization Vault', editorCallback: async (_editor, view) => {
+      if (!view.file) return new Notice('Open a Markdown note first.');
+      try {
+        const baseRecord = await this.canonizationClient.canonizeFile(view.file);
+        const provider = this.settings.providers.deepseek;
+        const atoms = await this.atomsApiClient.discover(view.file, provider.model || 'deepseek-chat', provider.apiKey);
+        const record = applyAtomsReceipt(baseRecord, atoms.receipt, atoms.raw);
+        await this.canonizationClient.writeRecord(record);
+        const result = await this.crossVaultClient.send(view.file, record, { [`atoms-${record.recordId}.json`]: atoms.raw });
+        new Notice(`Sent ${result.recordId} to the Canonization vault; not admitted.`);
+      } catch (error) {
+        new Notice(error instanceof Error ? error.message : 'Cross-vault transfer failed.');
+      }
+    } });
+    this.addCommand({ id: 'canonization-send-folder-to-canonization-vault', name: 'Send current folder to Canonization Vault', callback: async () => {
+      const current = this.app.workspace.getActiveFile();
+      const folder = current?.parent;
+      if (!folder) return new Notice('Open a note in the folder you want to send first.');
+      const prefix = folder.path ? `${folder.path}/` : '';
+      const files = this.app.vault.getMarkdownFiles().filter((file) => file.path.startsWith(prefix));
+      if (!files.length) return new Notice('No Markdown papers were found in this folder.');
+      let sent = 0;
+      try {
+        for (const file of files) {
+          const baseRecord = await this.canonizationClient.canonizeFile(file);
+          const provider = this.settings.providers.deepseek;
+          const atoms = await this.atomsApiClient.discover(file, provider.model || 'deepseek-chat', provider.apiKey);
+          const record = applyAtomsReceipt(baseRecord, atoms.receipt, atoms.raw);
+          await this.canonizationClient.writeRecord(record);
+          await this.crossVaultClient.send(file, record, { [`atoms-${record.recordId}.json`]: atoms.raw });
+          sent += 1;
+        }
+        new Notice(`Sent ${sent} papers to the Canonization vault; zero admissions.`);
+      } catch (error) {
+        new Notice(`Sent ${sent} papers, then stopped: ${error instanceof Error ? error.message : 'cross-vault transfer failed.'}`);
+      }
+    } });
     this.addCommand({ id: 'canonization-analyze-candidate-coverage', name: 'Analyze candidate coverage', callback: () => {
       const current = this.app.workspace.getActiveFile(); if (!current) return new Notice('Open a Markdown note first.');
       new AssemblyScopeModal(this.app, current, async (files) => { const ledgers = await this.assemblyClient.analyze(files); this.openAssemblyReview(ledgers); }).open();

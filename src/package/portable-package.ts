@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash } from "crypto";
 import { CanonizationRecord, SCHEMA_VERSION } from "../schema/types";
 import { validateCanonizationRecord } from "../schema/validator";
 import { projectMarkdown } from "../projections/markdown/project";
@@ -8,7 +8,7 @@ export type PackageFiles = Record<string, string>;
 export interface PackageReceipt { receiptId: string; type: "export" | "validation" | "import" | "conflict" | "regeneration" | "web-backup"; at: string; recordIds: string[]; outcome: "accepted" | "refused"; details: Record<string, unknown>; }
 export interface PackageManifest { packageFormatVersion: typeof PACKAGE_FORMAT_VERSION; createdAt: string; createdBy: string; projectId: string; recordIds: string[]; recordVersions: Record<string, number>; schemaVersions: { record: typeof SCHEMA_VERSION }; authority: "PORTABLE_CANDIDATE_DATA_NOT_ADMISSION"; files: string[]; }
 export interface PortablePackage { manifest: PackageManifest; files: PackageFiles; }
-export interface ExportOptions { projectId: string; actor: string; at?: string; recordVersions?: Record<string, number>; sources?: PackageFiles; relationships?: PackageFiles; receipts?: PackageReceipt[]; webBackup?: unknown; }
+export interface ExportOptions { projectId: string; actor: string; at?: string; recordVersions?: Record<string, number>; sources?: PackageFiles; relationships?: PackageFiles; externalReceipts?: PackageFiles; receipts?: PackageReceipt[]; webBackup?: unknown; }
 export interface ImportState { records: Map<string, CanonizationRecord>; versions: Map<string, number>; }
 export interface PackageValidation { valid: boolean; errors: string[]; warnings: string[]; receipt: PackageReceipt; records: CanonizationRecord[]; }
 
@@ -34,6 +34,7 @@ export function exportPackage(records: CanonizationRecord[], options: ExportOpti
     files[`projections/${name}.md`] = projectMarkdown(record, `../records/${name}.json`, "../web-backup/workbench.html");
   }
   addFiles(files, "sources", options.sources); addFiles(files, "relationships", options.relationships);
+  addFiles(files, "receipts", options.externalReceipts);
   if (!Object.keys(files).some((name) => name.startsWith("sources/"))) files["sources/.keep"] = "";
   if (!Object.keys(files).some((name) => name.startsWith("relationships/"))) files["relationships/.keep"] = "";
   files["schemas/canonization-record.schema.json"] = JSON.stringify({ $id: "canonization-record", version: SCHEMA_VERSION, bundledFrom: "schemas/canonization-record.schema.json" }, null, 2) + "\n";
