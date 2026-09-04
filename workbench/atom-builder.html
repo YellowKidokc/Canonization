@@ -321,6 +321,7 @@ textarea{resize:vertical;min-height:56px;line-height:1.6}
   <span class="saved" id="savemark"></span>
   <button class="hbtn hbtn-g" onclick="location.href='../web/workbench.html'">Canon Workbench</button>
   <button class="hbtn hbtn-g" onclick="document.getElementById('nerve-import').click()">Import JSON</button>
+  <button class="hbtn hbtn-g" onclick="saveAllNow()">Save Entire Draft</button>
   <button class="hbtn hbtn-g" onclick="exportNerveDraft()">Export Draft</button>
   <input id="nerve-import" type="file" accept="application/json,.json" hidden onchange="importNerveFile(this.files[0]);this.value=''">
   <button class="hbtn hbtn-g" id="jbtn" onclick="tJSON()">Show JSON</button>
@@ -553,6 +554,21 @@ function pick(e){
 }
 function g(el,k){return el.querySelector(`[data-f="${k}"]`)?.value?.trim()||'';}
 function gs(el,k){return el.querySelector(`.tg.on[data-key="${k}"]`)?.dataset.val||'';}
+function saveAllNow(message='Entire draft saved'){
+ try{
+  localStorage.setItem('pof_draft',JSON.stringify(makeDraftSnapshot()));
+  const s=document.getElementById('savemark');
+  if(s){s.textContent=message+' · '+new Date().toLocaleTimeString();s.classList.add('flash');setTimeout(()=>s.classList.remove('flash'),700);}
+ }catch(e){alert('Draft could not be saved: '+e.message);}
+}
+function saveSection(aid,step,event){event?.stopPropagation();saveAllNow(`Section ${step} saved`);}
+function installSectionSaves(aid){
+ const atom=document.getElementById('at-'+aid);if(!atom)return;
+ atom.querySelectorAll('.step').forEach(step=>{
+  const n=(step.id.match(/-(\d+)$/)||[])[1],bar=step.querySelector('.step-bar');if(!n||!bar||bar.querySelector('.save-section'))return;
+  const b=document.createElement('button');b.type='button';b.className='bg save-section';b.textContent='Save Section';b.onclick=e=>saveSection(aid,n,e);bar.insertBefore(b,bar.querySelector('.schev'));
+ });
+}
 function importSourceFile(aid,input){
  const file=input.files&&input.files[0];if(!file)return;
  const reader=new FileReader();
@@ -642,7 +658,7 @@ function newAtom(){
     <div class="field req"><label>Record Version</label><input data-f="record_ver" value="0.1.0" placeholder="0.1.0" oninput="refresh('${aid}')"></div>
     <div class="field"><label>Version Operation</label><select data-f="version_op" onchange="refresh('${aid}')"><option value="new">new</option><option value="amend">amend</option><option value="new_version">new version</option><option value="supersede">supersede</option></select></div>
     <div class="field"><label>Prior Atom@Version</label><input data-f="prior_ver" placeholder="A041@1.2.0" oninput="refresh('${aid}')"></div>
-    <div class="field"><label>Change Rationale</label><input data-f="version_why" placeholder="Why this version exists" oninput="refresh('${aid}')"></div>
+    <div class="field"><label>Change Rationale</label><input data-f="version_why" value="Initial candidate draft; ready for the next review stage." placeholder="Why this version exists" oninput="refresh('${aid}')"></div>
    </div>
    <div class="r2">
     <div class="field"><label>Source URI</label><input data-f="src_uri" list="dls" placeholder="https://… or file path" oninput="refresh('${aid}')" onblur="MEM.add('sources',this.value)"></div>
@@ -651,6 +667,9 @@ function newAtom(){
    <div class="field"><label>Raw Statement — preserved exactly as found</label>
     <div class="hint">Preserve before decomposition. No later clarification may erase what the source actually said.</div>
     <textarea data-f="raw" rows="2" placeholder="The original wording, verbatim…" oninput="refresh('${aid}')"></textarea></div>
+   <div class="field"><label>Paper Purpose / General Summary</label>
+    <div class="hint">A concise account of what the paper is about. This interpretation never replaces the preserved Raw Statement.</div>
+    <textarea data-f="purpose" rows="3" placeholder="What is this paper trying to establish, explain, or test?" oninput="refresh('${aid}')"></textarea></div>
    <div class="ax"><div class="ax-lb">AI contribution</div><div class="ax-df">Declare whether AI contributed. If yes, identify provider, model, role, and run receipt.</div>${tags('ai_contrib',['no','yes'],'ai')}</div>
    <div class="r4">
     <div class="field"><label>AI provider</label><input data-f="ai_provider" placeholder="DeepSeek / OpenAI / other" oninput="refresh('${aid}')"></div>
@@ -860,6 +879,7 @@ ANY      — dependsOn / defines / interprets / bridgesTo
  <button class="bg" style="color:#a05050;border-color:#3a1a1a" onclick="rmA('${aid}')">Discard Unsaved Draft</button>
 </div></div>
 </div>`);
+ installSectionSaves(aid);
  setTimeout(()=>refresh(aid),40);
 }
 
@@ -890,6 +910,7 @@ function pickT(aid,t){
  document.getElementById('ot-'+aid).textContent=t;
  document.getElementById('n-'+aid+'-3').classList.add('done');
  buildType(aid,t);
+ installSectionSaves(aid);
  const saved=A[aid].type_drafts[t];
  if(t==='CLAIM'&&saved?.reg)pickR(aid,saved.reg);
  restoreDraft(document.getElementById('tb-'+aid),saved?.body);

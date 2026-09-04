@@ -18,6 +18,7 @@ const SPECIAL={
  depends:{code:'PR001',section:'process',purpose:'List load-bearing prerequisites in derivation order.',question:'Which existing ATOM@VERSION prerequisites are load-bearing?',type:'list'},
  src_span:{code:'E001',section:'evidence',purpose:'Preserve verifiable source coordinates.',question:'Return only verified source coordinates supporting the proposed value.',type:'source-anchor'},
  raw:{code:'E002',section:'evidence',purpose:'Preserve source wording exactly.',question:'Extract the exact source text without normalization.',type:'source-anchor'},
+ purpose:{code:'C003',section:'claims',purpose:'Summarize the paper without replacing or rewriting its preserved source.',question:'In two or three precise sentences, what is this paper trying to establish, explain, or test? Preserve its scope and distinguish its central proposal from what it claims to prove.',type:'free text'},
  e_bridge:{code:'L001',section:'lineage',purpose:'Recommend an existing graph relationship without creating identity.',question:'Which existing atom does this bridge to, and why?',type:'identity explanation'}
 };
 const inferSection=k=>k==='fam'||k.includes('ver')?'identity':k.startsWith('e_')?'lineage':k.startsWith('pr')||k.startsWith('q')?'process':k.startsWith('p')?'proof':k.includes('src')||k==='raw'?'evidence':'claims';
