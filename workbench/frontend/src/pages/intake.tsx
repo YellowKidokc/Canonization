@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { FolderInput, Play, UploadCloud } from "lucide-react";
+import { FolderInput, Play, Trash2, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/accordion";
 import { PageHeader, Loading, ErrorBox, EmptyState, shortSha, fmtDate } from "@/components/common";
 import {
-  useSources, useJobs, useCreateJob, useUploadSource, useIntakeFolder, useJobEvents, useFailures,
+  useSources, useJobs, useCreateJob, useDeleteJob, useUploadSource, useIntakeFolder, useJobEvents, useFailures,
 } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import type { Job, Source } from "@/lib/types";
@@ -117,6 +117,7 @@ function JobRow({ job, onOpenSource }: { job: Job; onOpenSource: (sourceId: stri
     job.status === "RUNNING" || job.status === "PENDING" ? job.id : null
   );
   const failures = useFailures(job.status === "FAILED" ? job.id : undefined);
+  const deleteJob = useDeleteJob();
   const latest = events[events.length - 1];
 
   return (
@@ -139,8 +140,21 @@ function JobRow({ job, onOpenSource }: { job: Job; onOpenSource: (sourceId: stri
             <Button size="sm" variant="outline" onClick={() => onOpenSource(job.source_id)}>
               Open source in Review
             </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={deleteJob.isPending}
+              onClick={() => {
+                if (window.confirm("Delete this processing job? The preserved source and governed objects will remain.")) {
+                  deleteJob.mutate(job.id);
+                }
+              }}
+            >
+              <Trash2 className="w-3 h-3" /> Delete job
+            </Button>
             <span className="text-[10px] font-mono text-muted-foreground">job {job.id}</span>
           </div>
+          {deleteJob.isError && <ErrorBox error={deleteJob.error} />}
           {events.length > 0 && (
             <div className="bg-black/40 border border-border/50 rounded-md p-3 max-h-48 overflow-y-auto scrollbar-thin">
               {events.map((ev, i) => (

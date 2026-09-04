@@ -15,6 +15,8 @@ interface RulingDialogProps {
   objectLabel: string;
   /** Possible decisions for this context (e.g. PROMOTE/DEFER/REJECT). */
   decisions: RulingDecision[];
+  suggestedDecision?: RulingDecision;
+  suggestedReason?: string;
 }
 
 const DECISION_STYLES: Record<RulingDecision, { label: string; active: string; hint: string }> = {
@@ -28,19 +30,19 @@ const DECISION_STYLES: Record<RulingDecision, { label: string; active: string; h
 };
 
 /** Human-ruling dialog — the ONLY way canon_status changes. */
-export function RulingDialog({ open, onOpenChange, objectType, objectUuid, objectLabel, decisions }: RulingDialogProps) {
+export function RulingDialog({ open, onOpenChange, objectType, objectUuid, objectLabel, decisions, suggestedDecision, suggestedReason }: RulingDialogProps) {
   const [decision, setDecision] = useState<RulingDecision>(decisions[0]);
   const [reason, setReason] = useState("");
   const ruling = useRuling();
 
   useEffect(() => {
     if (open) {
-      setDecision(decisions[0]);
-      setReason("");
+      setDecision(suggestedDecision && decisions.includes(suggestedDecision) ? suggestedDecision : decisions[0]);
+      setReason(suggestedReason ?? "");
       ruling.reset();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, suggestedDecision, suggestedReason]);
 
   const submit = () => {
     ruling.mutate(

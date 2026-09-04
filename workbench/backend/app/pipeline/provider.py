@@ -5,6 +5,7 @@ import json
 from dataclasses import dataclass
 
 import httpx
+from json_repair import repair_json
 
 from ..config import get_settings
 
@@ -111,4 +112,17 @@ def extract_json_object(text: str) -> dict:
     try:
         return json.loads(candidate)
     except json.JSONDecodeError as e:
-        raise ParseError(f"JSON decode failed: {e}", detail={"head": candidate[:500]}) from e
+        # Providers occasionally emit an otherwise valid object with a missing
+        # comma, dangling comma, or unescaped quote even in JSON response mode.
+        # Repair only the extracted outer object, then require strict JSON again.
+        try:
+            repaired = repair_json(candidate)
+            parsed = json.loads(repaired)
+            if not isinstance(parsed, dict):
+                raise ValueError("repaired payload is not a JSON object")
+            return parsed
+        except (json.JSONDecodeError, TypeError, ValueError) as repair_error:
+            raise ParseError(
+                f"JSON decode failed: {e}",
+                detail={"head": candidate[:500], "repair_error": str(repair_error)},
+            ) from e

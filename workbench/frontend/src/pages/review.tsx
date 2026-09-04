@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
-import { ArrowRight, Gavel, Pencil, Plus } from "lucide-react";
+import { ArrowRight, Gavel, Pencil, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +21,7 @@ import { RulingDialog } from "@/components/ruling-dialog";
 import { PageHeader, Loading, ErrorBox, EmptyState, fmtDate } from "@/components/common";
 import {
   useSources, useQuestions, useClaims, useStatements, useVocab,
-  useUpdateStatement, useUpdateQuestion, useCreateStatement,
+  useUpdateStatement, useUpdateQuestion, useCreateStatement, useBulkRulings,
 } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import type { Question, Claim, Statement, ObjectType, RulingDecision, SourceAnchor } from "@/lib/types";
@@ -29,7 +29,7 @@ import type { Question, Claim, Statement, ObjectType, RulingDecision, SourceAnch
 function useSourceContent(sourceId: string | undefined) {
   return useQuery({
     queryKey: ["source-content", sourceId],
-    queryFn: () => api.get<string>(`/api/sources/${sourceId}/content`),
+    queryFn: () => api.getText(`/api/sources/${sourceId}/content`),
     enabled: !!sourceId,
   });
 }
@@ -39,6 +39,15 @@ interface RulingTarget {
   objectUuid: string;
   label: string;
   decisions: RulingDecision[];
+  suggestedDecision?: RulingDecision;
+  suggestedReason?: string;
+}
+
+type SuggestedRuling = { decision: RulingDecision; reason: string; average_score?: number | null };
+
+function suggestionFor(object: { provenance: Record<string, unknown> }): SuggestedRuling | null {
+  const suggestion = object.provenance?.suggested_ruling as SuggestedRuling | undefined;
+  return suggestion?.decision && suggestion?.reason ? suggestion : null;
 }
 
 function AnchorQuote({ anchor }: { anchor: SourceAnchor | null }) {
@@ -296,8 +305,27 @@ export default function Review() {
   const [editStatement, setEditStatement] = useState<Statement | null>(null);
   const [editQuestion, setEditQuestion] = useState<Question | null>(null);
   const [newOpen, setNewOpen] = useState(false);
+  const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
+  const bulkRulings = useBulkRulings();
 
   const selected: string | undefined = sourceId ?? sources.data?.[0]?.id;
+  const suggestedClaims = (claims.data ?? []).filter((claim) => suggestionFor(claim));
+
+  const applySelectedSuggestions = () => {
+    const items = (claims.data ?? [])
+      .filter((claim) => selectedClaims.has(claim.id))
+      .map((claim) => ({ claim, suggestion: suggestionFor(claim) }))
+      .filter((entry): entry is { claim: Claim; suggestion: SuggestedRuling } => !!entry.suggestion)
+      .map(({ claim, suggestion }) => ({
+        object_type: "CLAIM" as ObjectType,
+        object_uuid: claim.id,
+        decision: suggestion.decision,
+        reason: suggestion.reason,
+      }));
+    if (!items.length) return;
+    if (!window.confirm(`Record ${items.length} separate suggested rulings? This is one batch, but every claim keeps its own audit record.`)) return;
+    bulkRulings.mutate(items, { onSuccess: () => setSelectedClaims(new Set()) });
+  };
 
   return (
     <div>
@@ -408,20 +436,56 @@ export default function Review() {
                     <TabsContent value="claims" className="m-0 space-y-3 mt-0">
                       {claims.isLoading && <Loading />}
                       {claims.isError && <ErrorBox error={claims.error} />}
+                      {(claims.data?.length ?? 0) > 0 && (
+                        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border border-primary/25 bg-background/95 p-2 rounded-md backdrop-blur">
+                          <Button size="sm" variant="outline" onClick={() => setSelectedClaims(new Set(suggestedClaims.map((claim) => claim.id)))}>
+                            Select suggested ({suggestedClaims.length})
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setSelectedClaims(new Set())}>Clear</Button>
+                          <Button size="sm" onClick={applySelectedSuggestions} disabled={!selectedClaims.size || bulkRulings.isPending}>
+                            <Sparkles className="w-3.5 h-3.5 mr-1" />
+                            {bulkRulings.isPending ? "Recording…" : `Apply suggestions (${selectedClaims.size})`}
+                          </Button>
+                        </div>
+                      )}
                       {claims.data?.length === 0 && (
                         <EmptyState title="No claims extracted" hint="Run the pipeline on this source to extract candidate claims." />
                       )}
                       {claims.data?.map((c: Claim) => (
                         <div key={c.id} className="border border-border/50 rounded-md p-4 hover:border-primary/30 transition-colors">
                           <div className="flex items-start justify-between gap-2 mb-2">
-                            <CanonBadge status={c.canon_status} />
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                aria-label={`Select claim ${c.exact_claim}`}
+                                checked={selectedClaims.has(c.id)}
+                                disabled={!suggestionFor(c)}
+                                onChange={(event) => setSelectedClaims((current) => {
+                                  const next = new Set(current);
+                                  if (event.target.checked) next.add(c.id); else next.delete(c.id);
+                                  return next;
+                                })}
+                              />
+                              <CanonBadge status={c.canon_status} />
+                              {c.claim_mode && <Badge variant="outline" className="kicker">{c.claim_mode}</Badge>}
+                            </div>
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs font-mono"
-                              onClick={() => setRuling({ objectType: "CLAIM", objectUuid: c.id, label: c.exact_claim, decisions: ["PROMOTE", "DEFER", "REJECT"] })}>
+                              onClick={() => {
+                                const suggestion = suggestionFor(c);
+                                setRuling({ objectType: "CLAIM", objectUuid: c.id, label: c.exact_claim, decisions: ["PROMOTE", "DEFER", "REJECT"], suggestedDecision: suggestion?.decision, suggestedReason: suggestion?.reason });
+                              }}>
                               <Gavel className="w-3.5 h-3.5 mr-1" /> Rule
                             </Button>
                           </div>
                           <p className="text-sm font-serif text-foreground leading-relaxed">{c.exact_claim}</p>
                           {c.plain_language && <p className="text-xs text-muted-foreground mt-1 font-serif">{c.plain_language}</p>}
+                          {suggestionFor(c) && (
+                            <div className="mt-2 rounded border border-blue-500/25 bg-blue-500/5 px-3 py-2 text-xs text-muted-foreground">
+                              <span className="font-mono text-blue-300">Suggested: {suggestionFor(c)?.decision}</span>
+                              {suggestionFor(c)?.average_score != null && <span className="ml-2">score {suggestionFor(c)?.average_score}/10</span>}
+                              <p className="mt-1 font-serif">{suggestionFor(c)?.reason}</p>
+                            </div>
+                          )}
                           <AnchorQuote anchor={c.source_anchor} />
                         </div>
                       ))}
@@ -478,6 +542,8 @@ export default function Review() {
           objectUuid={ruling.objectUuid}
           objectLabel={ruling.label}
           decisions={ruling.decisions}
+          suggestedDecision={ruling.suggestedDecision}
+          suggestedReason={ruling.suggestedReason}
         />
       )}
       <StatementEditDialog statement={editStatement} open={!!editStatement} onOpenChange={(o) => !o && setEditStatement(null)} />

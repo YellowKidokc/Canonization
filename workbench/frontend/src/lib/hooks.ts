@@ -198,6 +198,17 @@ export function useCreateJob() {
   });
 }
 
+export function useDeleteJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: string) => api.delete(`/api/jobs/${jobId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.jobs });
+      qc.invalidateQueries({ queryKey: qk.dashboard });
+    },
+  });
+}
+
 export function useRuling() {
   const qc = useQueryClient();
   return useMutation({
@@ -214,6 +225,19 @@ export function useRuling() {
       // A ruling can touch any governed object — invalidate broadly.
       qc.invalidateQueries();
     },
+  });
+}
+
+export function useBulkRulings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (items: Array<{
+      object_type: ObjectType;
+      object_uuid: string;
+      decision: RulingDecision;
+      reason: string;
+    }>) => api.post<Ruling[]>("/api/rulings/bulk", { items }),
+    onSuccess: () => qc.invalidateQueries(),
   });
 }
 

@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -92,21 +93,31 @@ def _sha(text: str) -> str:
 
 def get_or_create_prompt_version(db: Session, call_number: int) -> PromptVersion:
     version = prompts.PROMPT_VERSIONS[call_number]
-    pv = db.scalar(
-        select(PromptVersion).where(
-            PromptVersion.call_number == call_number, PromptVersion.version == version
-        )
-    )
-    if pv is None:
-        pv = PromptVersion(
+    prompt_text = prompts.prompt_for_call(call_number, "<source>")
+    # Jobs run in independent threads. Two first runs may attempt to register
+    # the same immutable prompt version at once, so use PostgreSQL's atomic
+    # conflict handling instead of a race-prone SELECT followed by INSERT.
+    db.execute(
+        insert(PromptVersion)
+        .values(
             call_number=call_number,
             name=f"call{call_number}_three_call_pipeline",
             version=version,
-            prompt_text=prompts.prompt_for_call(call_number, "<source>"),
-            sha256=_sha(prompts.prompt_for_call(call_number, "<source>")),
+            prompt_text=prompt_text,
+            sha256=_sha(prompt_text),
         )
-        db.add(pv)
-        db.flush()
+        .on_conflict_do_nothing(
+            index_elements=[PromptVersion.call_number, PromptVersion.version]
+        )
+    )
+    pv = db.scalar(
+        select(PromptVersion).where(
+            PromptVersion.call_number == call_number,
+            PromptVersion.version == version,
+        )
+    )
+    if pv is None:  # defensive: the INSERT or existing row must be visible
+        raise RuntimeError(f"Prompt version {call_number}:{version} was not persisted")
     return pv
 
 
@@ -246,6 +257,59 @@ def _insert_candidates(db: Session, job_id, source_id, call1: dict, source_text:
     return counts
 
 
+def _suggest_ruling(evaluation: dict) -> dict:
+    score_fields = (
+        "logical_validity", "internal_coherence", "definition_precision",
+        "evidence_adequacy", "explanatory_compression", "rival_discrimination",
+        "testability", "cross_domain_integrity", "adversarial_robustness",
+        "epistemic_calibration",
+    )
+    scored = {name: evaluation.get(name) for name in score_fields if isinstance(evaluation.get(name), (int, float))}
+    average = round(sum(scored.values()) / len(scored), 2) if scored else None
+    if average is None:
+        decision = "DEFER"
+        reason = "Call 2 supplied no applicable scores; retain for human review."
+    else:
+        decision = "PROMOTE" if average >= 7 else "DEFER" if average >= 5 else "REJECT"
+        weakest = sorted(scored.items(), key=lambda pair: pair[1])[:2]
+        weakness = ", ".join(f"{name.replace('_', ' ')} {value}/10" for name, value in weakest)
+        reason = (
+            f"Advisory Call 2 assessment: {average}/10 across {len(scored)} applicable dimensions. "
+            f"Mode note: {evaluation.get('mode_note') or 'none supplied'}. "
+            f"Lowest dimensions: {weakness or 'none'}. Human confirmation required."
+        )
+    return {"decision": decision, "reason": reason, "average_score": average, "scores": scored}
+
+
+def attach_call2_evaluations(db: Session, job_id, evaluations: list[dict]) -> int:
+    """Attach Call 2 advice to matching objects without changing canon status."""
+    objects = [
+        *db.scalars(select(Question).where(Question.job_id == job_id)).all(),
+        *db.scalars(select(Claim).where(Claim.job_id == job_id)).all(),
+        *db.scalars(select(TrueStatement).where(TrueStatement.job_id == job_id)).all(),
+    ]
+    by_anchor: dict[str, list] = {}
+    for obj in objects:
+        quote = (obj.source_anchor or {}).get("exact_quote")
+        if quote:
+            by_anchor.setdefault(quote, []).append(obj)
+    attached = 0
+    for evaluation in evaluations:
+        quote = evaluation.get("anchor_quote")
+        matches = by_anchor.get(quote) or []
+        if not matches:
+            continue
+        obj = matches.pop(0)
+        obj.provenance = {
+            **(obj.provenance or {}),
+            "call2_evaluation": evaluation,
+            "suggested_ruling": _suggest_ruling(evaluation),
+        }
+        attached += 1
+    db.flush()
+    return attached
+
+
 def run_pipeline(db: Session, job_id: uuidlib.UUID) -> None:
     """Execute the three calls synchronously (invoked in a worker thread)."""
     from ..services.sources import read_source_bytes
@@ -267,20 +331,6 @@ def run_pipeline(db: Session, job_id: uuidlib.UUID) -> None:
         hub.publish(ProgressEvent(str(job_id), f"call{call_number}", f"Call {call_number} in flight", 10 + call_number * 25))
         try:
             result = call_deepseek(prompt_text)
-            run = _record_run(
-                db,
-                job_id=job_id,
-                call_number=call_number,
-                prompt_version_id=pv.id,
-                input_text=input_text,
-                result_text=result.text,
-                tokens=result.tokens_used,
-                latency_ms=result.latency_ms,
-                succeeded=True,
-            )
-            parsed = extract_json_object(result.text)
-            hub.publish(ProgressEvent(str(job_id), f"call{call_number}", f"Call {call_number} complete", 15 + call_number * 25))
-            return parsed
         except ProviderError as e:
             run = _record_run(
                 db,
@@ -303,6 +353,33 @@ def run_pipeline(db: Session, job_id: uuidlib.UUID) -> None:
             )
             raise
 
+        run = _record_run(
+            db,
+            job_id=job_id,
+            call_number=call_number,
+            prompt_version_id=pv.id,
+            input_text=input_text,
+            result_text=result.text,
+            tokens=result.tokens_used,
+            latency_ms=result.latency_ms,
+            succeeded=True,
+        )
+        try:
+            parsed = extract_json_object(result.text)
+            hub.publish(ProgressEvent(str(job_id), f"call{call_number}", f"Call {call_number} complete", 15 + call_number * 25))
+            return parsed
+        except ProviderError as e:
+            run.succeeded = False
+            _record_failure(
+                db,
+                job_id=job_id,
+                model_run_id=run.id,
+                error=e,
+                error_class=e.error_class,
+                input_text=input_text,
+            )
+            raise
+
     try:
         # CALL 1 — lossless extraction (question-first)
         call1_result = run_call(1, source_text)
@@ -311,10 +388,14 @@ def run_pipeline(db: Session, job_id: uuidlib.UUID) -> None:
 
         # CALL 2 — rigorous evaluation (recorded for the review UI)
         call2_result = run_call(2, json.dumps(call1_result))
+        attached_evaluations = attach_call2_evaluations(
+            db, job_id, call2_result.get("evaluations", [])
+        )
         job.receipt = {
             **job.receipt,
             "call2_evaluations": call2_result.get("evaluations", []),
             "call2_cross_cutting": call2_result.get("cross_cutting_findings", []),
+            "call2_attached_suggestions": attached_evaluations,
         }
 
         # CALL 3 — adversarial synthesis (recommendation is NOT admission)
@@ -354,3 +435,9 @@ def start_pipeline_thread(db_factory, job_id: uuidlib.UUID) -> threading.Thread:
     t = threading.Thread(target=_work, name=f"pipeline-{job_id}", daemon=True)
     t.start()
     return t
+
+
+def is_job_thread_active(job_id: uuidlib.UUID) -> bool:
+    """True only while this process still has a live worker for the job."""
+    expected = f"pipeline-{job_id}"
+    return any(t.name == expected and t.is_alive() for t in threading.enumerate())

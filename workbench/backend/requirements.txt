@@ -12,3 +12,4 @@ python-dotenv>=1.0
 itsdangerous>=2.2
 pytest>=8.0
 openpyxl>=3.1
+json-repair>=0.30

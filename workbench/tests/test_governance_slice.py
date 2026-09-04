@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import hashlib
 
+from app.pipeline.provider import extract_json_object
+
 from .conftest import SAMPLE_PAPER, run_job
 
 
@@ -103,6 +105,23 @@ def test_reruns_do_not_overwrite_history(client, source, mock_provider):
     assert len(runs1) == 3 and len(runs2) == 3
 
 
+def test_stale_job_can_be_deleted_without_deleting_source(client, source):
+    """Cleanup removes only the job; preserved source material remains intact."""
+    from app.db import session_scope
+    from app.models.entities import ProcessingJob
+
+    with session_scope() as db:
+        job = ProcessingJob(source_id=source["id"], status="RUNNING", receipt={})
+        db.add(job)
+        db.commit()
+        job_id = str(job.id)
+
+    response = client.delete(f"/api/jobs/{job_id}")
+    assert response.status_code == 204
+    assert client.get(f"/api/jobs/{job_id}").status_code == 404
+    assert client.get(f"/api/sources/{source['id']}/content").content == SAMPLE_PAPER.encode("utf-8")
+
+
 def test_candidate_api_cannot_self_promote(client, statement):
     """Even if a client sends canon_status directly, the object stays a candidate."""
     r = client.post(
@@ -142,3 +161,14 @@ def test_unlimited_true_statements(client, source):
         assert r.status_code == 201
     all_statements = client.get("/api/statements?limit=500").json()
     assert len(all_statements) >= 150
+
+
+def test_model_json_minor_syntax_damage_is_repaired():
+    payload = extract_json_object(
+        '```json\n{"questions": [{"exact_question": "Why?" "importance": "HIGH"}],}\n```'
+    )
+
+    assert payload["questions"][0] == {
+        "exact_question": "Why?",
+        "importance": "HIGH",
+    }

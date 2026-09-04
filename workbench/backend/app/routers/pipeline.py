@@ -102,9 +102,39 @@ def get_job(jid: uuidlib.UUID, db: Session = Depends(get_db)):
     return j
 
 
+@router.delete("/jobs/{jid}", status_code=204)
+def delete_job(jid: uuidlib.UUID, db: Session = Depends(get_db), actor: str = Depends(get_actor)):
+    """Remove a job record without deleting its preserved source or governed outputs.
+
+    A genuinely active worker cannot be deleted. A RUNNING row whose worker has
+    already died is considered stale and may be cleaned up.
+    """
+    job = db.get(ProcessingJob, jid)
+    if job is None:
+        raise HTTPException(404, "No such job")
+    if three_call.is_job_thread_active(jid):
+        raise HTTPException(409, "Job is still actively running")
+    db.delete(job)
+    db.commit()
+    return Response(status_code=204)
+
+
 @router.get("/jobs/{jid}/runs", response_model=list[ModelRunOut])
 def job_runs(jid: uuidlib.UUID, db: Session = Depends(get_db)):
     return db.scalars(select(ModelRun).where(ModelRun.job_id == jid).order_by(ModelRun.call_number)).all()
+
+
+@router.post("/jobs/{jid}/attach-suggestions")
+def attach_job_suggestions(jid: uuidlib.UUID, db: Session = Depends(get_db), actor: str = Depends(get_actor)):
+    """Reattach stored Call 2 advice to objects from an earlier successful run."""
+    job = db.get(ProcessingJob, jid)
+    if job is None:
+        raise HTTPException(404, "No such job")
+    evaluations = (job.receipt or {}).get("call2_evaluations") or []
+    attached = three_call.attach_call2_evaluations(db, jid, evaluations)
+    job.receipt = {**(job.receipt or {}), "call2_attached_suggestions": attached}
+    db.commit()
+    return {"job_id": str(jid), "attached": attached, "evaluations": len(evaluations)}
 
 
 @router.get("/jobs/{jid}/failures", response_model=list[FailureReceiptOut])

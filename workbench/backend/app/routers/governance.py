@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from ..auth import get_actor
 from ..db import get_db
 from ..models.entities import CanonVersion, Ruling
-from ..schemas import RulingCreate, RulingOut
+from ..schemas import BulkRulingCreate, RulingCreate, RulingOut
 from ..services import rulings as ruling_service
 
 router = APIRouter(prefix="/api", tags=["governance"])
@@ -41,6 +41,44 @@ def create_ruling(body: RulingCreate, db: Session = Depends(get_db), actor: str 
     search_service.reindex_object(db, body.object_type, body.object_uuid)
     db.commit()
     return ruling
+
+
+@router.post("/rulings/bulk", response_model=list[RulingOut], status_code=201)
+def create_bulk_rulings(body: BulkRulingCreate, db: Session = Depends(get_db), actor: str = Depends(get_actor)):
+    """Apply an explicit human-approved batch atomically.
+
+    Each object still receives its own append-only ruling and canon version.
+    Any illegal transition rejects the entire batch rather than partially ruling.
+    """
+    created = []
+    try:
+        for item in body.items:
+            created.append(
+                ruling_service.apply_ruling(
+                    db,
+                    ruling_service.RulingRequest(
+                        object_type=item.object_type,
+                        object_uuid=item.object_uuid,
+                        decision=item.decision,
+                        reason=item.reason,
+                        decided_by=actor,
+                        supporting_objects=item.supporting_objects,
+                        reverses_ruling_id=item.reverses_ruling_id,
+                        edit_payload=item.edit_payload,
+                    ),
+                )
+            )
+        db.commit()
+    except ruling_service.RulingError as e:
+        db.rollback()
+        raise HTTPException(422, str(e)) from e
+
+    from ..services import search as search_service
+
+    for item in body.items:
+        search_service.reindex_object(db, item.object_type, item.object_uuid)
+    db.commit()
+    return created
 
 
 @router.get("/rulings", response_model=list[RulingOut])

@@ -4,6 +4,7 @@ All secrets live in workbench/.env (never committed). Mutable data lives under
 %LOCALAPPDATA%\\Theophysics\\Canonization (never in the repo, never on a mapped drive).
 """
 from functools import lru_cache
+import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -50,6 +51,20 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     s = Settings()
+    # Windows desktop sessions can outlive environment-variable updates.  If the
+    # current process and .env do not contain the key, read the user's persistent
+    # environment value directly.  The secret remains server-side and is never
+    # returned by an API endpoint.
+    if not s.deepseek_api_key and os.name == "nt":
+        try:
+            import winreg
+
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+                value, _ = winreg.QueryValueEx(key, "DEEPSEEK_API_KEY")
+            if isinstance(value, str) and value.strip():
+                s.deepseek_api_key = value.strip()
+        except (FileNotFoundError, OSError):
+            pass
     s.pg_data_dir.mkdir(parents=True, exist_ok=True)
     s.preserved_dir.mkdir(parents=True, exist_ok=True)
     return s

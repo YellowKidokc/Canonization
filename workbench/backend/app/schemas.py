@@ -375,6 +375,10 @@ class RulingCreate(BaseModel):
     edit_payload: dict[str, Any] | None = None
 
 
+class BulkRulingCreate(BaseModel):
+    items: list[RulingCreate] = Field(min_length=1, max_length=500)
+
+
 class RulingOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

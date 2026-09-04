@@ -37,6 +37,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+async function requestText(path: string, init?: RequestInit): Promise<string> {
+  const res = await fetch(path, {
+    credentials: "same-origin",
+    ...init,
+  });
+  if (!res.ok) await parseError(res);
+  return res.text();
+}
+
 export function qs(params: Record<string, string | number | boolean | null | undefined> | undefined): string {
   if (!params) return "";
   const sp = new URLSearchParams();
@@ -49,8 +58,10 @@ export function qs(params: Record<string, string | number | boolean | null | und
 
 export const api = {
   get: <T>(path: string) => request<T>(path),
+  getText: (path: string) => requestText(path),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", body: body === undefined ? null : JSON.stringify(body) }),
   postForm: <T>(path: string, form: FormData) => request<T>(path, { method: "POST", body: form }),
   patch: <T>(path: string, body: unknown) => request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
+  delete: (path: string) => request<void>(path, { method: "DELETE" }),
 };
