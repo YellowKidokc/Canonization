@@ -21,3 +21,10 @@ Thumbs.db
 
 # Obsidian
 data.json
+
+# Canonization workbench
+workbench/.env
+workbench/backend/.venv/
+workbench/frontend/node_modules/
+workbench/frontend/dist/
+workbench/tests/_tmp/
