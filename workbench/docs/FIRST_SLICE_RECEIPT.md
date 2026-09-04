@@ -13,9 +13,11 @@ Status label: **CANDIDATE_DRAFT — NOT ADMITTED** (this receipt describes infra
 ## Commands run (summary)
 - `python -m venv backend/.venv` + pip install of backend requirements.
 - `python -m alembic upgrade head` (embedded PostgreSQL 16.2).
-- `uvicorn app.main:app --port 8471` + curl end-to-end smoke (intake → statement → 2-step promotion → audit → search → exports).
+- `uvicorn app.main:app --port 8471` + curl end-to-end smoke (intake → statement → 2-step promotion → audit → search → exports) — **passed after restart with search-sync fix**.
 - `pytest tests -q` → **25 passed** (final run; provider mocked).
-- Plugin `npm run verify` — see result below (final).
+- `npm run build` in `workbench/frontend` → **passes** (tsc strict + vite; one benign chunk-size warning).
+- `npm run test` (vitest smoke: login screen renders on 401) → **1 passed**.
+- Plugin `npm run verify` → **passes** (workbench excluded from plugin tsconfig; plugin source untouched).
 
 ## Acceptance test evidence (all in tests/)
 - Originals unchanged + SHA-256 verified on read: `test_intake_preserves_bytes_and_hash`
@@ -35,7 +37,8 @@ Status label: **CANDIDATE_DRAFT — NOT ADMITTED** (this receipt describes infra
 - Homepage search retrieves admitted object (text + UUID): `test_search_retrieves_admitted_object`, `test_search_by_uuid`
 
 ## Known gaps / not done in this slice
-- No real DeepSeek run against a live paper in this receipt (key placeholder empty; pipeline verified with mocked provider; SSE + receipts verified end-to-end).
+- No real DeepSeek run against a live paper in this receipt (key placeholder empty; pipeline verified with mocked provider; SSE + receipts verified end-to-end). Set `DEEPSEEK_API_KEY` in `workbench/.env` to enable live runs.
 - Prediction tournaments, contradiction/entailment/ablation engines, Z3/Lean, ATOM packets, Excel: schema/vocab reserved, not built (Phases 3–5).
 - Single-user local auth only.
-- vitest frontend smoke: see frontend agent report.
+- Dev database contains only the final live-verification demo (one source, one admitted statement, canon v2). Accidental test artifacts (C:/tmp import, proxy-verification rows) were removed. Exports from verification remain in `60_EXCHANGE` as format evidence.
+- Frontend SSE "Run pipeline" click-through with a live job done at HTTP level; verify once with a real API key.

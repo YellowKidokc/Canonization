@@ -1,0 +1,104 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme inline {
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-display: 'Cinzel', serif;
+
+  /* Blacked Out Gold Theme */
+  --color-background: hsl(0 0% 2%);
+  --color-foreground: hsl(45 20% 90%);
+
+  --color-card: hsl(0 0% 4%);
+  --color-card-foreground: hsl(45 20% 90%);
+
+  --color-popover: hsl(0 0% 4%);
+  --color-popover-foreground: hsl(45 20% 90%);
+
+  --color-primary: hsl(45 100% 50%);  /* Gold */
+  --color-primary-foreground: hsl(0 0% 0%);
+
+  --color-secondary: hsl(0 0% 8%);
+  --color-secondary-foreground: hsl(45 20% 90%);
+
+  --color-muted: hsl(0 0% 10%);
+  --color-muted-foreground: hsl(45 10% 40%);
+
+  --color-accent: hsl(45 100% 50%);
+  --color-accent-foreground: hsl(0 0% 0%);
+
+  --color-destructive: hsl(0 60% 30%);
+  --color-destructive-foreground: hsl(45 20% 90%);
+
+  --color-border: hsl(45 30% 15%);
+  --color-input: hsl(45 30% 15%);
+  --color-ring: hsl(45 100% 50%);
+
+  --color-sidebar: hsl(0 0% 3%);
+  --color-sidebar-foreground: hsl(45 20% 90%);
+  --color-sidebar-primary: hsl(45 100% 50%);
+  --color-sidebar-primary-foreground: hsl(0 0% 0%);
+  --color-sidebar-accent: hsl(0 0% 8%);
+  --color-sidebar-accent-foreground: hsl(45 100% 50%);
+  --color-sidebar-border: hsl(45 30% 15%);
+  --color-sidebar-ring: hsl(45 100% 50%);
+
+  --radius-sm: 0rem;
+  --radius-md: 0.1rem;
+  --radius-lg: 0.2rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-serif);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+}
+
+.gold-glow {
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.text-gold {
+  color: hsl(45 100% 50%);
+}
+
+/* Kicker idiom: mono, tiny, uppercase, wide-tracked */
+.kicker {
+  font-size: 10px;
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+/* Scrollbar idiom for code/markdown panes */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(45 30% 15%);
+}
+
+/* React Flow dark overrides */
+.react-flow__attribution {
+  display: none;
+}
+.react-flow__node-governed {
+  cursor: pointer;
+}
