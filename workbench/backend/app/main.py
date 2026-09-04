@@ -70,22 +70,22 @@ app.include_router(atom_builder.router, dependencies=[Depends(current_user)])
 @app.get("/atom-builder.html")
 @app.get("/atom-builder-v2")
 def atom_builder_page(user: str = Depends(current_user)):
-    return FileResponse(WORKBENCH_DIR / "atom-builder.html")
+    return FileResponse(WORKBENCH_DIR / "atom-builder.html", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/field-registry.js")
 def atom_builder_registry():
-    return FileResponse(WORKBENCH_DIR / "field-registry.js")
+    return FileResponse(WORKBENCH_DIR / "field-registry.js", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/prompt-rail.js")
 def atom_builder_script():
-    return FileResponse(WORKBENCH_DIR / "prompt-rail.js")
+    return FileResponse(WORKBENCH_DIR / "prompt-rail.js", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/prompt-rail.css")
 def atom_builder_styles():
-    return FileResponse(WORKBENCH_DIR / "prompt-rail.css")
+    return FileResponse(WORKBENCH_DIR / "prompt-rail.css", headers={"Cache-Control": "no-store"})
 
 
 if FRONTEND_DIST.exists():

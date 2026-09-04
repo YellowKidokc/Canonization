@@ -553,6 +553,22 @@ function pick(e){
 }
 function g(el,k){return el.querySelector(`[data-f="${k}"]`)?.value?.trim()||'';}
 function gs(el,k){return el.querySelector(`.tg.on[data-key="${k}"]`)?.dataset.val||'';}
+function importSourceFile(aid,input){
+ const file=input.files&&input.files[0];if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+  const atom=document.getElementById('at-'+aid),raw=atom?.querySelector('[data-f="raw"]'),uri=atom?.querySelector('[data-f="src_uri"]');
+  if(!raw)return;
+  raw.value=String(reader.result||'');
+  if(uri&&!uri.value)uri.value=file.name;
+  raw.dispatchEvent(new Event('input',{bubbles:true}));
+  uri?.dispatchEvent(new Event('input',{bubbles:true}));
+  document.getElementById('p-'+aid+'-2')?.classList.add('open');
+  raw.scrollIntoView({behavior:'smooth',block:'center'});
+ };
+ reader.onerror=()=>alert('The source file could not be read.');
+ reader.readAsText(file);
+}
 
 // ══ NEW ATOM ═════════════════════════════════════════════════════════════
 function newAtom(){
@@ -586,6 +602,11 @@ function newAtom(){
    <li>an HTML page treated as a second source of truth</li>
    <li>an automated score treated as a human admission ruling</li>
   </ul>
+  <div style="margin-top:18px;padding:16px;border:1px solid var(--blu);border-radius:7px;background:rgba(70,130,180,.08)">
+   <strong style="display:block;margin-bottom:8px;color:var(--blu)">START HERE — IMPORT THE SOURCE</strong>
+   <div class="hint" style="margin-bottom:10px">Choose the Markdown, text, HTML, or JSON source that this ATOM will preserve and analyze.</div>
+   <input type="file" accept=".md,.markdown,.txt,.html,.htm,.json,text/plain,text/markdown,text/html,application/json" onchange="importSourceFile('${aid}',this)">
+  </div>
  </div></div></div>
 
 <!-- 2 · ADDRESS -->
